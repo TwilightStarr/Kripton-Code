@@ -1,8 +1,6 @@
 package com.kriptoncod.app
 
 import android.content.Context
-import com.kriptoncod.app.data.ai.AiGenerator
-import com.kriptoncod.app.data.ai.OpenAiCompatibleGenerator
 import com.kriptoncod.app.data.db.KriptonDatabase
 import com.kriptoncod.app.data.email.EmailAuthClient
 import com.kriptoncod.app.data.email.EmailTokenStore
@@ -48,9 +46,6 @@ class AppContainer(context: Context) {
     val aiAccountRepository: AiAccountRepository by lazy { AiAccountRepository(database.aiAccountDao(), keyVault) }
     val promptRepository: PromptRepository by lazy { PromptRepository(database) }
     val runRepository: RunRepository by lazy { RunRepository(database, outputStore, historyStore) }
-
-    // --- AI üretimi ---
-    val aiGenerator: AiGenerator by lazy { OpenAiCompatibleGenerator() }
 
     // --- GitHub ---
     val githubTokenStore: GitHubTokenStore by lazy { GitHubTokenStore(keyVault) }
