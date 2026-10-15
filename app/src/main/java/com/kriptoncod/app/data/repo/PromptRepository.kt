@@ -23,6 +23,8 @@ class PromptRepository(
     fun observeAssignments(setId: Long): Flow<List<Assignment>> = assignments.observeForSet(setId)
 
     suspend fun getItems(setId: Long): List<PromptItem> = items.getBySet(setId)
+    suspend fun getItem(id: Long): PromptItem? = items.get(id)
+    suspend fun getAssignment(promptId: Long): Assignment? = assignments.get(promptId)
 
     suspend fun createSet(name: String): Long = sets.insert(PromptSet(name = name))
 

@@ -22,6 +22,13 @@ import com.kriptoncod.app.data.repo.RunRepository
 import com.kriptoncod.app.data.settings.ThemeStore
 import com.kriptoncod.app.data.vault.AndroidKeystoreKeyVault
 import com.kriptoncod.app.data.vault.KeyVault
+import com.kriptoncod.app.data.run.CredentialProvider
+import com.kriptoncod.app.data.run.PromptDispatcher
+import com.kriptoncod.app.data.run.RunLauncher
+import com.kriptoncod.app.data.run.VaultCredentialProvider
+import com.kriptoncod.app.domain.RunStatus
+import com.kriptoncod.app.work.RunScheduler
+import androidx.work.WorkManager
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -71,6 +78,16 @@ class AppContainer(context: Context) {
     /** Üretim HTTP istemcisi; testlerde FakeEmailAuthClient ile değiştirilebilir. */
     val emailAuthClient: EmailAuthClient by lazy { RealEmailAuthClient() }
 
+    // --- Dağıtım (prompt → AI hesabı) ---
+    val credentialProvider: CredentialProvider by lazy {
+        VaultCredentialProvider(aiAccountRepository, googleTokenStore, emailTokenStore)
+    }
+    val promptDispatcher: PromptDispatcher by lazy {
+        PromptDispatcher(runRepository, promptRepository, aiAccountRepository, credentialProvider, aiGenerator)
+    }
+    val runScheduler: RunScheduler by lazy { RunScheduler(WorkManager.getInstance(appContext), runRepository) }
+    val runLauncher: RunLauncher by lazy { RunLauncher(promptRepository, runRepository, runScheduler) }
+
     /** Açılışta yarım kalan dosya/iş durumlarını toparlar; hata uygulamayı düşürmez. */
     fun startRecovery() {
         appScope.launch {
@@ -78,6 +95,10 @@ class AppContainer(context: Context) {
                 runRepository.recover()
                 aiAccountRepository.purgeOrphanSecrets()
                 aiAccountRepository.releaseExpiredWaits()
+                // Süreç öldürüldüyse yarım kalan run'ların dağıtımını yeniden başlat (KEEP: çift çalışmaz).
+                runRepository.observeRuns().first()
+                    .filter { it.status == RunStatus.PREPARING || it.status == RunStatus.RUNNING }
+                    .forEach { runScheduler.start(it.id) }
             }
         }
     }

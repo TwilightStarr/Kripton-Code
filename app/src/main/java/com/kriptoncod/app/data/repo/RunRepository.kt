@@ -42,6 +42,7 @@ class RunRepository(
 
     suspend fun getRun(id: Long): RunRecord? = runs.get(id)
     suspend fun getJobs(runId: Long): List<Job> = jobs.getByRun(runId)
+    suspend fun getJob(id: Long): Job? = jobs.get(id)
 
     suspend fun createRun(repo: String? = null): Long =
         runs.insert(RunRecord(createdAt = now(), status = RunStatus.PREPARING, repo = repo))
