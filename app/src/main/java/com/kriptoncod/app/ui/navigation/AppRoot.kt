@@ -37,6 +37,8 @@ import com.kriptoncod.app.ui.screens.AccountEditorScreen
 import com.kriptoncod.app.ui.screens.AisScreen
 import com.kriptoncod.app.ui.screens.HistoryScreen
 import com.kriptoncod.app.ui.screens.HomeScreen
+import com.kriptoncod.app.ui.screens.PromptEditorScreen
+import com.kriptoncod.app.ui.screens.PromptSetScreen
 import com.kriptoncod.app.ui.screens.PromptsScreen
 import com.kriptoncod.app.ui.screens.SettingsScreen
 import com.kriptoncod.app.ui.theme.KriptonTheme
@@ -114,7 +116,39 @@ fun AppRoot(
                 val id = entry.arguments?.getLong(AisRoutes.ARG_ID) ?: return@composable
                 AccountEditorScreen(accountId = id, onClose = { navController.popBackStack() })
             }
-            composable(Route.Prompts.path) { PromptsScreen() }
+            composable(Route.Prompts.path) {
+                PromptsScreen(onOpenSet = { id -> navController.navigate(PromptRoutes.set(id)) })
+            }
+            composable(
+                PromptRoutes.SET,
+                arguments = listOf(navArgument(PromptRoutes.ARG_SET_ID) { type = NavType.LongType }),
+            ) { entry ->
+                val setId = entry.arguments?.getLong(PromptRoutes.ARG_SET_ID) ?: return@composable
+                PromptSetScreen(
+                    setId = setId,
+                    onBack = { navController.popBackStack() },
+                    onAddPrompt = { navController.navigate(PromptRoutes.addPrompt(setId)) },
+                    onEditPrompt = { promptId -> navController.navigate(PromptRoutes.editPrompt(setId, promptId)) },
+                )
+            }
+            composable(
+                PromptRoutes.ADD_PROMPT,
+                arguments = listOf(navArgument(PromptRoutes.ARG_SET_ID) { type = NavType.LongType }),
+            ) { entry ->
+                val setId = entry.arguments?.getLong(PromptRoutes.ARG_SET_ID) ?: return@composable
+                PromptEditorScreen(setId = setId, promptId = null, onClose = { navController.popBackStack() })
+            }
+            composable(
+                PromptRoutes.EDIT_PROMPT,
+                arguments = listOf(
+                    navArgument(PromptRoutes.ARG_SET_ID) { type = NavType.LongType },
+                    navArgument(PromptRoutes.ARG_PROMPT_ID) { type = NavType.LongType },
+                ),
+            ) { entry ->
+                val setId = entry.arguments?.getLong(PromptRoutes.ARG_SET_ID) ?: return@composable
+                val promptId = entry.arguments?.getLong(PromptRoutes.ARG_PROMPT_ID) ?: return@composable
+                PromptEditorScreen(setId = setId, promptId = promptId, onClose = { navController.popBackStack() })
+            }
             composable(Route.History.path) { HistoryScreen() }
             composable(Route.Settings.path) {
                 SettingsScreen(

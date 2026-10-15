@@ -20,8 +20,8 @@
     <string name="ais_empty_message">Bir sağlayıcı seç, anahtarını doğrula ve ilk hesabını ekle.</string>
 
     <string name="prompts_title">Promptlar</string>
-    <string name="prompts_empty_title">Prompt seti boş</string>
-    <string name="prompts_empty_message">Ayrıntılı promptların burada hazırlanacak ve AI\'lara dağıtılacak.</string>
+    <string name="prompts_empty_title">Henüz prompt seti yok</string>
+    <string name="prompts_empty_message">Bir set oluştur; ayrıntılı promptlarını ekleyip AI\'lara dağıt.</string>
 
     <string name="history_title">Geçmiş</string>
     <string name="history_empty_title">Geçmiş boş</string>
@@ -127,4 +127,40 @@
     <string name="err_action_failed">İşlem tamamlanamadı. Tekrar dene.</string>
     <string name="err_load_failed">Hesaplar yüklenemedi.</string>
     <string name="err_clipboard_empty">Panoda yapıştırılacak metin yok.</string>
+
+    <!-- Prompt setleri -->
+    <string name="prompts_add_set">+ Set Oluştur</string>
+    <string name="prompts_create_set_title">Yeni prompt seti</string>
+    <string name="prompts_set_name_hint">Set adı (ör. Landing sayfası)</string>
+    <string name="action_create">Oluştur</string>
+    <string name="prompts_delete_set_title">Set silinsin mi?</string>
+    <string name="prompts_delete_set_message">\"%1$s\" seti ve içindeki tüm promptlar silinecek. Bu işlem geri alınamaz.</string>
+    <string name="prompts_delete_set_description">%1$s setini sil</string>
+
+    <!-- Set detayı -->
+    <string name="prompts_add_prompt">+ Prompt</string>
+    <string name="prompt_set_empty_title">Bu sette prompt yok</string>
+    <string name="prompt_set_empty_message">İlk promptunu ekle; sıralama ve hesap ataması buradan yapılır.</string>
+    <string name="prompts_assigned_count">%1$d / %2$d prompta hesap atandı</string>
+    <string name="prompts_assign">Hesap Ata</string>
+    <string name="prompts_reassign">Atamayı Değiştir</string>
+    <string name="prompts_unassign">Atamayı Kaldır</string>
+    <string name="prompts_assign_title">\"%1$s\" için hesap ata</string>
+    <string name="prompts_assign_account_label">Hesap</string>
+    <string name="prompts_assign_mode_label">Mod</string>
+    <string name="prompts_no_accounts">Atanabilecek aktif AI hesabı yok. Önce AI\'lar sekmesinden hesap ekle.</string>
+    <string name="assignment_auto">Otomatik</string>
+    <string name="assignment_manual">Manuel</string>
+    <string name="prompts_move_up">Yukarı taşı</string>
+    <string name="prompts_move_down">Aşağı taşı</string>
+    <string name="prompts_delete_prompt_title">Prompt silinsin mi?</string>
+    <string name="prompts_delete_prompt_message">\"%1$s\" silinecek. Bu işlem geri alınamaz.</string>
+
+    <!-- Prompt editörü -->
+    <string name="prompts_new_prompt_title">Yeni Prompt</string>
+    <string name="prompts_edit_prompt_title">Promptu Düzenle</string>
+    <string name="prompts_prompt_title_label">Başlık</string>
+    <string name="prompts_prompt_title_hint">Örn. Hero bölümü kodu</string>
+    <string name="prompts_prompt_body_label">Prompt metni</string>
+    <string name="prompts_prompt_body_hint">AI\'a gönderilecek ayrıntılı talimat…</string>
 </resources>

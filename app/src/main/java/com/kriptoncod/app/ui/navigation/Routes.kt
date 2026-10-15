@@ -27,3 +27,16 @@ object AisRoutes {
 
     fun edit(id: Long): String = "ais/edit/$id"
 }
+
+/** Prompt seti detayı ve prompt ekleme/düzenleme alt rotaları (alt gezinmede görünmez). */
+object PromptRoutes {
+    const val ARG_SET_ID = "setId"
+    const val ARG_PROMPT_ID = "promptId"
+    const val SET = "prompts/set/{$ARG_SET_ID}"
+    const val ADD_PROMPT = "prompts/set/{$ARG_SET_ID}/add"
+    const val EDIT_PROMPT = "prompts/set/{$ARG_SET_ID}/edit/{$ARG_PROMPT_ID}"
+
+    fun set(setId: Long): String = "prompts/set/$setId"
+    fun addPrompt(setId: Long): String = "prompts/set/$setId/add"
+    fun editPrompt(setId: Long, promptId: Long): String = "prompts/set/$setId/edit/$promptId"
+}
