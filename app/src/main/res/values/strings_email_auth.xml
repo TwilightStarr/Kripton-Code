@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- E-posta auth eklentisi: mevcut strings.xml'e eklenecek satırlar -->
+<resources>
+    <!-- Sağlayıcı adları (yeni) -->
+    <string name="provider_claude">Anthropic Claude</string>
+    <string name="provider_openai">OpenAI ChatGPT</string>
+    <string name="provider_email_auth">E-posta girişi</string>
+
+    <!-- E-posta / şifre giriş kartı (AccountEditorScreen) -->
+    <string name="email_auth_title">E-posta ile bağlan</string>
+    <string name="email_auth_hint">Hesap e-postanı ve şifreni girerek bağlan. Kimlik bilgileri yalnız cihazında şifreli saklanır.</string>
+    <string name="email_auth_email_label">E-posta</string>
+    <string name="email_auth_password_label">Şifre</string>
+    <string name="email_auth_connect">Bağlan</string>
+    <string name="email_auth_disconnect">Bağlantıyı kes</string>
+    <string name="email_auth_connected">Hesap bağlı — oturum açık</string>
+    <string name="email_auth_needs_reauth">Oturum süresi doldu — yeniden giriş gerekli</string>
+    <string name="email_auth_loading">Oturum kontrol ediliyor…</string>
+    <string name="email_auth_sign_in_failed">Giriş başarısız. E-posta ve şifreyi kontrol et.</string>
+    <string name="email_auth_refresh_failed">Oturum yenileme başarısız oldu.</string>
+    <string name="email_auth_sign_out_failed">Oturum kapatma başarısız oldu.</string>
+</resources>

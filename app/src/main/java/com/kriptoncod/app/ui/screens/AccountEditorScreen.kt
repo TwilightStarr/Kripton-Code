@@ -55,11 +55,13 @@ import com.kriptoncod.app.ui.ais.AccountEditorViewModel
 import com.kriptoncod.app.ui.ais.ApiKeyOnlyCard
 import com.kriptoncod.app.ui.ais.EditorError
 import com.kriptoncod.app.ui.ais.EditorUiState
+import com.kriptoncod.app.ui.ais.EmailAuthCard
 import com.kriptoncod.app.ui.ais.GoogleAuthCard
 import com.kriptoncod.app.ui.ais.GoogleAuthViewModel
 import com.kriptoncod.app.ui.ais.ModelOption
 import com.kriptoncod.app.ui.ais.Pricing
 import com.kriptoncod.app.ui.ais.rememberEditorViewModelFactory
+import com.kriptoncod.app.ui.ais.rememberEmailAuthViewModelFactory
 import com.kriptoncod.app.ui.ais.rememberGoogleAuthViewModelFactory
 import com.kriptoncod.app.ui.components.KBadge
 import com.kriptoncod.app.ui.components.KButton
@@ -151,28 +153,40 @@ private fun AccountEditorContent(
             }
 
             if (provider != null && !state.loading) {
-                // Kimlik doğrulama bölümü
                 item { SectionTitle(R.string.step_auth) }
 
-                if (provider.supportsGoogleAuth) {
-                    // Gemini: Google OAuth kartı
-                    item(key = "google-auth-card") {
-                        val googleFactory = rememberGoogleAuthViewModelFactory(accountId)
-                        GoogleAuthCard(
-                            accountId = accountId,
-                            factory = googleFactory,
-                        )
+                when {
+                    provider.supportsGoogleAuth -> {
+                        // Gemini: Google OAuth kartı
+                        item(key = "google-auth-card") {
+                            val googleFactory = rememberGoogleAuthViewModelFactory(accountId)
+                            GoogleAuthCard(accountId = accountId, factory = googleFactory)
+                        }
+                        // Ek olarak API key alternatifi
+                        item { SectionTitle(R.string.step_key_alternative) }
+                        item { KeySection(state, provider, onKeyChange, onPaste, onVerify) }
                     }
-                    // Gemini: Ek olarak API key girişi de sunulur (opsiyonel alternatif)
-                    item { SectionTitle(R.string.step_key_alternative) }
-                    item { KeySection(state, provider, onKeyChange, onPaste, onVerify) }
-                } else {
-                    // Diğer sağlayıcılar: yalnız API anahtarı — bilgi bandı + giriş alanı
-                    item(key = "api-key-only-info") {
-                        ApiKeyOnlyCard(keyUrl = provider.keyUrl)
+                    provider.supportsEmailAuth -> {
+                        // Claude / ChatGPT: e-posta/şifre giriş kartı
+                        item(key = "email-auth-card") {
+                            val emailFactory = rememberEmailAuthViewModelFactory(
+                                accountId = accountId,
+                                providerId = provider.id,
+                            )
+                            EmailAuthCard(accountId = accountId, factory = emailFactory)
+                        }
+                        // Ek olarak API key alternatifi
+                        item { SectionTitle(R.string.step_key_alternative) }
+                        item { KeySection(state, provider, onKeyChange, onPaste, onVerify) }
                     }
-                    item { SectionTitle(R.string.step_key) }
-                    item { KeySection(state, provider, onKeyChange, onPaste, onVerify) }
+                    else -> {
+                        // Diğer sağlayıcılar: yalnız API anahtarı
+                        item(key = "api-key-only-info") {
+                            ApiKeyOnlyCard(keyUrl = provider.keyUrl)
+                        }
+                        item { SectionTitle(R.string.step_key) }
+                        item { KeySection(state, provider, onKeyChange, onPaste, onVerify) }
+                    }
                 }
             }
 
@@ -254,6 +268,9 @@ private fun ProviderCard(provider: Provider, selected: Boolean, onClick: (() -> 
             )
             if (provider.supportsGoogleAuth) {
                 KBadge(text = stringResource(R.string.provider_google_auth), accent = NodeAccent.Blue)
+            }
+            if (provider.supportsEmailAuth) {
+                KBadge(text = stringResource(R.string.provider_email_auth), accent = NodeAccent.Blue)
             }
         }
     }
@@ -364,9 +381,9 @@ private fun ModelRow(model: ModelOption, selected: Boolean, onClick: () -> Unit)
                         KBadge(stringResource(R.string.model_recommended), accent = NodeAccent.Green)
                     }
                     when (model.pricing) {
-                        Pricing.FREE -> KBadge(stringResource(R.string.model_free), accent = NodeAccent.Green)
+                        Pricing.FREE      -> KBadge(stringResource(R.string.model_free), accent = NodeAccent.Green)
                         Pricing.FREE_TIER -> KBadge(stringResource(R.string.model_free_tier))
-                        Pricing.PAID -> KBadge(stringResource(R.string.model_paid))
+                        Pricing.PAID      -> KBadge(stringResource(R.string.model_paid))
                     }
                 }
             }

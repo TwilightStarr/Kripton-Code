@@ -16,6 +16,8 @@ data class ProviderEndpoint(
     val authMethod: AuthMethod,
     /** Ücretsiz modelleri belirten model kimliği eki (ör. OpenRouter ":free"). */
     val freeModelMarker: String? = null,
+    /** E-posta oturum açma tam URL'si; yalnız EMAIL destekli sağlayıcılarda. */
+    val loginUrl: String? = null,
 )
 
 data class Provider(
@@ -32,10 +34,20 @@ data class Provider(
      * true ise hesap ekranında "Google ile bağlan" kartı gösterilir.
      */
     val supportsGoogleAuth: Boolean = false,
+    /**
+     * Sağlayıcı e-posta/şifre girişi destekliyor mu (Claude, ChatGPT).
+     * true ise hesap ekranında "E-posta ile bağlan" kartı gösterilir.
+     */
+    val supportsEmailAuth: Boolean = false,
     val modelsPath: String = "models",
     val chatPath: String = "chat/completions",
     val validationPath: String = modelsPath,
     val freeModelMarker: String? = null,
+    /**
+     * Oturum açma yolu; yalnız [supportsEmailAuth] == true olan sağlayıcılarda.
+     * Diğer sağlayıcılarda null.
+     */
+    val loginPath: String? = null,
 ) {
     val isCustom: Boolean get() = baseUrl == null
 
@@ -52,6 +64,7 @@ data class Provider(
             return null
         }
         fun at(path: String): HttpUrl = url.newBuilder().addPathSegments(path).build()
+        val loginUrl = loginPath?.let { url.newBuilder().addPathSegments(it).build().toString() }
         return ProviderEndpoint(
             providerId = id,
             baseUrl = url,
@@ -60,6 +73,7 @@ data class Provider(
             validationUrl = at(validationPath),
             authMethod = authMethod,
             freeModelMarker = freeModelMarker,
+            loginUrl = loginUrl,
         )
     }
 }
@@ -68,6 +82,8 @@ data class Provider(
 object ProviderCatalog {
     const val CUSTOM_ID = "custom"
     const val GEMINI_ID = "gemini"
+    const val CLAUDE_ID = "claude"
+    const val OPENAI_ID = "openai"
 
     val all: List<Provider> = listOf(
         Provider(
@@ -78,6 +94,26 @@ object ProviderCatalog {
             keyUrl = "https://aistudio.google.com/apikey",
             authMethod = Google,
             supportsGoogleAuth = true,
+        ),
+        Provider(
+            id = CLAUDE_ID,
+            nameRes = R.string.provider_claude,
+            baseUrl = "https://api.anthropic.com/v1",
+            hasFreeTier = false,
+            keyUrl = "https://console.anthropic.com/settings/keys",
+            authMethod = EmailPassword,
+            supportsEmailAuth = true,
+            loginPath = "auth/login",
+        ),
+        Provider(
+            id = OPENAI_ID,
+            nameRes = R.string.provider_openai,
+            baseUrl = "https://api.openai.com/v1",
+            hasFreeTier = false,
+            keyUrl = "https://platform.openai.com/api-keys",
+            authMethod = EmailPassword,
+            supportsEmailAuth = true,
+            loginPath = "auth/login",
         ),
         Provider(
             id = "groq",

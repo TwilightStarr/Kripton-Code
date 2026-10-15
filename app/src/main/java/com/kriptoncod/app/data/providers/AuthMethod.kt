@@ -29,16 +29,24 @@ data class ApiKey(
  * Google OAuth yöntemi — yalnız Gemini'de.
  * Gerçek uygulama [com.kriptoncod.app.data.google.GeminiGoogleAuth]'dadır;
  * bu nesne sağlayıcı kataloğunda yer tutar.
- * Claude, ChatGPT gibi diğer sağlayıcılar bu yöntemi desteklemez: [ApiKey] kullanır.
  */
 data object Google : AuthMethod {
     override val type: AuthType = AuthType.GOOGLE
     override val isAvailable: Boolean = true
 
-    /**
-     * OkHttp isteğine Authorization başlığı ekler.
-     * [credential] → kasadan okunan geçerli access token.
-     */
+    override fun authorize(request: Request.Builder, credential: String): Request.Builder =
+        request.header("Authorization", "Bearer $credential")
+}
+
+/**
+ * E-posta/şifre oturum açma yöntemi — Claude (Anthropic Console) ve ChatGPT (OpenAI).
+ * Gerçek uygulama [com.kriptoncod.app.data.email.EmailPasswordAuth]'dadır;
+ * bu nesne sağlayıcı kataloğunda yer tutar.
+ */
+data object EmailPassword : AuthMethod {
+    override val type: AuthType = AuthType.EMAIL
+    override val isAvailable: Boolean = true
+
     override fun authorize(request: Request.Builder, credential: String): Request.Builder =
         request.header("Authorization", "Bearer $credential")
 }

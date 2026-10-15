@@ -2,6 +2,9 @@ package com.kriptoncod.app
 
 import android.content.Context
 import com.kriptoncod.app.data.db.KriptonDatabase
+import com.kriptoncod.app.data.email.EmailAuthClient
+import com.kriptoncod.app.data.email.EmailTokenStore
+import com.kriptoncod.app.data.email.RealEmailAuthClient
 import com.kriptoncod.app.data.files.HistoryStore
 import com.kriptoncod.app.data.files.OutputStore
 import com.kriptoncod.app.data.google.GoogleAuthClient
@@ -44,18 +47,18 @@ class AppContainer(context: Context) {
 
     // --- Google Auth ---
     val googleAuthSettings: GoogleAuthSettings by lazy { GoogleAuthSettings(appContext) }
-
     val googleTokenStore: GoogleTokenStore by lazy { GoogleTokenStore(keyVault) }
-
-    /**
-     * Gerçek [GoogleAuthClient]; OAuth istemci kimliği DataStore'dan tembel okunur.
-     * BuildConfig'de GOOGLE_OAUTH_CLIENT_ID tanımlandıysa başlangıç değeri olarak kullanılır.
-     */
     val googleAuthClient: GoogleAuthClient by lazy {
-        // İlk clientId değerini senkron oku — container ilk kez oluşturulurken çağrılır.
         val clientId = runBlocking { googleAuthSettings.clientIdFlow.first() }
         RealGoogleAuthClient(clientId)
     }
+
+    // --- Email Auth ---
+    /** Session token kasası; Google ile aynı KeyVault'u paylaşır, key prefix farklıdır. */
+    val emailTokenStore: EmailTokenStore by lazy { EmailTokenStore(keyVault) }
+
+    /** Üretim HTTP istemcisi; testlerde FakeEmailAuthClient ile değiştirilebilir. */
+    val emailAuthClient: EmailAuthClient by lazy { RealEmailAuthClient() }
 
     /** Açılışta yarım kalan dosya/iş durumlarını toparlar; hata uygulamayı düşürmez. */
     fun startRecovery() {

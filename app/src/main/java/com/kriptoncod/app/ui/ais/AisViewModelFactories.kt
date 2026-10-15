@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.kriptoncod.app.AppContainer
 import com.kriptoncod.app.KriptonCodApp
+import com.kriptoncod.app.data.providers.ProviderCatalog
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 
@@ -51,8 +52,6 @@ internal fun rememberEditorViewModelFactory(accountId: Long?): ViewModelProvider
 internal fun rememberGoogleAuthViewModelFactory(accountId: Long?): GoogleAuthViewModel.Factory {
     val container = rememberContainer()
     return remember(container, accountId) {
-        // runBlocking: Compose çağrı thread'inde DataStore ilk değerini okumak için.
-        // DataStore önbellekte tutulur — ikinci çağrıda gecikme olmaz.
         val clientIdAvailable = runBlocking {
             container.googleAuthSettings.clientIdFlow.first() != null
         }
@@ -62,6 +61,33 @@ internal fun rememberGoogleAuthViewModelFactory(accountId: Long?): GoogleAuthVie
             authClient = container.googleAuthClient,
             repository = container.aiAccountRepository,
             clientIdAvailable = clientIdAvailable,
+        )
+    }
+}
+
+/**
+ * [EmailAuthViewModel] factory'si.
+ * [providerId] → ProviderCatalog'dan loginUrl türetilir.
+ */
+@Composable
+internal fun rememberEmailAuthViewModelFactory(
+    accountId: Long?,
+    providerId: String,
+): EmailAuthViewModel.Factory {
+    val container = rememberContainer()
+    return remember(container, accountId, providerId) {
+        val provider = ProviderCatalog.byId(providerId)
+        val endpoint = provider?.resolve()
+        // loginUrl ve revokeUrl endpoint'ten alınır; null ise boş string guard yeterli
+        val loginUrl = endpoint?.loginUrl ?: ""
+        val revokeUrl: String? = null  // Anthropic / OpenAI revoke uç noktası şu an tanımlı değil
+        EmailAuthViewModel.Factory(
+            accountId = accountId,
+            tokenStore = container.emailTokenStore,
+            authClient = container.emailAuthClient,
+            loginUrl = loginUrl,
+            revokeUrl = revokeUrl,
+            repository = container.aiAccountRepository,
         )
     }
 }
