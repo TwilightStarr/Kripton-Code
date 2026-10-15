@@ -1,12 +1,16 @@
 package com.kriptoncod.app
 
 import android.content.Context
+import com.kriptoncod.app.data.ai.AiGenerator
+import com.kriptoncod.app.data.ai.OpenAiCompatibleGenerator
 import com.kriptoncod.app.data.db.KriptonDatabase
 import com.kriptoncod.app.data.email.EmailAuthClient
 import com.kriptoncod.app.data.email.EmailTokenStore
 import com.kriptoncod.app.data.email.RealEmailAuthClient
 import com.kriptoncod.app.data.files.HistoryStore
 import com.kriptoncod.app.data.files.OutputStore
+import com.kriptoncod.app.data.github.GitHubService
+import com.kriptoncod.app.data.github.GitHubTokenStore
 import com.kriptoncod.app.data.google.GoogleAuthClient
 import com.kriptoncod.app.data.google.GoogleAuthSettings
 import com.kriptoncod.app.data.google.GoogleTokenStore
@@ -44,6 +48,13 @@ class AppContainer(context: Context) {
     val aiAccountRepository: AiAccountRepository by lazy { AiAccountRepository(database.aiAccountDao(), keyVault) }
     val promptRepository: PromptRepository by lazy { PromptRepository(database) }
     val runRepository: RunRepository by lazy { RunRepository(database, outputStore, historyStore) }
+
+    // --- AI üretimi ---
+    val aiGenerator: AiGenerator by lazy { OpenAiCompatibleGenerator() }
+
+    // --- GitHub ---
+    val githubTokenStore: GitHubTokenStore by lazy { GitHubTokenStore(keyVault) }
+    val githubService: GitHubService by lazy { GitHubService() }
 
     // --- Google Auth ---
     val googleAuthSettings: GoogleAuthSettings by lazy { GoogleAuthSettings(appContext) }

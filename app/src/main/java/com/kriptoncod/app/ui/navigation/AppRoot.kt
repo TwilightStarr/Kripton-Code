@@ -11,8 +11,14 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -25,6 +31,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.kriptoncod.app.KriptonCodApp
 import com.kriptoncod.app.domain.ThemePreference
 import com.kriptoncod.app.ui.screens.AccountEditorScreen
 import com.kriptoncod.app.ui.screens.AisScreen
@@ -33,6 +40,8 @@ import com.kriptoncod.app.ui.screens.HomeScreen
 import com.kriptoncod.app.ui.screens.PromptsScreen
 import com.kriptoncod.app.ui.screens.SettingsScreen
 import com.kriptoncod.app.ui.theme.KriptonTheme
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 @Composable
 fun AppRoot(
@@ -40,6 +49,14 @@ fun AppRoot(
     onThemeChange: (ThemePreference) -> Unit,
 ) {
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val googleSettings =
+        (context.applicationContext as KriptonCodApp).container.googleAuthSettings
+    var googleClientId by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(googleSettings) {
+        googleClientId = googleSettings.clientIdFlow.first().orEmpty()
+    }
     val backStack by navController.currentBackStackEntryAsState()
     val scheme = MaterialTheme.colorScheme
     val currentRoute = backStack?.destination?.route
@@ -100,7 +117,15 @@ fun AppRoot(
             composable(Route.Prompts.path) { PromptsScreen() }
             composable(Route.History.path) { HistoryScreen() }
             composable(Route.Settings.path) {
-                SettingsScreen(themePreference = themePreference, onThemeChange = onThemeChange)
+                SettingsScreen(
+                    themePreference = themePreference,
+                    onThemeChange = onThemeChange,
+                    googleClientId = googleClientId,
+                    onGoogleClientIdChange = { value ->
+                        googleClientId = value
+                        scope.launch { googleSettings.setClientId(value) }
+                    },
+                )
             }
         }
     }
