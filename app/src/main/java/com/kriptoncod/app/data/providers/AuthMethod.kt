@@ -7,7 +7,7 @@ import okhttp3.Request
 interface AuthMethod {
     val type: AuthType
 
-    /** Yöntem şu an kullanılabilir mi (Google girişi henüz yok). */
+    /** Yöntem şu an kullanılabilir mi. */
     val isAvailable: Boolean
 
     fun authorize(request: Request.Builder, credential: String): Request.Builder
@@ -25,11 +25,20 @@ data class ApiKey(
         request.header(headerName, if (scheme.isNullOrEmpty()) credential else "$scheme $credential")
 }
 
-/** Yalnız arayüz: Google ile giriş sonraki aşamada eklenecek. */
+/**
+ * Google OAuth yöntemi — yalnız Gemini'de.
+ * Gerçek uygulama [com.kriptoncod.app.data.google.GeminiGoogleAuth]'dadır;
+ * bu nesne sağlayıcı kataloğunda yer tutar.
+ * Claude, ChatGPT gibi diğer sağlayıcılar bu yöntemi desteklemez: [ApiKey] kullanır.
+ */
 data object Google : AuthMethod {
     override val type: AuthType = AuthType.GOOGLE
-    override val isAvailable: Boolean = false
+    override val isAvailable: Boolean = true
 
-    override fun authorize(request: Request.Builder, credential: String): Nothing =
-        throw UnsupportedOperationException("Google girişi henüz desteklenmiyor")
+    /**
+     * OkHttp isteğine Authorization başlığı ekler.
+     * [credential] → kasadan okunan geçerli access token.
+     */
+    override fun authorize(request: Request.Builder, credential: String): Request.Builder =
+        request.header("Authorization", "Bearer $credential")
 }

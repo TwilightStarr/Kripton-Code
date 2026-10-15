@@ -27,6 +27,11 @@ data class Provider(
     /** Anahtar alma sayfası; özel sağlayıcıda null. */
     val keyUrl: String?,
     val authMethod: AuthMethod = ApiKey(),
+    /**
+     * Sağlayıcı Google OAuth destekliyor mu (yalnız Gemini).
+     * true ise hesap ekranında "Google ile bağlan" kartı gösterilir.
+     */
+    val supportsGoogleAuth: Boolean = false,
     val modelsPath: String = "models",
     val chatPath: String = "chat/completions",
     val validationPath: String = modelsPath,
@@ -62,14 +67,17 @@ data class Provider(
 /** Desteklenen sağlayıcılar. Hepsi OpenAI uyumlu /models ve /chat/completions sunar. */
 object ProviderCatalog {
     const val CUSTOM_ID = "custom"
+    const val GEMINI_ID = "gemini"
 
     val all: List<Provider> = listOf(
         Provider(
-            id = "gemini",
+            id = GEMINI_ID,
             nameRes = R.string.provider_gemini,
             baseUrl = "https://generativelanguage.googleapis.com/v1beta/openai",
             hasFreeTier = true,
             keyUrl = "https://aistudio.google.com/apikey",
+            authMethod = Google,
+            supportsGoogleAuth = true,
         ),
         Provider(
             id = "groq",
@@ -84,7 +92,6 @@ object ProviderCatalog {
             baseUrl = "https://openrouter.ai/api/v1",
             hasFreeTier = true,
             keyUrl = "https://openrouter.ai/settings/keys",
-            // /models herkese açıktır; anahtarı gerçekten sınayan uç nokta /key.
             validationPath = "key",
             freeModelMarker = ":free",
         ),

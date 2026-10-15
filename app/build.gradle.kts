@@ -18,6 +18,10 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+
+        // İsteğe bağlı: derleme zamanında OAuth istemci kimliği sabit girilmek istenirse.
+        // google-services.json kullanılıyorsa bu satır kaldırılabilir.
+        buildConfigField("String", "GOOGLE_OAUTH_CLIENT_ID", "\"\"")
     }
 
     buildTypes {
@@ -34,7 +38,10 @@ android {
     }
     kotlin { compilerOptions { jvmTarget.set(JvmTarget.JVM_17) } }
 
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
 
     testOptions { unitTests { isIncludeAndroidResources = true } }
 
@@ -68,13 +75,14 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.datastore.preferences)
-    // Sonraki adımlarda kullanılacak; sürümler şimdiden sabit.
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.work.runtime.ktx)
+    // Google Identity Services — Authorization API
+    implementation(libs.google.identity.authorization)
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)

@@ -21,5 +21,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            Google Identity Services — play-services-auth için zorunlu değil,
+            ancak GoogleSignIn / AuthorizationClient kütüphanesi bu meta-data'yı kullanır.
+            google-services.json eklenirse aşağıdaki satır otomatik üretilir; plugin olmadan
+            manuel tutulabilir veya BuildConfig.GOOGLE_OAUTH_CLIENT_ID kullanılabilir.
+        -->
     </application>
 </manifest>

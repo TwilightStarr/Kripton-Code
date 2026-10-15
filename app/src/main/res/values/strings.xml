@@ -34,6 +34,12 @@
     <string name="theme_light">Açık</string>
     <string name="theme_dark">Koyu</string>
 
+    <!-- Google Auth Ayarları (SettingsScreen) -->
+    <string name="settings_google_auth">Google OAuth (Gemini)</string>
+    <string name="settings_google_auth_hint">Gemini\'de Google hesabıyla bağlanmak için OAuth istemci kimliğini buraya gir. Google Cloud Console\'dan Android uygulaması için oluşturulmuş ID olmalıdır.</string>
+    <string name="settings_google_client_id_label">OAuth istemci kimliği</string>
+    <string name="settings_google_client_id_placeholder">com.example.app veya *.apps.googleusercontent.com</string>
+
     <string name="provider_gemini">Google Gemini</string>
     <string name="provider_groq">Groq</string>
     <string name="provider_openrouter">OpenRouter</string>
@@ -44,9 +50,29 @@
     <string name="provider_free_tier">Ücretsiz katman var</string>
     <string name="provider_paid_only">Ücretli</string>
     <string name="provider_get_key">Anahtar al</string>
+    <string name="provider_google_auth">Google OAuth</string>
 
     <string name="auth_api_key">API anahtarı</string>
     <string name="auth_google">Google ile giriş</string>
+
+    <!-- Yalnızca API anahtarı bilgi kartı (Groq, Mistral vb.) -->
+    <string name="auth_api_key_only_title">Yalnızca API anahtarı</string>
+    <string name="auth_api_key_only_message">Bu sağlayıcı hesapla giriş desteklemiyor. API anahtarı oluşturmak için sağlayıcının konsoluna git.</string>
+
+    <!-- Google Auth kartı (AccountEditorScreen – Gemini) -->
+    <string name="google_auth_title">Google ile bağlan</string>
+    <string name="google_auth_hint">Gemini\'yi Google hesabınla kullanmak için bağlan. API anahtarı gerektirmez.</string>
+    <string name="google_auth_connect">Google ile bağlan</string>
+    <string name="google_auth_disconnect">Bağlantıyı kes</string>
+    <string name="google_auth_reconnect">Yeniden bağlan</string>
+    <string name="google_auth_retry">Yeniden dene</string>
+    <string name="google_auth_connected">Google hesabı bağlı</string>
+    <string name="google_auth_needs_reauth">Oturum süresi doldu — yeniden giriş gerekli</string>
+    <string name="google_auth_no_client_id">OAuth istemci kimliği tanımlanmamış. Ayarlar\'dan ekle.</string>
+    <string name="google_auth_sign_in_failed">Google girişi başarısız oldu.</string>
+    <string name="google_auth_refresh_failed">Token yenileme başarısız oldu.</string>
+    <string name="google_auth_sign_out_failed">Oturum kapatma başarısız oldu.</string>
+    <string name="google_auth_loading">Bağlantı kontrol ediliyor…</string>
 
     <string name="model_recommended">Önerilen</string>
 
@@ -70,7 +96,9 @@
     <string name="action_edit">Düzenle</string>
 
     <string name="step_provider">1. Sağlayıcı seç</string>
+    <string name="step_auth">2. Kimlik doğrulama</string>
     <string name="step_key">2. API anahtarı</string>
+    <string name="step_key_alternative">veya API anahtarıyla bağlan</string>
     <string name="step_model">3. Model seç</string>
     <string name="key_label">API anahtarı</string>
     <string name="key_paste">Panodan yapıştır</string>

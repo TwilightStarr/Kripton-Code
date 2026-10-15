@@ -5,7 +5,6 @@ import okhttp3.Request
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Assert.fail
 import org.junit.Test
 
 class AuthMethodTest {
@@ -29,14 +28,29 @@ class AuthMethodTest {
         assertFalse(ApiKey().toString().contains("SECRET-VALUE"))
     }
 
-    @Test fun googleIsInterfaceOnlyForNow() {
+    /**
+     * Google artık gerçek uygulama — isAvailable = true, Bearer başlığı ekler.
+     * Somut uygulama [GeminiGoogleAuth]'da; bu test statik nesneyi doğrular.
+     */
+    @Test fun googleAuthMethodIsAvailableAndAddsBearer() {
         val google: AuthMethod = Google
         assertEquals(AuthType.GOOGLE, google.type)
-        assertFalse(google.isAvailable)
-        try {
-            google.authorize(builder(), "token")
-            fail("UnsupportedOperationException beklenirdi")
-        } catch (_: UnsupportedOperationException) {
+        assertTrue(google.isAvailable)
+        val req = google.authorize(builder(), "my-access-token").build()
+        assertEquals("Bearer my-access-token", req.header("Authorization"))
+    }
+
+    @Test fun geminiProviderHasGoogleAuthMethod() {
+        val gemini = ProviderCatalog.byId(ProviderCatalog.GEMINI_ID)
+        assertTrue("Gemini supportsGoogleAuth olmalı", gemini?.supportsGoogleAuth == true)
+        assertEquals(AuthType.GOOGLE, gemini?.authMethod?.type)
+    }
+
+    @Test fun nonGeminiProvidersDoNotSupportGoogleAuth() {
+        val nonGemini = ProviderCatalog.all.filter { it.id != ProviderCatalog.GEMINI_ID && !it.isCustom }
+        nonGemini.forEach { p ->
+            assertFalse("${p.id} supportsGoogleAuth olmamalı", p.supportsGoogleAuth)
+            assertEquals("${p.id} API_KEY kullanmalı", AuthType.API_KEY, p.authMethod.type)
         }
     }
 }

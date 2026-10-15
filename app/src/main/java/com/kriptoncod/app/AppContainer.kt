@@ -4,6 +4,10 @@ import android.content.Context
 import com.kriptoncod.app.data.db.KriptonDatabase
 import com.kriptoncod.app.data.files.HistoryStore
 import com.kriptoncod.app.data.files.OutputStore
+import com.kriptoncod.app.data.google.GoogleAuthClient
+import com.kriptoncod.app.data.google.GoogleAuthSettings
+import com.kriptoncod.app.data.google.GoogleTokenStore
+import com.kriptoncod.app.data.google.RealGoogleAuthClient
 import com.kriptoncod.app.data.providers.ModelService
 import com.kriptoncod.app.data.repo.AiAccountRepository
 import com.kriptoncod.app.data.repo.PromptRepository
@@ -15,7 +19,9 @@ import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 /** Elle basit DI: tekil bağımlılıklar burada tembel (lazy) oluşturulur. */
 class AppContainer(context: Context) {
@@ -35,6 +41,21 @@ class AppContainer(context: Context) {
     val aiAccountRepository: AiAccountRepository by lazy { AiAccountRepository(database.aiAccountDao(), keyVault) }
     val promptRepository: PromptRepository by lazy { PromptRepository(database) }
     val runRepository: RunRepository by lazy { RunRepository(database, outputStore, historyStore) }
+
+    // --- Google Auth ---
+    val googleAuthSettings: GoogleAuthSettings by lazy { GoogleAuthSettings(appContext) }
+
+    val googleTokenStore: GoogleTokenStore by lazy { GoogleTokenStore(keyVault) }
+
+    /**
+     * Gerçek [GoogleAuthClient]; OAuth istemci kimliği DataStore'dan tembel okunur.
+     * BuildConfig'de GOOGLE_OAUTH_CLIENT_ID tanımlandıysa başlangıç değeri olarak kullanılır.
+     */
+    val googleAuthClient: GoogleAuthClient by lazy {
+        // İlk clientId değerini senkron oku — container ilk kez oluşturulurken çağrılır.
+        val clientId = runBlocking { googleAuthSettings.clientIdFlow.first() }
+        RealGoogleAuthClient(clientId)
+    }
 
     /** Açılışta yarım kalan dosya/iş durumlarını toparlar; hata uygulamayı düşürmez. */
     fun startRecovery() {

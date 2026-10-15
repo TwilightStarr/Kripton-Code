@@ -52,11 +52,15 @@ import com.kriptoncod.app.R
 import com.kriptoncod.app.data.providers.Provider
 import com.kriptoncod.app.data.providers.ProviderCatalog
 import com.kriptoncod.app.ui.ais.AccountEditorViewModel
+import com.kriptoncod.app.ui.ais.ApiKeyOnlyCard
 import com.kriptoncod.app.ui.ais.EditorError
 import com.kriptoncod.app.ui.ais.EditorUiState
+import com.kriptoncod.app.ui.ais.GoogleAuthCard
+import com.kriptoncod.app.ui.ais.GoogleAuthViewModel
 import com.kriptoncod.app.ui.ais.ModelOption
 import com.kriptoncod.app.ui.ais.Pricing
 import com.kriptoncod.app.ui.ais.rememberEditorViewModelFactory
+import com.kriptoncod.app.ui.ais.rememberGoogleAuthViewModelFactory
 import com.kriptoncod.app.ui.components.KBadge
 import com.kriptoncod.app.ui.components.KButton
 import com.kriptoncod.app.ui.components.KButtonStyle
@@ -78,6 +82,7 @@ fun AccountEditorScreen(accountId: Long?, onClose: () -> Unit) {
     val clipboard = LocalClipboardManager.current
     AccountEditorContent(
         state = state,
+        accountId = accountId,
         onBack = onClose,
         onSelectProvider = viewModel::selectProvider,
         onKeyChange = viewModel::onKeyChanged,
@@ -96,6 +101,7 @@ fun AccountEditorScreen(accountId: Long?, onClose: () -> Unit) {
 @Composable
 private fun AccountEditorContent(
     state: EditorUiState,
+    accountId: Long?,
     onBack: () -> Unit,
     onSelectProvider: (String) -> Unit,
     onKeyChange: (String) -> Unit,
@@ -145,8 +151,29 @@ private fun AccountEditorContent(
             }
 
             if (provider != null && !state.loading) {
-                item { SectionTitle(R.string.step_key) }
-                item { KeySection(state, provider, onKeyChange, onPaste, onVerify) }
+                // Kimlik doğrulama bölümü
+                item { SectionTitle(R.string.step_auth) }
+
+                if (provider.supportsGoogleAuth) {
+                    // Gemini: Google OAuth kartı
+                    item(key = "google-auth-card") {
+                        val googleFactory = rememberGoogleAuthViewModelFactory(accountId)
+                        GoogleAuthCard(
+                            accountId = accountId,
+                            factory = googleFactory,
+                        )
+                    }
+                    // Gemini: Ek olarak API key girişi de sunulur (opsiyonel alternatif)
+                    item { SectionTitle(R.string.step_key_alternative) }
+                    item { KeySection(state, provider, onKeyChange, onPaste, onVerify) }
+                } else {
+                    // Diğer sağlayıcılar: yalnız API anahtarı — bilgi bandı + giriş alanı
+                    item(key = "api-key-only-info") {
+                        ApiKeyOnlyCard(keyUrl = provider.keyUrl)
+                    }
+                    item { SectionTitle(R.string.step_key) }
+                    item { KeySection(state, provider, onKeyChange, onPaste, onVerify) }
+                }
             }
 
             state.error?.let { error ->
@@ -225,6 +252,9 @@ private fun ProviderCard(provider: Provider, selected: Boolean, onClick: (() -> 
                 text = stringResource(if (provider.hasFreeTier) R.string.provider_free_tier else R.string.provider_paid_only),
                 accent = if (provider.hasFreeTier) NodeAccent.Green else NodeAccent.Blue,
             )
+            if (provider.supportsGoogleAuth) {
+                KBadge(text = stringResource(R.string.provider_google_auth), accent = NodeAccent.Blue)
+            }
         }
     }
 }

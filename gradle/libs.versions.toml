@@ -17,6 +17,7 @@ ksp = "2.0.21-1.0.28"
 robolectric = "4.14.1"
 androidxTest = "1.6.1"
 androidxTestExt = "1.2.1"
+googleIdentity = "1.1.1"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -45,6 +46,8 @@ robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectr
 androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTest" }
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExt" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+# Google Identity Services — Authorization API (GIS)
+google-identity-authorization = { module = "com.google.android.gms:play-services-auth", version.ref = "googleIdentity" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -8,6 +8,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.kriptoncod.app.AppContainer
 import com.kriptoncod.app.KriptonCodApp
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 
 @Composable
 internal fun rememberContainer(): AppContainer {
@@ -38,5 +40,28 @@ internal fun rememberEditorViewModelFactory(accountId: Long?): ViewModelProvider
                 )
             }
         }
+    }
+}
+
+/**
+ * [GoogleAuthViewModel] factory'si.
+ * [clientIdAvailable] ilk değeri senkron okunur (DataStore başlatılmış olmalı).
+ */
+@Composable
+internal fun rememberGoogleAuthViewModelFactory(accountId: Long?): GoogleAuthViewModel.Factory {
+    val container = rememberContainer()
+    return remember(container, accountId) {
+        // runBlocking: Compose çağrı thread'inde DataStore ilk değerini okumak için.
+        // DataStore önbellekte tutulur — ikinci çağrıda gecikme olmaz.
+        val clientIdAvailable = runBlocking {
+            container.googleAuthSettings.clientIdFlow.first() != null
+        }
+        GoogleAuthViewModel.Factory(
+            accountId = accountId,
+            tokenStore = container.googleTokenStore,
+            authClient = container.googleAuthClient,
+            repository = container.aiAccountRepository,
+            clientIdAvailable = clientIdAvailable,
+        )
     }
 }
