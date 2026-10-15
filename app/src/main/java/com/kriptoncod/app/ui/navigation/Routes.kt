@@ -18,3 +18,12 @@ enum class Route(val path: String, @StringRes val label: Int, val icon: ImageVec
     History("history", R.string.nav_history, Icons.AutoMirrored.Filled.List),
     Settings("settings", R.string.nav_settings, Icons.Filled.Settings),
 }
+
+/** Alt gezinmede görünmeyen, AI hesabı ekleme/düzenleme alt rotaları. */
+object AisRoutes {
+    const val ADD = "ais/add"
+    const val ARG_ID = "id"
+    const val EDIT = "ais/edit/{$ARG_ID}"
+
+    fun edit(id: Long): String = "ais/edit/$id"
+}

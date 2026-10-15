@@ -19,11 +19,14 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.kriptoncod.app.domain.ThemePreference
+import com.kriptoncod.app.ui.screens.AccountEditorScreen
 import com.kriptoncod.app.ui.screens.AisScreen
 import com.kriptoncod.app.ui.screens.HistoryScreen
 import com.kriptoncod.app.ui.screens.HomeScreen
@@ -39,11 +42,14 @@ fun AppRoot(
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
     val scheme = MaterialTheme.colorScheme
+    val currentRoute = backStack?.destination?.route
+    // Ekleme/düzenleme akışı tam ekran; alt gezinme yalnız ana sekmelerde görünür.
+    val showBottomBar = currentRoute == null || Route.entries.any { it.path == currentRoute }
 
     Scaffold(
         containerColor = scheme.background,
         bottomBar = {
-            Column {
+            if (showBottomBar) Column {
                 HorizontalDivider(thickness = 1.5.dp, color = KriptonTheme.colors.nodeBorder)
                 NavigationBar(containerColor = scheme.surface, tonalElevation = 0.dp) {
                     Route.entries.forEach { route ->
@@ -74,8 +80,23 @@ fun AppRoot(
             startDestination = Route.Home.path,
             modifier = Modifier.padding(inner),
         ) {
-            composable(Route.Home.path) { HomeScreen(onAddAi = { navController.navigateTo(Route.Ais) }) }
-            composable(Route.Ais.path) { AisScreen() }
+            composable(Route.Home.path) { HomeScreen(onAddAi = { navController.navigate(AisRoutes.ADD) }) }
+            composable(Route.Ais.path) {
+                AisScreen(
+                    onAdd = { navController.navigate(AisRoutes.ADD) },
+                    onEdit = { id -> navController.navigate(AisRoutes.edit(id)) },
+                )
+            }
+            composable(AisRoutes.ADD) {
+                AccountEditorScreen(accountId = null, onClose = { navController.popBackStack() })
+            }
+            composable(
+                AisRoutes.EDIT,
+                arguments = listOf(navArgument(AisRoutes.ARG_ID) { type = NavType.LongType }),
+            ) { entry ->
+                val id = entry.arguments?.getLong(AisRoutes.ARG_ID) ?: return@composable
+                AccountEditorScreen(accountId = id, onClose = { navController.popBackStack() })
+            }
             composable(Route.Prompts.path) { PromptsScreen() }
             composable(Route.History.path) { HistoryScreen() }
             composable(Route.Settings.path) {

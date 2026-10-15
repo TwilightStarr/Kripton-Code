@@ -17,7 +17,7 @@
 
     <string name="ais_title">AI\'lar</string>
     <string name="ais_empty_title">Eklenmiş AI yok</string>
-    <string name="ais_empty_message">Eklediğin AI hesapları burada listelenecek.</string>
+    <string name="ais_empty_message">Bir sağlayıcı seç, anahtarını doğrula ve ilk hesabını ekle.</string>
 
     <string name="prompts_title">Promptlar</string>
     <string name="prompts_empty_title">Prompt seti boş</string>
@@ -51,9 +51,52 @@
     <string name="model_recommended">Önerilen</string>
 
     <string name="err_invalid_key">API anahtarı geçersiz veya yetkisiz.</string>
-    <string name="err_rate_limited">İstek sınırına ulaşıldı; biraz sonra tekrar dene.</string>
+    <string name="err_rate_limited">Kota veya istek sınırı aşıldı; biraz bekleyip yeniden dene.</string>
     <string name="err_not_found">Sağlayıcı adresi bulunamadı.</string>
     <string name="err_server">Sağlayıcı şu an yanıt veremiyor.</string>
     <string name="err_network">Bağlantı kurulamadı. İnternetini kontrol et.</string>
     <string name="err_bad_response">Sağlayıcıdan beklenmeyen bir yanıt geldi.</string>
+    <string name="ais_add">+ AI Ekle</string>
+    <string name="ais_add_title">AI Ekle</string>
+    <string name="ais_edit_title">AI Düzenle</string>
+    <string name="action_back">Geri</string>
+    <string name="action_verify">Doğrula</string>
+    <string name="action_verifying">Doğrulanıyor…</string>
+    <string name="action_save">Kaydet</string>
+    <string name="action_saving">Kaydediliyor…</string>
+    <string name="action_retry">Yeniden Dene</string>
+    <string name="action_delete">Sil</string>
+    <string name="action_cancel">Vazgeç</string>
+    <string name="action_edit">Düzenle</string>
+
+    <string name="step_provider">1. Sağlayıcı seç</string>
+    <string name="step_key">2. API anahtarı</string>
+    <string name="step_model">3. Model seç</string>
+    <string name="key_label">API anahtarı</string>
+    <string name="key_paste">Panodan yapıştır</string>
+    <string name="key_edit_hint">Boş bırakırsan kayıtlı anahtar kullanılır.</string>
+    <string name="key_stored_securely">Anahtar yalnızca cihazın güvenli deposunda şifreli saklanır.</string>
+    <string name="models_found">%1$d uygun model bulundu</string>
+    <string name="models_show_more">Daha fazla göster (%1$d)</string>
+    <string name="model_free">Ücretsiz</string>
+    <string name="model_paid">Ücretli</string>
+    <string name="model_free_tier">Ücretsiz katman</string>
+
+    <string name="status_ready">Hazır</string>
+    <string name="status_waiting">Bekliyor</string>
+    <string name="status_error">Hata</string>
+    <string name="status_disabled">Pasif</string>
+    <string name="account_toggle_description">%1$s hesabını aç veya kapat</string>
+    <string name="account_edit_description">%1$s hesabını düzenle</string>
+    <string name="account_delete_description">%1$s hesabını sil</string>
+    <string name="delete_dialog_title">Hesap silinsin mi?</string>
+    <string name="delete_dialog_message">%1$s ve kayıtlı anahtarı silinecek. Bu işlem geri alınamaz.</string>
+
+    <string name="err_save_failed">Hesap kaydedilemedi. Tekrar dene.</string>
+    <string name="err_key_unreadable">Kayıtlı anahtar okunamadı. Yeni bir anahtar yapıştırıp doğrula.</string>
+    <string name="err_no_models">Bu anahtarla kullanılabilir bir sohbet modeli bulunamadı.</string>
+    <string name="err_account_missing">Hesap bulunamadı.</string>
+    <string name="err_action_failed">İşlem tamamlanamadı. Tekrar dene.</string>
+    <string name="err_load_failed">Hesaplar yüklenemedi.</string>
+    <string name="err_clipboard_empty">Panoda yapıştırılacak metin yok.</string>
 </resources>
