@@ -1,0 +1,21 @@
+# GitHub'ın otomatik sürüm notları için kategori ayarı.
+# PR'lara etiket ver (feature, bug, docs...) ve notlar otomatik gruplanır.
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+    authors:
+      - dependabot
+  categories:
+    - title: "✨ Yeni özellikler"
+      labels: [feature, enhancement]
+    - title: "🐛 Hata düzeltmeleri"
+      labels: [bug, fix]
+    - title: "🎨 Arayüz"
+      labels: [ui, design]
+    - title: "📚 Dokümantasyon"
+      labels: [docs, documentation]
+    - title: "🔧 Altyapı ve bağımlılıklar"
+      labels: [chore, dependencies, ci]
+    - title: "Diğer değişiklikler"
+      labels: ["*"]

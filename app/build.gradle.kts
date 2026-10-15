@@ -16,16 +16,38 @@ android {
         applicationId = "com.kriptoncod.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        // CI (release.yml) etiketten türetilen değerleri -PversionName / -PversionCode ile verir.
+        versionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: 1
+        versionName = (project.findProperty("versionName") as String?) ?: "0.1.0"
 
         // İsteğe bağlı: derleme zamanında OAuth istemci kimliği sabit girilmek istenirse.
         // google-services.json kullanılıyorsa bu satır kaldırılabilir.
         buildConfigField("String", "GOOGLE_OAUTH_CLIENT_ID", "\"\"")
     }
 
+    // Release imzası yalnızca ortam değişkenleri doluysa tanımlanır (CI secrets).
+    // Boşsa release APK imzasız üretilir; yerel derlemeler bundan etkilenmez.
+    val releaseKeystorePath = System.getenv("KEYSTORE_PATH")
+    val hasReleaseSigning = !releaseKeystorePath.isNullOrBlank() &&
+        file(releaseKeystorePath).exists() &&
+        !System.getenv("KEYSTORE_PASSWORD").isNullOrBlank() &&
+        !System.getenv("KEY_ALIAS").isNullOrBlank() &&
+        !System.getenv("KEY_PASSWORD").isNullOrBlank()
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(releaseKeystorePath!!)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (hasReleaseSigning) signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

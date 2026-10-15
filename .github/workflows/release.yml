@@ -1,0 +1,163 @@
+name: Release
+
+# Kullanım:  git tag v0.2.0 && git push origin v0.2.0
+# Etiket itildiğinde APK derlenir, GitHub Releases'e yüklenir ve sürüm notları otomatik oluşur.
+# Elle çalıştırmak için: Actions > Release > Run workflow (etiket adını gir, ör. v0.2.0).
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Sürüm etiketi (ör. v0.2.0). Etiket yoksa bu işlemle oluşturulur."
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.event.inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+    steps:
+      - name: Etiket biçimini doğrula
+        run: |
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Geçersiz etiket: '$TAG' (beklenen: v1.2.3 veya v1.2.3-beta.1)"
+            exit 1
+          fi
+          CORE="${TAG#v}"; CORE="${CORE%%-*}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CORE"
+          if [ "$MINOR" -gt 99 ] || [ "$PATCH" -gt 99 ]; then
+            echo "::error::Minor ve patch 99'u aşamaz (versionCode = major*10000 + minor*100 + patch)."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Wrapper jar yoksa üret
+        run: |
+          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+            gradle wrapper --gradle-version 8.9
+          fi
+          chmod +x gradlew
+
+      - name: Sürüm bilgisini hesapla
+        id: ver
+        run: |
+          NAME="${TAG#v}"
+          CORE="${NAME%%-*}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CORE"
+          CODE=$(( MAJOR * 10000 + MINOR * 100 + PATCH ))
+          if [[ "$NAME" == *-* ]]; then PRE=true; else PRE=false; fi
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRE" >> "$GITHUB_OUTPUT"
+          echo "Sürüm: $NAME (versionCode $CODE, önsürüm: $PRE)"
+
+      - name: İmza anahtarını hazırla
+        id: sign
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS_IN: ${{ secrets.KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASS" ] && [ -n "$KEY_ALIAS_IN" ] && [ -n "$KEY_PASS" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            echo "KEYSTORE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+            echo "KEYSTORE_PASSWORD=$KEYSTORE_PASS" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=$KEY_ALIAS_IN" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=$KEY_PASS" >> "$GITHUB_ENV"
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::İmza secret'ları tanımlı değil; imzasız release yüklenemez, bu yüzden debug imzalı APK yayınlanacak."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Lint ve birim testler
+        run: ./gradlew --no-daemon lintDebug testDebugUnitTest -PversionName=${{ steps.ver.outputs.name }} -PversionCode=${{ steps.ver.outputs.code }} --stacktrace
+
+      - name: APK derle
+        run: |
+          if [ "${{ steps.sign.outputs.signed }}" = "true" ]; then
+            ./gradlew --no-daemon assembleRelease -PversionName=${{ steps.ver.outputs.name }} -PversionCode=${{ steps.ver.outputs.code }} --stacktrace
+          else
+            ./gradlew --no-daemon assembleDebug -PversionName=${{ steps.ver.outputs.name }} -PversionCode=${{ steps.ver.outputs.code }} --stacktrace
+          fi
+
+      - name: APK dosyasını adlandır ve sağlama toplamı üret
+        id: apk
+        run: |
+          mkdir -p dist
+          if [ "${{ steps.sign.outputs.signed }}" = "true" ]; then
+            SRC=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
+            OUT="dist/KriptonCod-${TAG}.apk"
+          else
+            SRC=$(ls app/build/outputs/apk/debug/*.apk | head -n 1)
+            OUT="dist/KriptonCod-${TAG}-debug.apk"
+          fi
+          cp "$SRC" "$OUT"
+          ( cd dist && sha256sum "$(basename "$OUT")" > "$(basename "$OUT").sha256" )
+          echo "file=$OUT" >> "$GITHUB_OUTPUT"
+          echo "sha=$(cut -d' ' -f1 "$OUT.sha256")" >> "$GITHUB_OUTPUT"
+          ls -l dist
+
+      - name: Sürüm metnini hazırla
+        env:
+          SIGNED: ${{ steps.sign.outputs.signed }}
+          SHA: ${{ steps.apk.outputs.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          APK_NAME="$(basename "${{ steps.apk.outputs.file }}")"
+          if [ "$SIGNED" = "true" ]; then
+            SIGN_NOTE="İmzalı release APK."
+          else
+            SIGN_NOTE="Debug imzalı APK (release imza anahtarı tanımlı değil). Yalnızca test içindir."
+          fi
+          sed \
+            -e "s|{{VERSION}}|${TAG}|g" \
+            -e "s|{{APK}}|${APK_NAME}|g" \
+            -e "s|{{SHA256}}|${SHA}|g" \
+            -e "s|{{SIGN_NOTE}}|${SIGN_NOTE}|g" \
+            -e "s|{{REPO}}|${REPO}|g" \
+            .github/RELEASE_TEMPLATE.md > release-body.md
+          cat release-body.md
+
+      - name: GitHub Release oluştur
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          name: Kripton Cod ${{ env.TAG }}
+          body_path: release-body.md
+          generate_release_notes: true
+          prerelease: ${{ steps.ver.outputs.prerelease == 'true' }}
+          fail_on_unmatched_files: true
+          files: |
+            ${{ steps.apk.outputs.file }}
+            ${{ steps.apk.outputs.file }}.sha256
+
+      - name: Anahtarı temizle
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.keystore"

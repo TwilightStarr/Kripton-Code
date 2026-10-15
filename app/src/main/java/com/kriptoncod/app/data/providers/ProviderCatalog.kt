@@ -70,6 +70,7 @@ object ProviderCatalog {
     const val CLAUDE_ID = "claude"
     const val OPENAI_ID = "openai"
     const val KIMI_ID = "kimi"
+    const val NVIDIA_ID = "nvidia"
 
     val all: List<Provider> = listOf(
         Provider(
@@ -81,15 +82,15 @@ object ProviderCatalog {
             authMethod = Google,
             supportsGoogleAuth = true,
         ),
+        // Claude, OpenAI ve Kimi yalnızca resmi API anahtarıyla çalışır. Bu sağlayıcıların
+        // üçüncü taraf uygulamalara açık bir e-posta/şifre giriş API'si yoktur; eski
+        // e-posta/oturum akışı katalogdan kaldırıldı (kodu ayrı temizlik için yerinde duruyor).
         Provider(
             id = CLAUDE_ID,
             nameRes = R.string.provider_claude,
             baseUrl = "https://api.anthropic.com/v1",
             hasFreeTier = false,
             keyUrl = "https://console.anthropic.com/settings/keys",
-            authMethod = EmailPassword,
-            supportsEmailAuth = true,
-            loginPath = "auth/login",
         ),
         Provider(
             id = OPENAI_ID,
@@ -97,19 +98,13 @@ object ProviderCatalog {
             baseUrl = "https://api.openai.com/v1",
             hasFreeTier = false,
             keyUrl = "https://platform.openai.com/api-keys",
-            authMethod = EmailPassword,
-            supportsEmailAuth = true,
-            loginPath = "auth/login",
         ),
         Provider(
             id = KIMI_ID,
             nameRes = R.string.provider_kimi,
             baseUrl = "https://api.moonshot.cn/v1",
-            hasFreeTier = true,
-            keyUrl = null,
-            authMethod = KimiSession,
-            supportsKimiAuth = true,
-            loginPath = "api/auth/login",
+            hasFreeTier = false,
+            keyUrl = "https://platform.moonshot.cn/console/api-keys",
         ),
         Provider(
             id = "groq",
@@ -140,6 +135,13 @@ object ProviderCatalog {
             baseUrl = "https://api.cerebras.ai/v1",
             hasFreeTier = true,
             keyUrl = "https://cloud.cerebras.ai",
+        ),
+        Provider(
+            id = NVIDIA_ID,
+            nameRes = R.string.provider_nvidia,
+            baseUrl = "https://integrate.api.nvidia.com/v1",
+            hasFreeTier = true,
+            keyUrl = "https://build.nvidia.com/settings/api-keys",
         ),
         Provider(
             id = "deepseek",

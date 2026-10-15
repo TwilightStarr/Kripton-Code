@@ -11,18 +11,22 @@ import org.junit.Test
 class ProviderCatalogTest {
     private fun p(id: String) = ProviderCatalog.byId(id)!!
 
-    @Test fun containsAllSevenProvidersWithUniqueIds() {
+    @Test fun containsAllElevenProvidersWithUniqueIds() {
         assertEquals(
-            listOf("gemini", "groq", "openrouter", "mistral", "cerebras", "deepseek", "custom"),
+            listOf(
+                "gemini", "claude", "openai", "kimi",
+                "groq", "openrouter", "mistral", "cerebras", "nvidia", "deepseek", "custom",
+            ),
             ProviderCatalog.all.map { it.id },
         )
-        assertEquals(7, ProviderCatalog.all.map { it.nameRes }.toSet().size)
+        assertEquals(11, ProviderCatalog.all.map { it.nameRes }.toSet().size)
         assertTrue(ProviderCatalog.all.all { it.nameRes != 0 })
         assertNull(ProviderCatalog.byId("yok"))
     }
 
     @Test fun fixedProvidersUseHttpsAndApiKeyAuth() {
-        ProviderCatalog.all.filterNot { it.isCustom }.forEach {
+        // Gemini Google OAuth de sunar (AuthMethodTest bunu ayrıca doğrular); diğerleri yalnız API anahtarı.
+        ProviderCatalog.all.filterNot { it.isCustom || it.id == ProviderCatalog.GEMINI_ID }.forEach {
             assertTrue(it.id, it.baseUrl!!.startsWith("https://"))
             assertTrue(it.id, it.keyUrl!!.startsWith("https://"))
             assertEquals(AuthType.API_KEY, it.authMethod.type)
@@ -30,11 +34,31 @@ class ProviderCatalogTest {
         }
     }
 
+    @Test fun claudeOpenAiAndKimiUseApiKeyOnly() {
+        listOf(ProviderCatalog.CLAUDE_ID, ProviderCatalog.OPENAI_ID, ProviderCatalog.KIMI_ID).forEach { id ->
+            val prov = p(id)
+            assertFalse(id, prov.supportsEmailAuth)
+            assertFalse(id, prov.supportsKimiAuth)
+            assertFalse(id, prov.supportsGoogleAuth)
+            assertEquals(id, AuthType.API_KEY, prov.authMethod.type)
+            assertNull(id, prov.loginPath)
+            assertNull(id, prov.resolve()!!.loginUrl)
+        }
+    }
+
     @Test fun freeTierLabels() {
         assertTrue(p("gemini").hasFreeTier)
         assertTrue(p("groq").hasFreeTier)
         assertTrue(p("openrouter").hasFreeTier)
+        assertTrue(p("nvidia").hasFreeTier)
         assertFalse(p("deepseek").hasFreeTier)
+    }
+
+    @Test fun nvidiaUsesOfficialOpenAiCompatibleEndpoint() {
+        val e = p("nvidia").resolve()!!
+        assertEquals("https://integrate.api.nvidia.com/v1/models", e.modelsUrl.toString())
+        assertEquals("https://integrate.api.nvidia.com/v1/chat/completions", e.chatUrl.toString())
+        assertEquals(AuthType.API_KEY, p("nvidia").authMethod.type)
     }
 
     @Test fun onlyCustomProviderNeedsBaseUrl() {
