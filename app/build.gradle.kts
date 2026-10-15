@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -34,6 +36,11 @@ android {
 
     buildFeatures { compose = true }
 
+    testOptions { unitTests { isIncludeAndroidResources = true } }
+
+    // Room şema dışa aktarımı (migration testleri bu JSON'ları okur; repoya commit edilir).
+    sourceSets.getByName("test").assets.srcDir("$projectDir/schemas")
+
     packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
 
     lint {
@@ -41,6 +48,10 @@ android {
         warningsAsErrors = false
         checkReleaseBuilds = false
     }
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {
@@ -59,9 +70,15 @@ dependencies {
     // Sonraki adımlarda kullanılacak; sürümler şimdiden sabit.
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.work.runtime.ktx)
 
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.test.ext.junit)
+    testImplementation(libs.androidx.room.testing)
+    testImplementation(libs.kotlinx.coroutines.test)
 }

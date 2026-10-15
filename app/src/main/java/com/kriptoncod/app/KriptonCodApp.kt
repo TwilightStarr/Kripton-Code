@@ -9,5 +9,6 @@ class KriptonCodApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        container.startRecovery()
     }
 }
