@@ -33,4 +33,27 @@
     <string name="theme_system">Sistem</string>
     <string name="theme_light">Açık</string>
     <string name="theme_dark">Koyu</string>
+
+    <string name="provider_gemini">Google Gemini</string>
+    <string name="provider_groq">Groq</string>
+    <string name="provider_openrouter">OpenRouter</string>
+    <string name="provider_mistral">Mistral</string>
+    <string name="provider_cerebras">Cerebras</string>
+    <string name="provider_deepseek">DeepSeek</string>
+    <string name="provider_custom">OpenAI-uyumlu (özel)</string>
+    <string name="provider_free_tier">Ücretsiz katman var</string>
+    <string name="provider_paid_only">Ücretli</string>
+    <string name="provider_get_key">Anahtar al</string>
+
+    <string name="auth_api_key">API anahtarı</string>
+    <string name="auth_google">Google ile giriş</string>
+
+    <string name="model_recommended">Önerilen</string>
+
+    <string name="err_invalid_key">API anahtarı geçersiz veya yetkisiz.</string>
+    <string name="err_rate_limited">İstek sınırına ulaşıldı; biraz sonra tekrar dene.</string>
+    <string name="err_not_found">Sağlayıcı adresi bulunamadı.</string>
+    <string name="err_server">Sağlayıcı şu an yanıt veremiyor.</string>
+    <string name="err_network">Bağlantı kurulamadı. İnternetini kontrol et.</string>
+    <string name="err_bad_response">Sağlayıcıdan beklenmeyen bir yanıt geldi.</string>
 </resources>

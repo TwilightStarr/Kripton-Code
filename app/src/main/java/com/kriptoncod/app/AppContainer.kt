@@ -4,6 +4,7 @@ import android.content.Context
 import com.kriptoncod.app.data.db.KriptonDatabase
 import com.kriptoncod.app.data.files.HistoryStore
 import com.kriptoncod.app.data.files.OutputStore
+import com.kriptoncod.app.data.providers.ModelService
 import com.kriptoncod.app.data.repo.AiAccountRepository
 import com.kriptoncod.app.data.repo.PromptRepository
 import com.kriptoncod.app.data.repo.RunRepository
@@ -28,6 +29,8 @@ class AppContainer(context: Context) {
     val keyVault: KeyVault by lazy { AndroidKeystoreKeyVault(File(appContext.filesDir, "vault")) }
     val outputStore: OutputStore by lazy { OutputStore(appContext.filesDir) }
     val historyStore: HistoryStore by lazy { HistoryStore(appContext.filesDir) }
+
+    val modelService: ModelService by lazy { ModelService() }
 
     val aiAccountRepository: AiAccountRepository by lazy { AiAccountRepository(database.aiAccountDao(), keyVault) }
     val promptRepository: PromptRepository by lazy { PromptRepository(database) }
