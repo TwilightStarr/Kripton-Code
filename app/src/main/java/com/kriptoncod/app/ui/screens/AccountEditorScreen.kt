@@ -56,12 +56,14 @@ import com.kriptoncod.app.ui.ais.ApiKeyOnlyCard
 import com.kriptoncod.app.ui.ais.EditorError
 import com.kriptoncod.app.ui.ais.EditorUiState
 import com.kriptoncod.app.ui.ais.EmailAuthCard
+import com.kriptoncod.app.ui.ais.KimiAuthCard
 import com.kriptoncod.app.ui.ais.GoogleAuthCard
 import com.kriptoncod.app.ui.ais.GoogleAuthViewModel
 import com.kriptoncod.app.ui.ais.ModelOption
 import com.kriptoncod.app.ui.ais.Pricing
 import com.kriptoncod.app.ui.ais.rememberEditorViewModelFactory
 import com.kriptoncod.app.ui.ais.rememberEmailAuthViewModelFactory
+import com.kriptoncod.app.ui.ais.rememberKimiAuthViewModelFactory
 import com.kriptoncod.app.ui.ais.rememberGoogleAuthViewModelFactory
 import com.kriptoncod.app.ui.components.KBadge
 import com.kriptoncod.app.ui.components.KButton
@@ -179,6 +181,19 @@ private fun AccountEditorContent(
                         item { SectionTitle(R.string.step_key_alternative) }
                         item { KeySection(state, provider, onKeyChange, onPaste, onVerify) }
                     }
+                    provider.supportsKimiAuth -> {
+                        // Kimi: e-posta/şifre oturum kartı; kodlar sırayla Kimi'den istenir
+                        item(key = "kimi-auth-card") {
+                            val kimiFactory = rememberKimiAuthViewModelFactory(
+                                accountId = accountId,
+                                providerId = provider.id,
+                            )
+                            KimiAuthCard(accountId = accountId, factory = kimiFactory)
+                        }
+                        // Ek olarak API key alternatifi
+                        item { SectionTitle(R.string.step_key_alternative) }
+                        item { KeySection(state, provider, onKeyChange, onPaste, onVerify) }
+                    }
                     else -> {
                         // Diğer sağlayıcılar: yalnız API anahtarı
                         item(key = "api-key-only-info") {
@@ -271,6 +286,9 @@ private fun ProviderCard(provider: Provider, selected: Boolean, onClick: (() -> 
             }
             if (provider.supportsEmailAuth) {
                 KBadge(text = stringResource(R.string.provider_email_auth), accent = NodeAccent.Blue)
+            }
+            if (provider.supportsKimiAuth) {
+                KBadge(text = stringResource(R.string.provider_kimi_auth), accent = NodeAccent.Blue)
             }
         }
     }

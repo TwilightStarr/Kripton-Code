@@ -15,6 +15,10 @@ import com.kriptoncod.app.data.google.GoogleAuthClient
 import com.kriptoncod.app.data.google.GoogleAuthSettings
 import com.kriptoncod.app.data.google.GoogleTokenStore
 import com.kriptoncod.app.data.google.RealGoogleAuthClient
+import com.kriptoncod.app.data.kimi.KimiAuthClient
+import com.kriptoncod.app.data.kimi.KimiCodeRepository
+import com.kriptoncod.app.data.kimi.KimiTokenStore
+import com.kriptoncod.app.data.kimi.RealKimiAuthClient
 import com.kriptoncod.app.data.providers.ModelService
 import com.kriptoncod.app.data.repo.AiAccountRepository
 import com.kriptoncod.app.data.repo.PromptRepository
@@ -23,7 +27,9 @@ import com.kriptoncod.app.data.settings.ThemeStore
 import com.kriptoncod.app.data.vault.AndroidKeystoreKeyVault
 import com.kriptoncod.app.data.vault.KeyVault
 import com.kriptoncod.app.data.run.CredentialProvider
+import com.kriptoncod.app.data.run.FinalAiAssembler
 import com.kriptoncod.app.data.run.PromptDispatcher
+import com.kriptoncod.app.data.run.RunFinalizer
 import com.kriptoncod.app.data.run.RunLauncher
 import com.kriptoncod.app.data.run.VaultCredentialProvider
 import com.kriptoncod.app.domain.RunStatus
@@ -78,12 +84,46 @@ class AppContainer(context: Context) {
     /** Üretim HTTP istemcisi; testlerde FakeEmailAuthClient ile değiştirilebilir. */
     val emailAuthClient: EmailAuthClient by lazy { RealEmailAuthClient() }
 
+    // --- Kimi Auth ---
+    /** Kimi oturum token kasası; key prefix `kimi-token-` (Email/Google'dan ayrık). */
+    val kimiTokenStore: KimiTokenStore by lazy { KimiTokenStore(keyVault) }
+
+    /** Kimi web oturum açma istemcisi (e-posta/şifre + refresh). */
+    val kimiAuthClient: KimiAuthClient by lazy { RealKimiAuthClient() }
+
+    /** Kimi'nin ürettiği kod bloklarını run başına toplayan depo. */
+    val kimiCodeRepository: KimiCodeRepository by lazy { KimiCodeRepository(appContext.filesDir) }
+
     // --- Dağıtım (prompt → AI hesabı) ---
     val credentialProvider: CredentialProvider by lazy {
-        VaultCredentialProvider(aiAccountRepository, googleTokenStore, emailTokenStore)
+        VaultCredentialProvider(aiAccountRepository, googleTokenStore, emailTokenStore, kimiTokenStore)
+    }
+    val runFinalizer: RunFinalizer by lazy { RunFinalizer(runRepository) }
+    val finalAiAssembler: FinalAiAssembler by lazy {
+        FinalAiAssembler(runRepository, aiAccountRepository, credentialProvider, aiGenerator, kimiCodeRepository)
     }
     val promptDispatcher: PromptDispatcher by lazy {
-        PromptDispatcher(runRepository, promptRepository, aiAccountRepository, credentialProvider, aiGenerator)
+        PromptDispatcher(
+            runRepository, promptRepository, aiAccountRepository, credentialProvider, aiGenerator,
+            onAllJobsDone = { runId ->
+                // Kimi run'ları: kodlar depoda toplandı; nihai paketi son AI (en güçlü API_KEY) üretir.
+                if (finalAiAssembler.assemble(runId)) {
+                    RunStatus.DONE
+                } else when (val result = runFinalizer.finalize(runId)) {
+                    is RunFinalizer.Result.Success -> {
+                        val run = runRepository.getRun(runId)
+                        if (run?.repo != null && githubTokenStore.get() != null) {
+                            runRepository.setRunStatus(runId, RunStatus.CI_WAITING)
+                            runScheduler.startCiLoop(runId)
+                        }
+                        RunStatus.DONE
+                    }
+                    is RunFinalizer.Result.HasTruncated -> RunStatus.FAILED
+                    is RunFinalizer.Result.NeedsConflictResolution -> RunStatus.FAILED
+                }
+            },
+            kimiCodes = kimiCodeRepository,
+        )
     }
     val runScheduler: RunScheduler by lazy { RunScheduler(WorkManager.getInstance(appContext), runRepository) }
     val runLauncher: RunLauncher by lazy { RunLauncher(promptRepository, runRepository, runScheduler) }

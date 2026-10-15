@@ -33,10 +33,15 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.kriptoncod.app.KriptonCodApp
 import com.kriptoncod.app.domain.ThemePreference
+import com.kriptoncod.app.AppContainer
 import com.kriptoncod.app.ui.screens.AccountEditorScreen
 import com.kriptoncod.app.ui.screens.AisScreen
+import com.kriptoncod.app.ui.screens.DispatchScreen
+import com.kriptoncod.app.ui.screens.GitHubSettingsScreen
 import com.kriptoncod.app.ui.screens.HistoryScreen
 import com.kriptoncod.app.ui.screens.HomeScreen
+import com.kriptoncod.app.ui.screens.PermissionScreen
+import com.kriptoncod.app.ui.screens.RunScreen
 import com.kriptoncod.app.ui.screens.PromptEditorScreen
 import com.kriptoncod.app.ui.screens.PromptSetScreen
 import com.kriptoncod.app.ui.screens.PromptsScreen
@@ -52,6 +57,7 @@ fun AppRoot(
 ) {
     val navController = rememberNavController()
     val context = LocalContext.current
+    val container: AppContainer = (context.applicationContext as KriptonCodApp).container
     val googleSettings =
         (context.applicationContext as KriptonCodApp).container.googleAuthSettings
     var googleClientId by remember { mutableStateOf("") }
@@ -62,7 +68,6 @@ fun AppRoot(
     val backStack by navController.currentBackStackEntryAsState()
     val scheme = MaterialTheme.colorScheme
     val currentRoute = backStack?.destination?.route
-    // Ekleme/düzenleme akışı tam ekran; alt gezinme yalnız ana sekmelerde görünür.
     val showBottomBar = currentRoute == null || Route.entries.any { it.path == currentRoute }
 
     Scaffold(
@@ -148,6 +153,28 @@ fun AppRoot(
                 val setId = entry.arguments?.getLong(PromptRoutes.ARG_SET_ID) ?: return@composable
                 val promptId = entry.arguments?.getLong(PromptRoutes.ARG_PROMPT_ID) ?: return@composable
                 PromptEditorScreen(setId = setId, promptId = promptId, onClose = { navController.popBackStack() })
+            }
+            composable(
+                "run/{runId}",
+                arguments = listOf(navArgument("runId") { type = NavType.LongType }),
+            ) { entry ->
+                val runId = entry.arguments?.getLong("runId") ?: return@composable
+                RunScreen(runId = runId, container = container,
+                    onBack = { navController.popBackStack() })
+            }
+            composable(
+                "dispatch/{setId}",
+                arguments = listOf(navArgument("setId") { type = NavType.LongType }),
+            ) { entry ->
+                val setId = entry.arguments?.getLong("setId") ?: return@composable
+                DispatchScreen(setId = setId, onBack = { navController.popBackStack() })
+            }
+            composable("github") {
+                GitHubSettingsScreen(container = container,
+                    onBack = { navController.popBackStack() })
+            }
+            composable("permissions") {
+                PermissionScreen(onDone = { navController.popBackStack() })
             }
             composable(Route.History.path) { HistoryScreen() }
             composable(Route.Settings.path) {

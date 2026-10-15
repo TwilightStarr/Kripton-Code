@@ -238,7 +238,7 @@ class GitHubService(
 
     // ------------------------------------------------------------------ iç yardımcılar
 
-    private suspend fun branchSha(token: String, repo: String, branch: String): ApiResult<String> =
+    suspend fun branchSha(token: String, repo: String, branch: String): ApiResult<String> =
         execute(token, "GET", url("repos/$repo/git/ref/heads/$branch"))
             .flatMap { decode<RefDto>(it) }
             .map { it.obj.sha }

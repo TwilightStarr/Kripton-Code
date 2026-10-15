@@ -30,6 +30,18 @@ class RunScheduler(
         )
     }
 
+    /** CI döngüsünü başlatır: workflow bitene kadar yoklar, hata varsa düzeltip yeniden push'lar. */
+    fun startCiLoop(runId: Long) {
+        val request = OneTimeWorkRequestBuilder<CiLoopWorker>()
+            .setInputData(workDataOf(CiLoopWorker.KEY_RUN_ID to runId))
+            .setConstraints(Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+            .build()
+        workManager.enqueueUniqueWork(
+            WorkNames.ciLoop(runId), ExistingWorkPolicy.REPLACE, request)
+    }
+
     suspend fun cancel(runId: Long) {
         runs.setRunStatus(runId, RunStatus.CANCELLED)
         workManager.cancelUniqueWork(WorkNames.dispatch(runId))

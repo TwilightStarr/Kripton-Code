@@ -16,7 +16,7 @@ data class ProviderEndpoint(
     val authMethod: AuthMethod,
     /** Ücretsiz modelleri belirten model kimliği eki (ör. OpenRouter ":free"). */
     val freeModelMarker: String? = null,
-    /** E-posta oturum açma tam URL'si; yalnız EMAIL destekli sağlayıcılarda. */
+    /** Oturum açma tam URL'si; yalnız EMAIL/KIMI destekli sağlayıcılarda. */
     val loginUrl: String? = null,
 )
 
@@ -29,32 +29,17 @@ data class Provider(
     /** Anahtar alma sayfası; özel sağlayıcıda null. */
     val keyUrl: String?,
     val authMethod: AuthMethod = ApiKey(),
-    /**
-     * Sağlayıcı Google OAuth destekliyor mu (yalnız Gemini).
-     * true ise hesap ekranında "Google ile bağlan" kartı gösterilir.
-     */
     val supportsGoogleAuth: Boolean = false,
-    /**
-     * Sağlayıcı e-posta/şifre girişi destekliyor mu (Claude, ChatGPT).
-     * true ise hesap ekranında "E-posta ile bağlan" kartı gösterilir.
-     */
     val supportsEmailAuth: Boolean = false,
+    val supportsKimiAuth: Boolean = false,
     val modelsPath: String = "models",
     val chatPath: String = "chat/completions",
     val validationPath: String = modelsPath,
     val freeModelMarker: String? = null,
-    /**
-     * Oturum açma yolu; yalnız [supportsEmailAuth] == true olan sağlayıcılarda.
-     * Diğer sağlayıcılarda null.
-     */
     val loginPath: String? = null,
 ) {
     val isCustom: Boolean get() = baseUrl == null
 
-    /**
-     * Uç noktaları üretir. Özel sağlayıcıda [customBaseUrl] zorunludur; sabit sağlayıcıda yok sayılır.
-     * Yalnız https kabul edilir; kullanıcı bilgisi/sorgu/parça içeren adresler reddedilir → null.
-     */
     fun resolve(customBaseUrl: String? = null): ProviderEndpoint? {
         val raw = baseUrl ?: customBaseUrl ?: return null
         val url = raw.trim().trimEnd('/').toHttpUrlOrNull() ?: return null
@@ -84,6 +69,7 @@ object ProviderCatalog {
     const val GEMINI_ID = "gemini"
     const val CLAUDE_ID = "claude"
     const val OPENAI_ID = "openai"
+    const val KIMI_ID = "kimi"
 
     val all: List<Provider> = listOf(
         Provider(
@@ -114,6 +100,16 @@ object ProviderCatalog {
             authMethod = EmailPassword,
             supportsEmailAuth = true,
             loginPath = "auth/login",
+        ),
+        Provider(
+            id = KIMI_ID,
+            nameRes = R.string.provider_kimi,
+            baseUrl = "https://api.moonshot.cn/v1",
+            hasFreeTier = true,
+            keyUrl = null,
+            authMethod = KimiSession,
+            supportsKimiAuth = true,
+            loginPath = "api/auth/login",
         ),
         Provider(
             id = "groq",

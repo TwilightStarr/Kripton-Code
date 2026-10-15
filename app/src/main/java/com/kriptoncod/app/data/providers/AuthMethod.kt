@@ -50,3 +50,16 @@ data object EmailPassword : AuthMethod {
     override fun authorize(request: Request.Builder, credential: String): Request.Builder =
         request.header("Authorization", "Bearer $credential")
 }
+
+/**
+ * Kimi (Moonshot) web oturumu — e-posta/şifre girişi + oturum token'ı.
+ * Gerçek uygulama [com.kriptoncod.app.data.kimi.KimiSessionAuth]'dadır;
+ * bu nesne sağlayıcı kataloğunda yer tutar.
+ */
+data object KimiSession : AuthMethod {
+    override val type: AuthType = AuthType.KIMI
+    override val isAvailable: Boolean = true
+
+    override fun authorize(request: Request.Builder, credential: String): Request.Builder =
+        request.header("Authorization", "Bearer $credential")
+}

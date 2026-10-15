@@ -91,3 +91,23 @@ internal fun rememberEmailAuthViewModelFactory(
         )
     }
 }
+
+/** [KimiAuthViewModel] factory'si. Kimi sağlayıcısının loginPath'i çözümlenir. */
+@Composable
+internal fun rememberKimiAuthViewModelFactory(
+    accountId: Long?,
+    providerId: String,
+): KimiAuthViewModel.Factory {
+    val container = rememberContainer()
+    return remember(container, accountId, providerId) {
+        val loginUrl = ProviderCatalog.byId(providerId)?.resolve()?.loginUrl
+        KimiAuthViewModel.Factory(
+            accountId = accountId,
+            tokenStore = container.kimiTokenStore,
+            authClient = container.kimiAuthClient,
+            loginUrl = loginUrl.orEmpty(),
+            revokeUrl = null,
+            repository = container.aiAccountRepository,
+        )
+    }
+}

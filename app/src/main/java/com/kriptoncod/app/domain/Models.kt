@@ -1,6 +1,6 @@
 package com.kriptoncod.app.domain
 
-enum class AuthType { API_KEY, GOOGLE, EMAIL }
+enum class AuthType { API_KEY, GOOGLE, EMAIL, KIMI }
 
 enum class AccountStatus { READY, WAITING, ERROR }
 

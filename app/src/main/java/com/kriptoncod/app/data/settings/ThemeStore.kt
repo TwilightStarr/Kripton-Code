@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.map
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-/** Sistem/Açık/Koyu seçimi. DataStore yazmaları atomiktir. */
+/** Sistem/Açık/Koyu seçimi + CI deneme sayısı. DataStore yazmaları atomiktir. */
 class ThemeStore(private val context: Context) {
 
     val preference: Flow<ThemePreference> = context.settingsDataStore.data
@@ -30,9 +30,20 @@ class ThemeStore(private val context: Context) {
         }
     }
 
+    // ---- CI deneme sayısı (1-10, varsayılan 3) ----
+    val ciMaxAttemptsFlow: Flow<Int> = context.settingsDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[CI_MAX_ATTEMPTS] ?: DEFAULT_CI_ATTEMPTS }
+
+    suspend fun setCiMaxAttempts(value: Int) {
+        context.settingsDataStore.edit { it[CI_MAX_ATTEMPTS] = value.coerceIn(1, 10) }
+    }
+
     private companion object {
         const val SCHEMA_VERSION = 1
+        const val DEFAULT_CI_ATTEMPTS = 3
         val SCHEMA_KEY = intPreferencesKey("schema")
         val THEME_KEY = stringPreferencesKey("theme")
+        val CI_MAX_ATTEMPTS = intPreferencesKey("ci_max_attempts")
     }
 }

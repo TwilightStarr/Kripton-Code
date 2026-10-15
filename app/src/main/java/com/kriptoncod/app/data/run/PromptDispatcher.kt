@@ -5,6 +5,8 @@ import com.kriptoncod.app.data.ai.AiGenerationException.Kind
 import com.kriptoncod.app.data.ai.AiGenerator
 import com.kriptoncod.app.data.db.AiAccount
 import com.kriptoncod.app.data.db.Job
+import com.kriptoncod.app.data.db.PromptItem
+import com.kriptoncod.app.data.kimi.KimiCodeRepository
 import com.kriptoncod.app.data.providers.ProviderCatalog
 import com.kriptoncod.app.data.providers.ProviderEndpoint
 import com.kriptoncod.app.data.repo.AiAccountRepository
@@ -12,33 +14,17 @@ import com.kriptoncod.app.data.repo.PromptRepository
 import com.kriptoncod.app.data.repo.RunRepository
 import com.kriptoncod.app.domain.AccountStatus
 import com.kriptoncod.app.domain.AssignmentMode
+import com.kriptoncod.app.domain.AuthType
 import com.kriptoncod.app.domain.JobState
 import com.kriptoncod.app.domain.RunStatus
 import kotlinx.coroutines.flow.first
 
 sealed interface DispatchOutcome {
-    /** Tüm işler bitti; run bu durumda kapandı. */
     data class Finished(val status: RunStatus) : DispatchOutcome
-
-    /** Açık işler var ama şimdi ilerlenemiyor (rate limit / geçici hata); [delayMs] sonra tekrar çağır. */
     data class Wait(val delayMs: Long) : DispatchOutcome
-
-    /** Kullanıcı run'ı iptal etti. */
     data object Cancelled : DispatchOutcome
 }
 
-/**
- * Bir run'ın bekleyen işlerini AI hesaplarına dağıtır ve üretir.
- *
- * Kurallar ([AiGenerationException] belgesindeki sözleşmeye uyar):
- * - AUTO iş: en güçlü (powerRank) kullanılabilir hesaba gider; hesap 401/429 verirse sıradakine geçer.
- * - MANUAL iş: yalnız atanan hesapta çalışır; 429'da bekler, 401'de FAILED olur.
- * - 401/403/402 → hesap ERROR. 429 → hesap WAITING (Retry-After). 5xx/ağ → iş yeniden kuyruğa,
- *   [MAX_ATTEMPTS] denemeden sonra FAILED. Diğer hatalar → iş FAILED.
- * - Kimlik bilgisi veya uç nokta çözülemeyen hesap ERROR yapılır.
- *
- * [process] idempotenttir: çökme/iptal sonrası tekrar çağrılabilir (yarım kalan RUNNING işler kuyruğa döner).
- */
 class PromptDispatcher(
     private val runs: RunRepository,
     private val prompts: PromptRepository,
@@ -48,8 +34,8 @@ class PromptDispatcher(
     private val now: () -> Long = System::currentTimeMillis,
     private val resolveEndpoint: (AiAccount) -> ProviderEndpoint? =
         { ProviderCatalog.byId(it.providerId)?.resolve() },
-    /** Tüm işler DONE olunca çağrılır; ZIP/GitHub adımları buraya bağlanır. Dönen durum run'a yazılır. */
     private val onAllJobsDone: suspend (runId: Long) -> RunStatus = { RunStatus.DONE },
+    private val kimiCodes: KimiCodeRepository? = null,
 ) {
 
     suspend fun process(runId: Long): DispatchOutcome {
@@ -62,7 +48,6 @@ class PromptDispatcher(
         runs.setRunStatus(runId, RunStatus.RUNNING)
         accounts.releaseExpiredWaits()
 
-        // Önceki worker ölmüşse RUNNING'de kalan işleri kuyruğa geri al.
         runs.getJobs(runId).filter { it.state == JobState.RUNNING }.forEach { runs.requeueJob(it.id) }
 
         var wakeAtMs: Long? = null
@@ -122,6 +107,10 @@ class PromptDispatcher(
             }
             tried += account.id
 
+            if (account.authType == AuthType.KIMI && kimiCodes != null) {
+                return processKimiJob(job, account, item)
+            }
+
             val endpoint = resolveEndpoint(account)
             val credential = credentials.credentialFor(account)
             if (endpoint == null || credential.isNullOrBlank()) {
@@ -152,7 +141,6 @@ class PromptDispatcher(
                             runs.failJob(job.id)
                             return JobResult.Failed
                         }
-                        // AUTO: döngü başa döner, sıradaki hesap seçilir.
                     }
                     Kind.RATE_LIMITED -> {
                         val until = e.waitUntil(now())
@@ -171,15 +159,67 @@ class PromptDispatcher(
                         runs.requeueJob(job.id)
                         return JobResult.Wait(now() + RETRY_BASE_MS * attempts)
                     }
-                    else -> { // NOT_FOUND, BAD_REQUEST, BAD_RESPONSE, TRUNCATED: aynı girdiyle tekrar anlamsız
+                    else -> {
                         runs.failJob(job.id)
                         return JobResult.Failed
                     }
                 }
-            } catch (_: IllegalArgumentException) { // boş model kimliği vb. yapılandırma hatası
+            } catch (_: IllegalArgumentException) {
                 runs.failJob(job.id)
                 return JobResult.Failed
             }
+        }
+    }
+
+    private suspend fun processKimiJob(job: Job, account: AiAccount, item: PromptItem): JobResult {
+        val endpoint = resolveEndpoint(account)
+        val credential = credentials.credentialFor(account)
+        if (endpoint == null || credential.isNullOrBlank()) {
+            accounts.markError(account.id)
+            runs.failJob(job.id)
+            return JobResult.Failed
+        }
+
+        if (job.accountId != account.id) runs.assignAccount(job.id, account.id)
+        runs.startJob(job.id)
+
+        return try {
+            val text = generator.generate(endpoint, account.modelId, credential, item.body)
+            if (text.isBlank()) {
+                runs.failJob(job.id)
+                JobResult.Failed
+            } else {
+                kimiCodes?.collect(job.runId, text)
+                runs.completeJob(job.id, text)
+                JobResult.Done
+            }
+        } catch (e: AiGenerationException) {
+            when (e.kind) {
+                Kind.RATE_LIMITED -> {
+                    val until = e.waitUntil(now())
+                    accounts.markWaiting(account.id, until)
+                    runs.waitJob(job.id)
+                    JobResult.Wait(until)
+                }
+                Kind.SERVER, Kind.NETWORK -> {
+                    val attempts = runs.getJob(job.id)?.attempts ?: MAX_ATTEMPTS
+                    if (attempts >= MAX_ATTEMPTS) {
+                        runs.failJob(job.id)
+                        JobResult.Failed
+                    } else {
+                        runs.requeueJob(job.id)
+                        JobResult.Wait(now() + RETRY_BASE_MS * attempts)
+                    }
+                }
+                else -> {
+                    accounts.markError(account.id)
+                    runs.failJob(job.id)
+                    JobResult.Failed
+                }
+            }
+        } catch (_: IllegalArgumentException) {
+            runs.failJob(job.id)
+            JobResult.Failed
         }
     }
 
@@ -194,7 +234,6 @@ class PromptDispatcher(
             return Pick.Use(account)
         }
 
-        // observeAll() powerRank'e göre azalan sıralıdır: en güçlü hesap önce.
         val enabled = accounts.observeAll().first().filter { it.enabled }
         enabled.firstOrNull { it.id !in tried && it.isUsable(t) }?.let { return Pick.Use(it) }
 
@@ -213,7 +252,6 @@ class PromptDispatcher(
     }
 
     companion object {
-        /** Bir iş için en çok başlatma sayısı (hesap değişimleri de sayılır). */
         const val MAX_ATTEMPTS = 4
         const val RETRY_BASE_MS = 15_000L
         private const val MIN_DELAY_MS = 1_000L

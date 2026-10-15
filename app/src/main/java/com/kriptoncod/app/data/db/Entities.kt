@@ -53,6 +53,8 @@ data class PromptItem(
     val setId: Long,
     val title: String,
     val body: String,
+    /** Virgülle ayrılmış hedef dosya yolları. */
+    val targetFiles: String? = null,
     /** "order" SQL anahtar kelimesi olduğundan sütun adı "position". */
     @ColumnInfo(name = "position") val order: Int,
 )

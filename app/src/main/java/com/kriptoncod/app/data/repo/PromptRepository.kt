@@ -42,6 +42,31 @@ class PromptRepository(
         items.insert(PromptItem(setId = setId, title = title, body = body, order = items.maxPosition(setId) + 1))
     }
 
+    /** Toplu ekleme: hepsi sondan, tek transaction. */
+    suspend fun addItems(setId: Long, newItems: List<Pair<String, String>>): List<Long> = db.withTransaction {
+        var pos = items.maxPosition(setId)
+        newItems.map { (title, body) ->
+            items.insert(PromptItem(setId = setId, title = title, body = body, order = ++pos))
+        }
+    }
+
+    /** Prompt'un kopyasını setin sonuna ekler. */
+    suspend fun duplicateItem(promptId: Long): Long? {
+        val src = items.get(promptId) ?: return null
+        return db.withTransaction {
+            items.insert(src.copy(
+                id = 0,
+                title = src.title + " (kopya)",
+                order = items.maxPosition(src.setId) + 1,
+            ))
+        }
+    }
+
+    /** Hedef dosya yollarını virgülle ayrılmış tek metin olarak kaydeder. */
+    suspend fun setTargetFiles(promptId: Long, files: List<String>) {
+        items.get(promptId)?.let { items.update(it.copy(targetFiles = files.joinToString(","))) }
+    }
+
     suspend fun updateItem(id: Long, title: String, body: String) {
         items.get(id)?.let { items.update(it.copy(title = title, body = body)) }
     }
