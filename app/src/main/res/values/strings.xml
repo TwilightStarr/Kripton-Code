@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Kripton Cod</string>
+    <string name="logo_description">Kripton Cod logosu</string>
+
+    <string name="nav_home">Ana</string>
+    <string name="nav_ais">AI\'lar</string>
+    <string name="nav_prompts">Promptlar</string>
+    <string name="nav_history">Geçmiş</string>
+    <string name="nav_settings">Ayarlar</string>
+
+    <string name="home_title">Kripton Cod</string>
+    <string name="home_subtitle">Kod odaklı çoklu-AI üretim aracı</string>
+    <string name="home_empty_title">Henüz bir AI hesabı yok</string>
+    <string name="home_empty_message">Başlamak için bir AI hesabı ekle, sonra promptlarını hazırla.</string>
+    <string name="home_action_add_ai">AI hesabı ekle</string>
+
+    <string name="ais_title">AI\'lar</string>
+    <string name="ais_empty_title">Eklenmiş AI yok</string>
+    <string name="ais_empty_message">Eklediğin AI hesapları burada listelenecek.</string>
+
+    <string name="prompts_title">Promptlar</string>
+    <string name="prompts_empty_title">Prompt seti boş</string>
+    <string name="prompts_empty_message">Ayrıntılı promptların burada hazırlanacak ve AI\'lara dağıtılacak.</string>
+
+    <string name="history_title">Geçmiş</string>
+    <string name="history_empty_title">Geçmiş boş</string>
+    <string name="history_empty_message">Hazırlanan zip dosyaları burada saklanacak.</string>
+
+    <string name="settings_title">Ayarlar</string>
+    <string name="settings_appearance">Görünüm</string>
+    <string name="settings_theme">Tema</string>
+    <string name="theme_system">Sistem</string>
+    <string name="theme_light">Açık</string>
+    <string name="theme_dark">Koyu</string>
+</resources>

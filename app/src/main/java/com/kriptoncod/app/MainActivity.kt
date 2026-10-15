@@ -1,0 +1,34 @@
+package com.kriptoncod.app
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kriptoncod.app.ui.navigation.AppRoot
+import com.kriptoncod.app.ui.theme.KriptonCodTheme
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        val store = (application as KriptonCodApp).container.themeStore
+        // İlk karede tema yanıp sönmesin diye tek seferlik, küçük bir okuma.
+        val initial = runBlocking { store.preference.first() }
+        setContent {
+            val preference by store.preference.collectAsStateWithLifecycle(initialValue = initial)
+            val scope = rememberCoroutineScope()
+            KriptonCodTheme(preference = preference) {
+                AppRoot(
+                    themePreference = preference,
+                    onThemeChange = { scope.launch { store.set(it) } },
+                )
+            }
+        }
+    }
+}
