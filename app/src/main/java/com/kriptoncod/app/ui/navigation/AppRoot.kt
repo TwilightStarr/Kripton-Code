@@ -45,6 +45,7 @@ import com.kriptoncod.app.ui.screens.PromptEditorScreen
 import com.kriptoncod.app.ui.screens.PromptSetScreen
 import com.kriptoncod.app.ui.screens.PromptsScreen
 import com.kriptoncod.app.ui.screens.SettingsScreen
+import com.kriptoncod.app.ui.screens.WebAccountEditScreen
 import com.kriptoncod.app.ui.screens.WebAccountScreen
 import com.kriptoncod.app.domain.AuthType
 import com.kriptoncod.app.ui.theme.KriptonTheme
@@ -111,10 +112,10 @@ fun AppRoot(
                     onAdd = { navController.navigate(AisRoutes.ADD) },
                     onAddWeb = { navController.navigate(AisRoutes.WEB_ADD) },
                     onEdit = { id ->
-                        // Web oturumu hesabında "düzenle" = yeniden giriş; diğerleri anahtar düzenleyicisini açar.
+                        // Web oturumu hesabında "düzenle" = ad düzenleme (yeniden giriş oradan ayrıca açılır); diğerleri anahtar düzenleyicisini açar.
                         scope.launch {
                             val web = container.aiAccountRepository.get(id)?.authType == AuthType.WEB_SESSION
-                            navController.navigate(if (web) AisRoutes.webRelogin(id) else AisRoutes.edit(id))
+                            navController.navigate(if (web) AisRoutes.webEdit(id) else AisRoutes.edit(id))
                         }
                     },
                 )
@@ -128,6 +129,20 @@ fun AppRoot(
             ) { entry ->
                 val id = entry.arguments?.getLong(AisRoutes.ARG_ID) ?: return@composable
                 WebAccountScreen(accountId = id, onClose = { navController.popBackStack() })
+            }
+            composable(
+                AisRoutes.WEB_EDIT,
+                arguments = listOf(navArgument(AisRoutes.ARG_ID) { type = NavType.LongType }),
+            ) { entry ->
+                val id = entry.arguments?.getLong(AisRoutes.ARG_ID) ?: return@composable
+                WebAccountEditScreen(
+                    accountId = id,
+                    onClose = { navController.popBackStack() },
+                    onRelogin = {
+                        navController.popBackStack()
+                        navController.navigate(AisRoutes.webRelogin(id))
+                    },
+                )
             }
             composable(AisRoutes.ADD) {
                 AccountEditorScreen(accountId = null, onClose = { navController.popBackStack() })

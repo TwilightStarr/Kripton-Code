@@ -74,10 +74,10 @@ class WebViewChatDriver(
         @SuppressLint("SetJavaScriptEnabled")
         private fun createWebView(): WebView {
             val wv = WebView(appContext)
+            WebUserAgent.apply(wv.settings)
             wv.settings.apply {
                 javaScriptEnabled = true
                 domStorageEnabled = true
-                userAgentString = WebUserAgent.DESKTOP
                 loadWithOverviewMode = true
                 useWideViewPort = true
                 mediaPlaybackRequiresUserGesture = true

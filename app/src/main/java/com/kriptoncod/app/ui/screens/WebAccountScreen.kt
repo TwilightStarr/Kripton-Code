@@ -41,6 +41,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kriptoncod.app.R
 import com.kriptoncod.app.data.web.WebProvider
+import androidx.compose.ui.platform.LocalUriHandler
 import com.kriptoncod.app.data.web.WebUserAgent
 import com.kriptoncod.app.ui.ais.WebAccountState
 import com.kriptoncod.app.ui.ais.WebAccountViewModel
@@ -154,9 +155,17 @@ private fun ColumnScope.BrowserStep(state: WebAccountState, vm: WebAccountViewMo
     val keyStep = state.step == WebStep.KEY
     var holder by remember { mutableStateOf<WebView?>(null) }
 
+    val uriHandler = LocalUriHandler.current
     if (keyStep) {
+        // Google WebView'da girişi engeller: sayfa telefonun kendi tarayıcısında açılır, anahtar buraya yapıştırılır.
         Text(stringResource(R.string.web_key_title), style = MaterialTheme.typography.titleMedium)
         Text(stringResource(R.string.web_key_hint), style = MaterialTheme.typography.bodySmall, color = KriptonTheme.colors.muted)
+        KButton(
+            stringResource(R.string.web_key_open_browser),
+            { runCatching { uriHandler.openUri(WebProvider.GEMINI.chatUrl) } },
+            style = KButtonStyle.Outline,
+            modifier = Modifier.fillMaxWidth(),
+        )
         OutlinedTextField(
             value = state.geminiKey,
             onValueChange = vm::onGeminiKey,
@@ -164,38 +173,36 @@ private fun ColumnScope.BrowserStep(state: WebAccountState, vm: WebAccountViewMo
             label = { Text(stringResource(R.string.web_key_label)) },
             singleLine = true,
         )
-        LaunchedEffect(Unit) { holder?.loadUrl(WebProvider.GEMINI.chatUrl) }
     } else {
         Text(stringResource(R.string.web_login_hint), style = MaterialTheme.typography.bodySmall, color = KriptonTheme.colors.muted)
-    }
-    AndroidView(
-        modifier = Modifier.weight(1f).fillMaxWidth(),
-        factory = { ctx ->
-            WebView(ctx).apply {
-                layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-                settings.javaScriptEnabled = true
-                settings.domStorageEnabled = true
-                // Sohbet WebView'ıyla AYNI kullanıcı-aracısı: oturum/bot kontrolleri buna bağlıdır.
-                settings.userAgentString = WebUserAgent.DESKTOP
-                CookieManager.getInstance().setAcceptCookie(true)
-                CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
-                webViewClient = object : WebViewClient() {
-                    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                        val scheme = request?.url?.scheme.orEmpty()
-                        return scheme != "https" && scheme != "about"
+        AndroidView(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            factory = { ctx ->
+                WebView(ctx).apply {
+                    layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                    settings.javaScriptEnabled = true
+                    settings.domStorageEnabled = true
+                    // Sohbet WebView'ıyla AYNI kullanıcı-aracısı: oturum/bot kontrolleri buna bağlıdır.
+                    WebUserAgent.apply(settings)
+                    CookieManager.getInstance().setAcceptCookie(true)
+                    CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+                    webViewClient = object : WebViewClient() {
+                        override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                            val scheme = request?.url?.scheme.orEmpty()
+                            return scheme != "https" && scheme != "about"
+                        }
                     }
+                    loadUrl(p.loginUrl)
+                    holder = this
                 }
-                loadUrl(p.loginUrl)
-                holder = this
-            }
-        },
-    )
+            },
+        )
+    }
     DisposableEffect(Unit) {
         onDispose { holder?.let { runCatching { it.stopLoading(); it.destroy() } } }
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         if (keyStep) {
-            KButton(stringResource(R.string.web_key_read), { vm.readKeyFromPage(holder) }, style = KButtonStyle.Outline)
             KButton(stringResource(R.string.web_key_save), vm::saveGeminiKey, enabled = state.geminiKey.isNotBlank())
         } else {
             KButton(stringResource(R.string.web_login_done), { vm.finishLogin(holder) })

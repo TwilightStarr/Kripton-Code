@@ -4,6 +4,9 @@
     <string name="ais_add_web">+ E-posta ile</string>
     <string name="web_title">E-posta ile hesap ekle</string>
     <string name="web_relogin_title">Yeniden giriş</string>
+    <string name="web_edit_title">Hesabı düzenle</string>
+    <string name="web_edit_relogin">Yeniden giriş yap</string>
+    <string name="web_edit_relogin_hint">Adı değiştirmek için giriş gerekmez. Oturum düştüyse aşağıdan yeniden giriş yapabilirsin.</string>
     <string name="web_pick_hint">Sağlayıcıyı seç, sonra o sağlayıcının kendi giriş sayfasında e-postanla gir. Şifreni uygulama görmez; yalnız oturum çerezleri cihazında şifreli saklanır.</string>
     <string name="web_label">Hesap adı (ör. e-postan)</string>
     <string name="web_continue">Devam</string>
@@ -14,19 +17,20 @@
     <string name="web_hint_claude">Çıktı: Claude\'un ürettiği zip indirilir ve açılır; zip gelmezse kod blokları kullanılır.</string>
     <string name="web_hint_chatgpt">Çıktı: ChatGPT\'nin ürettiği dosya/zip indirilir; olmazsa kod blokları kullanılır.</string>
     <string name="web_hint_kimi">Çıktı: uzun kod bloğu. Yanıt kesilirse otomatik "devam et" gönderilir ve parçalar birleştirilir.</string>
-    <string name="web_hint_gemini">Çıktı: Gemini web arayüzü kullanılmaz. Giriş yaptıktan sonra hesabının API anahtarı Google AI Studio\'dan alınır ve çıktılar resmi API ile üretilir.</string>
+    <string name="web_hint_gemini">Çıktı: Gemini web arayüzü kullanılmaz. API anahtarını telefonunun tarayıcısında Google AI Studio\'dan alıp buraya yapıştırırsın; çıktılar resmi API ile üretilir.</string>
 
     <string name="web_warning_title">Hesabın kapatılabilir</string>
     <string name="web_warning_claude">Claude web hesabını bu uygulamayla otomatik kullanmak Anthropic kullanım koşullarına aykırıdır. Hesabın önceden haber verilmeden kısıtlanabilir veya kapatılabilir. Yalnız kaybetmeyi göze alabileceğin hesapları ekle.</string>
     <string name="web_warning_gemini">Google hesabınla otomatik işlem yapmak Google koşullarına aykırı sayılabilir ve hesabın kısıtlanabilir veya kapatılabilir. Ana Google hesabını değil, kaybetmeyi göze aldığın bir hesabı kullan.</string>
     <string name="web_warning_accept">Riski anladım, kendi sorumluluğumda ekliyorum</string>
 
-    <string name="web_login_hint">Sayfada e-postanla giriş yap (2 adımlı doğrulama dahil). Sohbet ekranı görününce aşağıdaki düğmeye bas.</string>
+    <string name="web_login_hint">Sayfada e-postanla giriş yap (2 adımlı doğrulama dahil). "Google ile devam et" seçeneğini kullanma: Google uygulama içi girişi engeller. Sohbet ekranı görününce aşağıdaki düğmeye bas.</string>
     <string name="web_login_done">Girişi tamamladım</string>
     <string name="web_key_title">API anahtarını al</string>
-    <string name="web_key_hint">AI Studio sayfasında "Create API key" ile anahtar oluştur, sonra "Sayfadan oku"ya bas. Ya da anahtarı aşağıya yapıştır.</string>
+    <string name="web_key_hint">Google, uygulama içinden girişe izin vermez. "Tarayıcıda aç"a bas, Google hesabınla giriş yapıp "Create API key" ile anahtarı oluştur, kopyala ve aşağıya yapıştır.</string>
     <string name="web_key_label">Gemini API anahtarı</string>
     <string name="web_key_read">Sayfadan oku</string>
+    <string name="web_key_open_browser">Tarayıcıda aç (AI Studio)</string>
     <string name="web_key_save">Doğrula ve kaydet</string>
     <string name="web_key_not_found">Sayfada anahtar bulunamadı. Önce anahtarı oluştur ya da elle yapıştır.</string>
     <string name="web_key_invalid">Anahtar biçimi geçersiz.</string>

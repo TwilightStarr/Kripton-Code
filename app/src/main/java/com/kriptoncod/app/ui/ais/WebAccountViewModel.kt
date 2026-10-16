@@ -38,7 +38,7 @@ data class WebAccountState(
 
 /**
  * E-posta ile (web oturumu) hesap ekleme / yeniden giriş akışı:
- * PICK -> (WARNING: Claude/Gemini) -> LOGIN (WebView) -> [Gemini: KEY] -> SAVING -> DONE.
+ * PICK -> (WARNING: Claude/Gemini) -> LOGIN (WebView; Gemini hariç) -> [Gemini: KEY, WebView'sız] -> SAVING -> DONE.
  * Şifre hiç okunmaz; yalnız giriş sonrası çerezler [WebSessionStore]'a (KeyVault) yazılır.
  */
 class WebAccountViewModel(
@@ -93,6 +93,12 @@ class WebAccountViewModel(
     }
 
     private fun beginLogin() {
+        // Google, uygulama içi tarayıcıda (WebView) girişi engeller ("This browser or app may not be secure").
+        // Gemini'de WebView ile giriş denenmez: anahtar telefonun kendi tarayıcısından alınıp yapıştırılır.
+        if (_state.value.provider == WebProvider.GEMINI) {
+            _state.update { it.copy(step = WebStep.KEY, error = null) }
+            return
+        }
         viewModelScope.launch {
             // Önceki hesabın çerezleri kalmasın: her giriş temiz bir çerez deposuyla başlar.
             WebCookies.clearAll()

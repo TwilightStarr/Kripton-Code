@@ -2,6 +2,10 @@ package com.kriptoncod.app.data.web
 
 import android.webkit.CookieManager
 import android.webkit.ValueCallback
+import android.webkit.WebSettings
+import androidx.webkit.UserAgentMetadata
+import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebViewFeature
 import android.webkit.WebStorage
 import android.webkit.WebView
 import kotlin.coroutines.resume
@@ -19,6 +23,40 @@ object WebUserAgent {
     /** Giriş ve sohbet WebView'ları AYNI kullanıcı-aracısını kullanmalı (oturum/bot kontrolü buna bağlı). */
     const val DESKTOP =
         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+
+    /**
+     * Giriş ve sohbet WebView'larının ayarı. Google/diğer siteler "uygulama içi tarayıcı"yı üç yerden anlar:
+     * kullanıcı-aracısı, `X-Requested-With: <paket adı>` başlığı ve `Sec-CH-UA` ipuçları ("Android WebView").
+     * Üçü de masaüstü Chrome ile tutarlı hâle getirilir. Desteklenmeyen sürümlerde sessizce atlanır.
+     */
+    fun apply(settings: WebSettings) {
+        settings.userAgentString = DESKTOP
+        runCatching {
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.REQUESTED_WITH_HEADER_ALLOW_LIST)) {
+                WebSettingsCompat.setRequestedWithHeaderOriginAllowList(settings, emptySet())
+            }
+        }
+        runCatching {
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.USER_AGENT_METADATA)) {
+                val brands = listOf(
+                    UserAgentMetadata.BrandVersion.Builder().setBrand("Chromium").setMajorVersion("130").setFullVersion("130.0.0.0").build(),
+                    UserAgentMetadata.BrandVersion.Builder().setBrand("Google Chrome").setMajorVersion("130").setFullVersion("130.0.0.0").build(),
+                    UserAgentMetadata.BrandVersion.Builder().setBrand("Not?A_Brand").setMajorVersion("99").setFullVersion("99.0.0.0").build(),
+                )
+                val meta = UserAgentMetadata.Builder()
+                    .setBrandVersionList(brands)
+                    .setFullVersion("130.0.0.0")
+                    .setPlatform("Linux")
+                    .setPlatformVersion("6.5.0")
+                    .setArchitecture("x86")
+                    .setBitness(64)
+                    .setModel("")
+                    .setMobile(false)
+                    .build()
+                WebSettingsCompat.setUserAgentMetadata(settings, meta)
+            }
+        }
+    }
 }
 
 object WebCookies {

@@ -29,7 +29,12 @@ object AisRoutes {
     const val WEB_ADD = "ais/web"
     const val WEB_RELOGIN = "ais/web/{$ARG_ID}"
 
+    /** Web oturumu hesabının adını düzenleme (giriş gerektirmez). */
+    const val WEB_EDIT = "ais/webedit/{$ARG_ID}"
+
     fun webRelogin(id: Long): String = "ais/web/$id"
+
+    fun webEdit(id: Long): String = "ais/webedit/$id"
 
     fun edit(id: Long): String = "ais/edit/$id"
 }
