@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Düz HTTP'ye yalnız "Proxy (CLIProxyAPI uyumlu)" hesapları için izin gerekir (localhost, LAN, Tailscale).
+    Android alan adı joker karakteriyle IP aralığı belirtemediği için burada genel izin verilir; asıl sınır
+    uygulama kodundadır: ProxyProvider yalnız yerel/özel ağ adreslerinde http'yi kabul eder, açık internet
+    adresleri ve tüm hazır sağlayıcılar https'tir. Yönlendirme (redirect) istemcide kapalıdır.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

@@ -8,6 +8,8 @@ import com.kriptoncod.app.data.providers.ApiResult
 import com.kriptoncod.app.data.providers.ModelRanking
 import com.kriptoncod.app.data.providers.ProviderCatalog
 import com.kriptoncod.app.data.providers.ProviderEndpoint
+import com.kriptoncod.app.data.providers.ProxyProvider
+import com.kriptoncod.app.data.providers.UpstreamProvider
 import com.kriptoncod.app.data.providers.RankedModel
 import com.kriptoncod.app.data.providers.RemoteModel
 import com.kriptoncod.app.data.repo.AiAccountRepository
@@ -44,9 +46,11 @@ private class FlakyPutVault(private val inner: FakeKeyVault) : KeyVault by inner
 private class FakeDiscover(var next: ApiResult<ModelRanking>) {
     @Volatile var calls = 0
     @Volatile var lastKey: String? = null
+    @Volatile var lastEndpoint: ProviderEndpoint? = null
     suspend operator fun invoke(endpoint: ProviderEndpoint, key: String): ApiResult<ModelRanking> {
         calls++
         lastKey = key
+        lastEndpoint = endpoint
         return next
     }
 }
@@ -319,6 +323,147 @@ class AccountEditorViewModelTest {
         val s = editVm(999).state.awaitValue { it.error != null }
         assertEquals(R.string.err_account_missing, s.error!!.messageRes)
         assertFalse(s.loading)
+    }
+
+    // ---- Proxy (CLIProxyAPI uyumlu) hesabı
+
+    private fun proxyRanking() = ModelRanking(
+        models = listOf(
+            RankedModel(RemoteModel("claude-sonnet-5-5", ownedBy = "anthropic"), 90),
+            RankedModel(RemoteModel("gemini-3.8-flash", ownedBy = "google"), 80),
+            RankedModel(RemoteModel("grok-4.7", ownedBy = "xai"), 70),
+        ),
+        recommended = RemoteModel("claude-sonnet-5-5"),
+    )
+
+    private fun verifiedProxyVm(url: String = "192.168.1.20:8317", key: String = "proxy-key"): AccountEditorViewModel {
+        discover.next = ApiResult.Ok(proxyRanking())
+        val vm = addVm()
+        vm.selectProvider(ProxyProvider.ID)
+        vm.onBaseUrlChanged(url)
+        vm.onKeyChanged(key)
+        vm.verify()
+        vm.state.awaitValue { it.verified }
+        return vm
+    }
+
+    private fun saveProxy(vm: AccountEditorViewModel): AiAccount = runBlocking {
+        vm.save()
+        vm.state.awaitValue { it.saved }
+        repo.observeAll().first().maxByOrNull { it.id }!!
+    }
+
+    @Test fun proxyNeedsUrlAndKeyBeforeVerify() {
+        val vm = addVm()
+        vm.selectProvider(ProxyProvider.ID)
+        assertTrue(vm.state.value.isProxy)
+        assertFalse(vm.state.value.canVerify)
+        vm.onKeyChanged("proxy-key")
+        assertFalse(vm.state.value.canVerify)
+        vm.onBaseUrlChanged("http://192.168.1.20:8317")
+        assertTrue(vm.state.value.canVerify)
+    }
+
+    @Test fun proxyAccountIsSavedWithBaseUrlAndEncryptedKey() = runBlocking {
+        val vm = verifiedProxyVm()
+        assertEquals("http://192.168.1.20:8317/v1/chat/completions", discover.lastEndpoint!!.chatUrl.toString())
+        assertEquals("proxy-key", discover.lastKey)
+        assertEquals(UpstreamProvider.CLAUDE, vm.state.value.upstreamFilter)
+        assertEquals(
+            listOf(UpstreamProvider.CLAUDE, UpstreamProvider.GEMINI, UpstreamProvider.OTHER),
+            vm.state.value.availableUpstreams,
+        )
+        vm.onNameChanged("Benim hesabım")
+        val account = saveProxy(vm)
+        assertEquals(AuthType.PROXY, account.authType)
+        assertEquals("claude", account.providerId)
+        assertEquals("http://192.168.1.20:8317/v1", account.baseUrl)
+        assertEquals("Benim hesabım", account.displayName)
+        assertEquals("claude-sonnet-5-5", account.modelId)
+        assertEquals("proxy-key", repo.getSecret(account.id)) // anahtar yalnız kasada
+        assertFalse(account.toString().contains("proxy-key"))
+    }
+
+    @Test fun sameProviderCanHaveSeveralProxyAccountsWithOwnKeys() = runBlocking {
+        val mine = saveProxy(verifiedProxyVm("192.168.1.20:8317", "my-key").also { it.onNameChanged("Benim hesabım") })
+        val friend = saveProxy(verifiedProxyVm("https://friend.example.com", "friend-key").also { it.onNameChanged("Arkadaşım") })
+        val again = saveProxy(verifiedProxyVm("https://friend.example.com", "other-key").also { it.onNameChanged("Arkadaşım") })
+        assertEquals(setOf("claude"), setOf(mine, friend, again).map { it.providerId }.toSet())
+        assertEquals(3, setOf(mine.id, friend.id, again.id).size)
+        assertEquals("my-key", repo.getSecret(mine.id))
+        assertEquals("friend-key", repo.getSecret(friend.id))
+        assertEquals("other-key", repo.getSecret(again.id))
+        assertEquals("https://friend.example.com/v1", friend.baseUrl)
+        assertEquals("Arkadaşım 1", again.displayName) // ad çakışması numaralanır
+    }
+
+    @Test fun unnamedProxyAccountsGetAutomaticNames() {
+        val a = saveProxy(verifiedProxyVm())
+        val b = saveProxy(verifiedProxyVm())
+        assertEquals("Proxy 1", a.displayName)
+        assertEquals("Proxy 2", b.displayName)
+    }
+
+    @Test fun upstreamFilterNarrowsModelsAndDeterminesSavedProvider() {
+        val vm = verifiedProxyVm()
+        vm.selectUpstream(UpstreamProvider.GEMINI)
+        assertEquals(listOf("gemini-3.8-flash"), vm.state.value.visibleModels.map { it.id })
+        assertEquals("gemini-3.8-flash", vm.state.value.selectedModelId)
+        vm.selectUpstream(null)
+        assertEquals(3, vm.state.value.visibleModels.size)
+        vm.selectUpstream(UpstreamProvider.OTHER)
+        assertEquals("grok-4.7", vm.state.value.selectedModelId)
+        val account = saveProxy(vm)
+        assertEquals("other", account.providerId)
+        assertEquals("grok-4.7", account.modelId)
+    }
+
+    @Test fun insecurePublicUrlIsRejectedWithoutAnyRequest() {
+        val vm = addVm()
+        vm.selectProvider(ProxyProvider.ID)
+        vm.onBaseUrlChanged("http://proxy.example.com")
+        vm.onKeyChanged("proxy-key")
+        vm.verify()
+        val s = vm.state.awaitValue { it.error != null }
+        assertEquals(R.string.err_proxy_url_insecure, s.error!!.messageRes)
+        assertEquals(0, discover.calls)
+        assertFalse(s.verified)
+    }
+
+    @Test fun changingBaseUrlInvalidatesVerification() {
+        val vm = verifiedProxyVm()
+        vm.onBaseUrlChanged("192.168.1.21:8317")
+        val s = vm.state.value
+        assertFalse(s.verified)
+        assertTrue(s.models.isEmpty())
+        assertNull(s.selectedModelId)
+        assertFalse(s.canSave)
+    }
+
+    @Test fun editingProxyAccountReusesStoredKeyAndAllowsRename() = runBlocking {
+        discover.next = ApiResult.Ok(proxyRanking())
+        val id = repo.add(
+            AiAccount(
+                providerId = "claude", displayName = "Arkadaşım", authType = AuthType.PROXY,
+                modelId = "gemini-3.8-flash", powerRank = 5, baseUrl = "http://10.0.0.5:8317/v1",
+            ),
+            "stored-proxy-key",
+        )
+        val vm = editVm(id)
+        val s = vm.state.awaitValue { it.verified }
+        assertTrue(s.isProxy)
+        assertEquals("http://10.0.0.5:8317/v1", s.baseUrl)
+        assertEquals("Arkadaşım", s.accountName)
+        assertEquals("stored-proxy-key", discover.lastKey)
+        assertEquals("gemini-3.8-flash", s.selectedModelId)
+        vm.onNameChanged("Arkadaşım (yedek)")
+        vm.save()
+        vm.state.awaitValue { it.saved }
+        val updated = repo.get(id)!!
+        assertEquals("Arkadaşım (yedek)", updated.displayName)
+        assertEquals("gemini", updated.providerId) // seçili modelin sağlayıcısı
+        assertEquals(AuthType.PROXY, updated.authType)
+        assertEquals("stored-proxy-key", repo.getSecret(id))
     }
 }
 

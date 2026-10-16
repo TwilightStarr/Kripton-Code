@@ -1,21 +1,21 @@
 package com.kriptoncod.app.data.ai
 
 import com.kriptoncod.app.data.ai.AiGenerationException.Kind
+import com.kriptoncod.app.data.ai.normalize.ChoiceReader
+import com.kriptoncod.app.data.ai.normalize.Finish
+import com.kriptoncod.app.data.ai.normalize.Normalizers
+import com.kriptoncod.app.data.ai.normalize.ProviderNormalizer
 import com.kriptoncod.app.data.http.await
 import com.kriptoncod.app.data.providers.ProviderEndpoint
+import com.kriptoncod.app.data.providers.UpstreamProvider
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
@@ -29,8 +29,9 @@ import okhttp3.RequestBody.Companion.toRequestBody
  *
  * - Kimlik doğrulama [ProviderEndpoint.authMethod] ile eklenir; kimlik bilgisi loglanmaz.
  * - Hata gövdesi okunur ama hata nesnesine konmaz (sağlayıcılar isteği yansıtabilir).
- * - `finish_reason == "length"` kesik çıktı sayılır ve KAYDEDİLMEZ ([Kind.TRUNCATED]).
- * - Başında `<think>…</think>` muhakeme bloğu varsa atılır.
+ * - Yanıt, **model kimliğine göre** seçilen [ProviderNormalizer] ile temizlenir (Claude, Gemini, OpenAI,
+ *   DeepSeek, Kimi; tanınmayanlar için genel): muhakeme blokları atılır, `finish_reason` sınıflanır.
+ * - Kesik çıktı (`length`, `max_tokens`, `MAX_TOKENS` …) KAYDEDİLMEZ ([Kind.TRUNCATED]).
  *
  * Çıktının kaydı çağıranındır: `RunRepository.completeJob` → `OutputStore.write` (atomik).
  */
@@ -81,7 +82,8 @@ class OpenAiCompatibleGenerator(
         }
 
         if (code !in 200..299) throw failure(code, retryAfter, body)
-        return withContext(Dispatchers.Default) { extract(body) }
+        val normalizer = Normalizers.forModel(modelId, UpstreamProvider.fromId(endpoint.providerId))
+        return withContext(Dispatchers.Default) { extract(body, normalizer) }
     }
 
     private fun failure(code: Int, retryAfter: String?, body: String): AiGenerationException {
@@ -100,7 +102,14 @@ class OpenAiCompatibleGenerator(
     private fun parseRetryAfter(value: String?): Long? =
         value?.trim()?.toLongOrNull()?.takeIf { it in 0..MAX_RETRY_AFTER_S }?.times(1000)
 
-    private fun extract(body: String): String {
+    /**
+     * Yanıtı ayrıştırır: `choices[0]` → [ChoiceReader] (içerik biçimleri, muhakeme parçaları) →
+     * model ailesine özgü [ProviderNormalizer] (temizlik + `finish_reason` sınıflaması).
+     *
+     * - Metin boş / reddedilmiş (içerik filtresi, `refusal`) → [Kind.BAD_RESPONSE]
+     * - Çıktı uzunluk sınırında kesilmiş → [Kind.TRUNCATED]
+     */
+    private fun extract(body: String, normalizer: ProviderNormalizer): String {
         val choice: JsonObject = (
             try {
                 json.parseToJsonElement(body).jsonObject["choices"]?.jsonArray?.firstOrNull()?.jsonObject
@@ -109,26 +118,10 @@ class OpenAiCompatibleGenerator(
             }
             ) ?: throw AiGenerationException(Kind.BAD_RESPONSE)
 
-        val text = contentText(choice["message"]?.let { (it as? JsonObject)?.get("content") })
-            ?.let { THINK_BLOCK.replaceFirst(it, "") }
-            ?.trim()
-        if (text.isNullOrEmpty()) throw AiGenerationException(Kind.BAD_RESPONSE)
-
-        val finish = (choice["finish_reason"] as? JsonPrimitive)?.contentOrNull
-        if (finish == "length") throw AiGenerationException(Kind.TRUNCATED)
-        return text
-    }
-
-    /** `content` düz metin ya da `[{type:"text", text:"…"}]` parça listesi olabilir. */
-    private fun contentText(content: JsonElement?): String? = when (content) {
-        null, JsonNull -> null
-        is JsonPrimitive -> content.contentOrNull
-        is JsonArray -> content.mapNotNull { part ->
-            val obj = part as? JsonObject ?: return@mapNotNull null
-            val type = (obj["type"] as? JsonPrimitive)?.contentOrNull
-            if (type == null || type == "text") (obj["text"] as? JsonPrimitive)?.contentOrNull else null
-        }.joinToString("").ifEmpty { null }
-        else -> null
+        val out = normalizer.normalize(ChoiceReader.read(choice))
+        if (out.text.isEmpty() || out.finish == Finish.FILTERED) throw AiGenerationException(Kind.BAD_RESPONSE)
+        if (out.finish == Finish.TRUNCATED) throw AiGenerationException(Kind.TRUNCATED)
+        return out.text
     }
 
     companion object {
@@ -136,7 +129,6 @@ class OpenAiCompatibleGenerator(
         private const val MAX_BODY_BYTES = 16L * 1024 * 1024
         private const val MAX_RETRY_AFTER_S = 7L * 24 * 3600
         private val INVALID_KEY_HINTS = listOf("api key not valid", "api_key_invalid")
-        private val THINK_BLOCK = Regex("^\\s*<think>.*?</think>\\s*", RegexOption.DOT_MATCHES_ALL)
 
         /** Uzun üretimler için geniş zaman aşımı; yönlendirme kapalı (anahtar başka adrese sızmaz). */
         fun defaultClient(): OkHttpClient = OkHttpClient.Builder()

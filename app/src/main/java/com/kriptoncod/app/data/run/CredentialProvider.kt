@@ -23,7 +23,7 @@ class VaultCredentialProvider(
 
     override suspend fun credentialFor(account: AiAccount): String? = try {
         when (account.authType) {
-            AuthType.API_KEY -> accounts.getSecret(account.id)
+            AuthType.API_KEY, AuthType.PROXY -> accounts.getSecret(account.id)
             AuthType.GOOGLE -> googleTokens.getValid(account.id)?.accessToken
             AuthType.EMAIL -> emailTokens.getValid(account.id)?.sessionToken
             AuthType.KIMI -> kimiTokens.getValid(account.id)?.sessionToken

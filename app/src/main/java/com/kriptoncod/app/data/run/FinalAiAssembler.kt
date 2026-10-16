@@ -4,7 +4,7 @@ import com.kriptoncod.app.data.ai.AiGenerationException
 import com.kriptoncod.app.data.ai.AiGenerator
 import com.kriptoncod.app.data.db.AiAccount
 import com.kriptoncod.app.data.kimi.KimiCodeRepository
-import com.kriptoncod.app.data.providers.ProviderCatalog
+import com.kriptoncod.app.data.providers.AccountEndpoints
 import com.kriptoncod.app.data.repo.AiAccountRepository
 import com.kriptoncod.app.data.repo.RunRepository
 import com.kriptoncod.app.domain.AccountStatus
@@ -22,7 +22,7 @@ class FinalAiAssembler(
     private val generator: AiGenerator,
     private val kimiCodes: KimiCodeRepository,
     private val resolveEndpoint: (AiAccount) -> com.kriptoncod.app.data.providers.ProviderEndpoint? =
-        { ProviderCatalog.byId(it.providerId)?.resolve() },
+        AccountEndpoints::resolve,
 ) {
 
     suspend fun assemble(runId: Long): Boolean {
@@ -40,7 +40,7 @@ class FinalAiAssembler(
         if (blocks.isEmpty()) return false
 
         val finalAccount = accounts.observeAll().first()
-            .filter { it.enabled && it.status == AccountStatus.READY && it.authType == AuthType.API_KEY }
+            .filter { it.enabled && it.status == AccountStatus.READY && (it.authType == AuthType.API_KEY || it.authType == AuthType.PROXY) }
             .maxByOrNull { it.powerRank } ?: return false
         val endpoint = resolveEndpoint(finalAccount) ?: return false
         val credential = credentials.credentialFor(finalAccount) ?: return false

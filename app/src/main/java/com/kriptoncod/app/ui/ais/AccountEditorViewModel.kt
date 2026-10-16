@@ -11,6 +11,10 @@ import com.kriptoncod.app.data.providers.ModelRanking
 import com.kriptoncod.app.data.providers.Provider
 import com.kriptoncod.app.data.providers.ProviderCatalog
 import com.kriptoncod.app.data.providers.ProviderEndpoint
+import com.kriptoncod.app.data.providers.ProxyProvider
+import com.kriptoncod.app.data.providers.ProxyUrlError
+import com.kriptoncod.app.data.providers.ProxyUrlResult
+import com.kriptoncod.app.data.providers.UpstreamProvider
 import com.kriptoncod.app.data.repo.AiAccountRepository
 import com.kriptoncod.app.domain.AccountStatus
 import com.kriptoncod.app.domain.AuthType
@@ -30,9 +34,16 @@ enum class RetryAction { VERIFY, SAVE }
 /** [retry] null ise "Yeniden Dene" gösterilmez (ör. geçersiz anahtar: önce anahtar düzeltilmeli). */
 data class EditorError(@StringRes val messageRes: Int, val retry: RetryAction?)
 
-enum class Pricing { FREE, PAID, FREE_TIER }
+enum class Pricing { FREE, PAID, FREE_TIER, UNKNOWN }
 
-data class ModelOption(val id: String, val score: Int, val recommended: Boolean, val pricing: Pricing)
+/** [upstream]: modelin ait olduğu sağlayıcı; proxy hesaplarında sağlayıcı süzgeci ve hesabın `providerId`'si. */
+data class ModelOption(
+    val id: String,
+    val score: Int,
+    val recommended: Boolean,
+    val pricing: Pricing,
+    val upstream: UpstreamProvider = UpstreamProvider.OTHER,
+)
 
 data class EditorUiState(
     val editingId: Long? = null,
@@ -48,10 +59,28 @@ data class EditorUiState(
     val saving: Boolean = false,
     val saved: Boolean = false,
     val error: EditorError? = null,
+    /** Yalnız proxy hesabı: kullanıcının verdiği ad ("Benim hesabım", "Arkadaşım" vb.); boşsa otomatik. */
+    val accountName: String = "",
+    /** Yalnız proxy hesabı: taban adres (ör. http://192.168.1.5:8317). */
+    val baseUrl: String = "",
+    /** Yalnız proxy hesabı: model listesini süzen sağlayıcı; null = tümü. */
+    val upstreamFilter: UpstreamProvider? = null,
 ) {
     val isEdit: Boolean get() = editingId != null
+    val isProxy: Boolean get() = providerId == ProxyProvider.ID
+
     val canVerify: Boolean
-        get() = providerId != null && !loading && !verifying && !saving && (!apiKey.isEmpty || isEdit)
+        get() = providerId != null && !loading && !verifying && !saving && (!apiKey.isEmpty || isEdit) &&
+            (!isProxy || baseUrl.isNotBlank())
+
+    /** Proxy'de sağlayıcı süzgecine göre görünen modeller; diğer hesaplarda hepsi. */
+    val visibleModels: List<ModelOption>
+        get() = if (isProxy && upstreamFilter != null) models.filter { it.upstream == upstreamFilter } else models
+
+    /** Proxy model listesinde bulunan sağlayıcılar (süzgeç çipleri için), sabit sırada. */
+    val availableUpstreams: List<UpstreamProvider>
+        get() = if (isProxy) UpstreamProvider.entries.filter { u -> models.any { it.upstream == u } } else emptyList()
+
     val canSave: Boolean
         get() = verified && selectedModelId != null && !verifying && !saving && !saved
 }
@@ -65,6 +94,8 @@ class AccountEditorViewModel(
     private val repository: AiAccountRepository,
     private val discover: suspend (ProviderEndpoint, String) -> ApiResult<ModelRanking>,
     private val providerName: (Provider) -> String,
+    /** Proxy hesabına otomatik ad verirken kullanılan yerelleştirilmiş ön ek. */
+    private val proxyName: String = "Proxy",
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(EditorUiState(editingId = accountId, loading = accountId != null))
@@ -88,8 +119,15 @@ class AccountEditorViewModel(
                     return@launch
                 }
                 originalModelId = account.modelId
+                val proxy = account.authType == AuthType.PROXY
                 _state.update {
-                    it.copy(loading = false, providerId = account.providerId, displayName = account.displayName)
+                    it.copy(
+                        loading = false,
+                        providerId = if (proxy) ProxyProvider.ID else account.providerId,
+                        displayName = account.displayName,
+                        accountName = if (proxy) account.displayName else "",
+                        baseUrl = if (proxy) account.baseUrl.orEmpty() else "",
+                    )
                 }
                 runVerify()
             }
@@ -99,8 +137,10 @@ class AccountEditorViewModel(
     fun selectProvider(id: String) {
         val s = _state.value
         if (s.isEdit || s.verifying || s.saving || s.providerId == id) return
-        val provider = ProviderCatalog.byId(id) ?: return
-        if (provider.isCustom) return
+        if (id != ProxyProvider.ID) {
+            val provider = ProviderCatalog.byId(id) ?: return
+            if (provider.isCustom) return
+        }
         _state.update {
             it.copy(
                 providerId = id,
@@ -108,8 +148,48 @@ class AccountEditorViewModel(
                 verified = false,
                 models = emptyList(),
                 selectedModelId = null,
+                upstreamFilter = null,
                 error = null,
             )
+        }
+    }
+
+    /** Proxy: taban adres değişince doğrulama ve model listesi geçersizleşir. */
+    fun onBaseUrlChanged(raw: String) {
+        val s = _state.value
+        if (s.saving || s.loading || !s.isProxy) return
+        verifyJob?.cancel()
+        _state.update {
+            it.copy(
+                baseUrl = raw.trim().take(MAX_URL_LENGTH),
+                verifying = false,
+                verified = false,
+                models = emptyList(),
+                selectedModelId = null,
+                upstreamFilter = null,
+                error = null,
+            )
+        }
+    }
+
+    /** Proxy: hesap adı (ör. "Arkadaşım"). Doğrulamayı etkilemez. */
+    fun onNameChanged(raw: String) {
+        val s = _state.value
+        if (s.saving || s.loading || !s.isProxy) return
+        _state.update { it.copy(accountName = raw.take(MAX_NAME_LENGTH)) }
+    }
+
+    /**
+     * Proxy: sağlayıcı seçimi (null = tümü). Seçili model yeni süzgeçte yoksa, süzgeçteki en iyi
+     * (listenin başındaki) model seçilir.
+     */
+    fun selectUpstream(upstream: UpstreamProvider?) {
+        val s = _state.value
+        if (!s.isProxy || s.saving || s.verifying) return
+        _state.update { cur ->
+            val visible = if (upstream == null) cur.models else cur.models.filter { it.upstream == upstream }
+            val keep = cur.selectedModelId?.takeIf { id -> visible.any { it.id == id } }
+            cur.copy(upstreamFilter = upstream, selectedModelId = keep ?: visible.firstOrNull()?.id)
         }
     }
 
@@ -125,6 +205,7 @@ class AccountEditorViewModel(
                 verified = false,
                 models = emptyList(),
                 selectedModelId = null,
+                upstreamFilter = null,
                 error = null,
             )
         }
@@ -158,9 +239,22 @@ class AccountEditorViewModel(
 
     private suspend fun runVerify() {
         val s = _state.value
-        val provider = s.providerId?.let { ProviderCatalog.byId(it) }
-        val endpoint = provider?.resolve()
-        if (provider == null || endpoint == null) {
+        val provider: Provider?
+        val endpoint: ProviderEndpoint?
+        if (s.isProxy) {
+            provider = null
+            when (val parsed = ProxyProvider.parseBaseUrl(s.baseUrl)) {
+                is ProxyUrlResult.Invalid -> {
+                    failVerify(EditorError(parsed.error.messageRes, null))
+                    return
+                }
+                is ProxyUrlResult.Valid -> endpoint = ProxyProvider.endpoint(parsed.baseUrl.toString())
+            }
+        } else {
+            provider = s.providerId?.let { ProviderCatalog.byId(it) }
+            endpoint = provider?.resolve()
+        }
+        if (endpoint == null || (provider == null && !s.isProxy)) {
             failVerify(EditorError(R.string.err_bad_response, null))
             return
         }
@@ -192,10 +286,16 @@ class AccountEditorViewModel(
         }
     }
 
-    private fun applyRanking(provider: Provider, ranking: ModelRanking) {
+    private fun applyRanking(provider: Provider?, ranking: ModelRanking) {
         val recommendedId = ranking.recommended?.id
         val options = ranking.models.map {
-            ModelOption(it.model.id, it.score, it.model.id == recommendedId, pricingOf(provider, it.model.id))
+            ModelOption(
+                id = it.model.id,
+                score = it.score,
+                recommended = it.model.id == recommendedId,
+                pricing = if (provider == null) Pricing.UNKNOWN else pricingOf(provider, it.model.id),
+                upstream = UpstreamProvider.detect(it.model.id, it.model.ownedBy),
+            )
         }
         if (options.isEmpty()) {
             failVerify(EditorError(R.string.err_no_models, RetryAction.VERIFY))
@@ -203,12 +303,15 @@ class AccountEditorViewModel(
         }
         val ordered = options.filter { it.recommended } + options.filterNot { it.recommended }
         val current = originalModelId?.takeIf { id -> ordered.any { it.id == id } }
+        val selected = ordered.first { it.id == (current ?: ordered.first().id) }
         _state.update {
             it.copy(
                 verifying = false,
                 verified = true,
                 models = ordered,
-                selectedModelId = current ?: ordered.first().id,
+                selectedModelId = selected.id,
+                // Proxy: başlangıç süzgeci seçili modelin sağlayıcısıdır; kullanıcı "Tümü"ne dönebilir.
+                upstreamFilter = if (it.isProxy) selected.upstream else null,
                 error = null,
             )
         }
@@ -224,8 +327,12 @@ class AccountEditorViewModel(
         val s = _state.value
         if (!s.canSave) return
         val option = s.models.firstOrNull { it.id == s.selectedModelId } ?: return
-        val providerId = s.providerId ?: return
-        val provider = ProviderCatalog.byId(providerId) ?: return
+        val editorProviderId = s.providerId ?: return
+        val proxy = s.isProxy
+        val provider = if (proxy) null else (ProviderCatalog.byId(editorProviderId) ?: return)
+        // Proxy hesabında kayıtlı sağlayıcı, seçilen modelin yukarı akış sağlayıcısıdır; taban adres normalleştirilir.
+        val baseUrl = if (proxy) (ProxyProvider.normalizeBaseUrl(s.baseUrl) ?: return) else null
+        val providerId = if (proxy) option.upstream.id else editorProviderId
         _state.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
             try {
@@ -233,18 +340,31 @@ class AccountEditorViewModel(
                     val taken = repository.observeAll().first().map { it.displayName }.toSet()
                     val account = AiAccount(
                         providerId = providerId,
-                        displayName = nextName(providerName(provider), taken),
-                        authType = AuthType.API_KEY,
+                        displayName = if (proxy) {
+                            proxyDisplayName(s.accountName, taken)
+                        } else {
+                            nextName(providerName(provider!!), taken)
+                        },
+                        authType = if (proxy) AuthType.PROXY else AuthType.API_KEY,
                         modelId = option.id,
                         powerRank = option.score,
+                        baseUrl = baseUrl,
                     )
                     repository.add(account, s.apiKey.value) // anahtar KeyVault'a, hesap Room'a
                 } else {
                     val current = repository.get(s.editingId) ?: throw IllegalStateException("missing")
                     if (!s.apiKey.isEmpty) repository.setSecret(s.editingId, s.apiKey.value)
                     val recovered = current.status == AccountStatus.ERROR
+                    val taken = if (proxy) {
+                        repository.observeAll().first().filter { it.id != current.id }.map { it.displayName }.toSet()
+                    } else {
+                        emptySet()
+                    }
                     repository.update(
                         current.copy(
+                            providerId = if (proxy) providerId else current.providerId,
+                            baseUrl = if (proxy) baseUrl else current.baseUrl,
+                            displayName = if (proxy) proxyDisplayName(s.accountName, taken, current.displayName) else current.displayName,
                             modelId = option.id,
                             powerRank = option.score,
                             status = if (recovered) AccountStatus.READY else current.status,
@@ -269,6 +389,25 @@ class AccountEditorViewModel(
         },
     )
 
+    /** Kullanıcı ad verdiyse onu (çakışırsa numaralayarak), vermediyse "Proxy N"yi kullanır. */
+    private fun proxyDisplayName(typed: String, taken: Set<String>, fallback: String? = null): String {
+        val name = typed.trim()
+        return when {
+            name.isEmpty() -> fallback ?: nextName(proxyName, taken)
+            name in taken -> nextName(name, taken)
+            else -> name
+        }
+    }
+
+    private val ProxyUrlError.messageRes: Int
+        get() = when (this) {
+            ProxyUrlError.EMPTY -> R.string.err_proxy_url_empty
+            ProxyUrlError.MALFORMED -> R.string.err_proxy_url_malformed
+            ProxyUrlError.HAS_CREDENTIALS -> R.string.err_proxy_url_credentials
+            ProxyUrlError.HAS_QUERY -> R.string.err_proxy_url_query
+            ProxyUrlError.INSECURE_PUBLIC_HOST -> R.string.err_proxy_url_insecure
+        }
+
     private fun nextName(base: String, taken: Set<String>): String {
         var n = 1
         while ("$base $n" in taken) n++
@@ -277,6 +416,8 @@ class AccountEditorViewModel(
 
     companion object {
         const val MAX_KEY_LENGTH = 512
+        const val MAX_URL_LENGTH = 300
+        const val MAX_NAME_LENGTH = 40
 
         /** Özel sağlayıcı kalıcı adres alanı olmadığı için akışta yer almaz. */
         val SELECTABLE_PROVIDERS: List<Provider> = ProviderCatalog.all.filterNot { it.isCustom }

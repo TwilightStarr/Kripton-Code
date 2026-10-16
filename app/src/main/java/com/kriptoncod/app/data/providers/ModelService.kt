@@ -111,6 +111,7 @@ class ModelService(
             RemoteModel(
                 id = m.id.trim().removePrefix("models/"), // Gemini "models/gemini-…" döndürür
                 contextLength = m.contextLength ?: m.contextWindow ?: m.maxContextLength,
+                ownedBy = m.ownedBy?.trim()?.takeIf { it.isNotEmpty() },
             )
         }
         .filter { it.id.isNotEmpty() }
@@ -153,6 +154,7 @@ private data class ModelListDto(val data: List<ModelDto> = emptyList())
 @Serializable
 private data class ModelDto(
     val id: String,
+    @SerialName("owned_by") val ownedBy: String? = null,
     val active: Boolean? = null,
     @SerialName("context_length") val contextLength: Long? = null,
     @SerialName("context_window") val contextWindow: Long? = null,

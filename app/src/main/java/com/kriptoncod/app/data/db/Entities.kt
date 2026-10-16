@@ -25,6 +25,12 @@ data class AiAccount(
     val status: AccountStatus = AccountStatus.READY,
     /** WAITING durumunda bekleme bitiş zamanı (epoch ms). */
     val waitUntil: Long? = null,
+    /**
+     * Yalnız [AuthType.PROXY] hesaplarında: proxy taban adresi (ör. "http://192.168.1.5:8317/v1").
+     * Gizli bilgi değildir; anahtar yine yalnız KeyVault'ta durur. Proxy hesabında [providerId]
+     * yukarı akış sağlayıcısını (claude, gemini, openai, deepseek, kimi, other) tutar.
+     */
+    val baseUrl: String? = null,
 ) {
     companion object {
         fun vaultKeyId(accountId: Long): String = "ai-account-$accountId"

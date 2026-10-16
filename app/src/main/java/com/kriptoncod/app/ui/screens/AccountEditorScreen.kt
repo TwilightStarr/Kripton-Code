@@ -51,6 +51,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kriptoncod.app.R
 import com.kriptoncod.app.data.providers.Provider
 import com.kriptoncod.app.data.providers.ProviderCatalog
+import com.kriptoncod.app.data.providers.ProxyProvider
+import com.kriptoncod.app.data.providers.UpstreamProvider
 import com.kriptoncod.app.ui.ais.AccountEditorViewModel
 import com.kriptoncod.app.ui.ais.ApiKeyOnlyCard
 import com.kriptoncod.app.ui.ais.EditorError
@@ -68,6 +70,7 @@ import com.kriptoncod.app.ui.ais.rememberGoogleAuthViewModelFactory
 import com.kriptoncod.app.ui.components.KBadge
 import com.kriptoncod.app.ui.components.KButton
 import com.kriptoncod.app.ui.components.KButtonStyle
+import com.kriptoncod.app.ui.components.KChip
 import com.kriptoncod.app.ui.components.NodeAccent
 import com.kriptoncod.app.ui.components.NodeCard
 import com.kriptoncod.app.ui.theme.KriptonTheme
@@ -90,6 +93,9 @@ fun AccountEditorScreen(accountId: Long?, onClose: () -> Unit) {
         onBack = onClose,
         onSelectProvider = viewModel::selectProvider,
         onKeyChange = viewModel::onKeyChanged,
+        onNameChange = viewModel::onNameChanged,
+        onBaseUrlChange = viewModel::onBaseUrlChanged,
+        onSelectUpstream = viewModel::selectUpstream,
         onPaste = {
             val text = clipboard.getText()?.text
             if (text.isNullOrBlank()) viewModel.onPasteEmpty() else viewModel.onKeyChanged(text)
@@ -109,6 +115,9 @@ private fun AccountEditorContent(
     onBack: () -> Unit,
     onSelectProvider: (String) -> Unit,
     onKeyChange: (String) -> Unit,
+    onNameChange: (String) -> Unit,
+    onBaseUrlChange: (String) -> Unit,
+    onSelectUpstream: (UpstreamProvider?) -> Unit,
     onPaste: () -> Unit,
     onVerify: () -> Unit,
     onSelectModel: (String) -> Unit,
@@ -118,7 +127,8 @@ private fun AccountEditorContent(
 ) {
     val provider = state.providerId?.let { ProviderCatalog.byId(it) }
     var showAllModels by rememberSaveable { mutableStateOf(false) }
-    val visibleModels = if (showAllModels) state.models else state.models.take(INITIAL_MODEL_COUNT)
+    val filteredModels = state.visibleModels
+    val visibleModels = if (showAllModels) filteredModels else filteredModels.take(INITIAL_MODEL_COUNT)
 
     Column(Modifier.fillMaxSize().imePadding()) {
         Row(
@@ -144,13 +154,28 @@ private fun AccountEditorContent(
             }
 
             if (state.isEdit) {
-                if (provider != null) {
+                if (state.isProxy) {
+                    item { ProxyCard(selected = true, onClick = null, subtitle = state.displayName) }
+                } else if (provider != null) {
                     item { ProviderCard(provider, selected = true, onClick = null, subtitle = state.displayName) }
                 }
             } else {
                 item { SectionTitle(R.string.step_provider) }
                 items(AccountEditorViewModel.SELECTABLE_PROVIDERS, key = { it.id }) { p ->
                     ProviderCard(p, selected = p.id == state.providerId, onClick = { onSelectProvider(p.id) })
+                }
+                item(key = "proxy-card") {
+                    ProxyCard(
+                        selected = state.isProxy,
+                        onClick = { onSelectProvider(ProxyProvider.ID) },
+                    )
+                }
+            }
+
+            if (state.isProxy && !state.loading) {
+                item { SectionTitle(R.string.step_proxy_connection) }
+                item(key = "proxy-form") {
+                    ProxyForm(state, onNameChange, onBaseUrlChange, onKeyChange, onPaste, onVerify)
                 }
             }
 
@@ -210,11 +235,17 @@ private fun AccountEditorContent(
             }
 
             if (state.models.isNotEmpty()) {
+                if (state.isProxy) {
+                    item(key = "upstream-title") { SectionTitle(R.string.step_upstream) }
+                    item(key = "upstream-chips") {
+                        UpstreamChips(state.availableUpstreams, state.upstreamFilter, onSelectUpstream)
+                    }
+                }
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        SectionTitle(R.string.step_model)
+                        SectionTitle(if (state.isProxy) R.string.step_model_proxy else R.string.step_model)
                         Text(
-                            stringResource(R.string.models_found, state.models.size),
+                            stringResource(R.string.models_found, filteredModels.size),
                             style = MaterialTheme.typography.bodyMedium,
                             color = KriptonTheme.colors.muted,
                         )
@@ -223,10 +254,10 @@ private fun AccountEditorContent(
                 items(visibleModels, key = { it.id }) { model ->
                     ModelRow(model, selected = model.id == state.selectedModelId, onClick = { onSelectModel(model.id) })
                 }
-                if (!showAllModels && state.models.size > INITIAL_MODEL_COUNT) {
+                if (!showAllModels && filteredModels.size > INITIAL_MODEL_COUNT) {
                     item {
                         KButton(
-                            text = stringResource(R.string.models_show_more, state.models.size - INITIAL_MODEL_COUNT),
+                            text = stringResource(R.string.models_show_more, filteredModels.size - INITIAL_MODEL_COUNT),
                             onClick = { showAllModels = true },
                             style = KButtonStyle.Outline,
                             modifier = Modifier.fillMaxWidth(),
@@ -298,10 +329,11 @@ private fun ProviderCard(provider: Provider, selected: Boolean, onClick: (() -> 
 @Composable
 private fun KeySection(
     state: EditorUiState,
-    provider: Provider,
+    provider: Provider?,
     onKeyChange: (String) -> Unit,
     onPaste: () -> Unit,
     onVerify: () -> Unit,
+    @androidx.annotation.StringRes labelRes: Int = R.string.key_label,
 ) {
     val k = KriptonTheme.colors
     val uriHandler = LocalUriHandler.current
@@ -310,7 +342,7 @@ private fun KeySection(
             value = state.apiKey.value,
             onValueChange = onKeyChange,
             modifier = Modifier.fillMaxWidth(),
-            label = { Text(stringResource(R.string.key_label)) },
+            label = { Text(stringResource(labelRes)) },
             singleLine = true,
             enabled = !state.saving && !state.loading,
             visualTransformation = PasswordVisualTransformation(),
@@ -338,7 +370,7 @@ private fun KeySection(
                 onClick = onVerify,
                 enabled = state.canVerify,
             )
-            provider.keyUrl?.let { url ->
+            provider?.keyUrl?.let { url ->
                 KButton(
                     text = stringResource(R.string.provider_get_key),
                     onClick = { runCatching { uriHandler.openUri(url) } },
@@ -402,9 +434,105 @@ private fun ModelRow(model: ModelOption, selected: Boolean, onClick: () -> Unit)
                         Pricing.FREE      -> KBadge(stringResource(R.string.model_free), accent = NodeAccent.Green)
                         Pricing.FREE_TIER -> KBadge(stringResource(R.string.model_free_tier))
                         Pricing.PAID      -> KBadge(stringResource(R.string.model_paid))
+                        Pricing.UNKNOWN   -> Unit
                     }
                 }
             }
         }
     }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ProxyCard(selected: Boolean, onClick: (() -> Unit)?, subtitle: String? = null) {
+    val k = KriptonTheme.colors
+    NodeCard(
+        modifier = Modifier.fillMaxWidth().semantics { this.selected = selected },
+        accent = if (selected) NodeAccent.Green else NodeAccent.Blue,
+        onClick = onClick,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.provider_proxy), style = MaterialTheme.typography.titleMedium)
+                if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = k.muted)
+            }
+            if (selected) Icon(Icons.Filled.Check, contentDescription = null, tint = k.arrow)
+        }
+        FlowRow(
+            modifier = Modifier.padding(top = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            KBadge(text = stringResource(R.string.provider_proxy_badge), accent = NodeAccent.Blue)
+        }
+    }
+}
+
+@Composable
+private fun ProxyForm(
+    state: EditorUiState,
+    onNameChange: (String) -> Unit,
+    onBaseUrlChange: (String) -> Unit,
+    onKeyChange: (String) -> Unit,
+    onPaste: () -> Unit,
+    onVerify: () -> Unit,
+) {
+    val k = KriptonTheme.colors
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedBorderColor = MaterialTheme.colorScheme.primary,
+        unfocusedBorderColor = k.nodeBorder,
+    )
+    val enabled = !state.saving && !state.loading
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(stringResource(R.string.proxy_hint), style = MaterialTheme.typography.bodyMedium, color = k.muted)
+        OutlinedTextField(
+            value = state.accountName,
+            onValueChange = onNameChange,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.proxy_name_label)) },
+            placeholder = { Text(stringResource(R.string.proxy_name_hint)) },
+            singleLine = true,
+            enabled = enabled,
+            shape = MaterialTheme.shapes.medium,
+            colors = fieldColors,
+        )
+        OutlinedTextField(
+            value = state.baseUrl,
+            onValueChange = onBaseUrlChange,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.proxy_url_label)) },
+            singleLine = true,
+            enabled = enabled,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+            shape = MaterialTheme.shapes.medium,
+            colors = fieldColors,
+        )
+        Text(stringResource(R.string.proxy_url_hint), style = MaterialTheme.typography.bodySmall, color = k.muted)
+        KeySection(state, provider = null, onKeyChange, onPaste, onVerify, labelRes = R.string.proxy_key_label)
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun UpstreamChips(
+    available: List<UpstreamProvider>,
+    selected: UpstreamProvider?,
+    onSelect: (UpstreamProvider?) -> Unit,
+) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        KChip(stringResource(R.string.upstream_all), selected == null, { onSelect(null) })
+        available.forEach { u ->
+            KChip(stringResource(u.labelRes()), selected == u, { onSelect(u) })
+        }
+    }
+}
+
+@androidx.annotation.StringRes
+internal fun UpstreamProvider.labelRes(): Int = when (this) {
+    UpstreamProvider.CLAUDE -> R.string.upstream_claude
+    UpstreamProvider.GEMINI -> R.string.upstream_gemini
+    UpstreamProvider.OPENAI -> R.string.upstream_openai
+    UpstreamProvider.DEEPSEEK -> R.string.upstream_deepseek
+    UpstreamProvider.KIMI -> R.string.upstream_kimi
+    UpstreamProvider.OTHER -> R.string.upstream_other
 }

@@ -5,6 +5,14 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
+### Eklendi (Proxy hesap türü)
+- Yeni hesap türü **Proxy (CLIProxyAPI uyumlu)**: taban adres + anahtar (anahtar KeyVault'ta şifreli); aynı sağlayıcı için birden çok hesap; hesap başına sağlayıcı/model seçimi (veritabanı şeması 4, `ai_accounts.baseUrl`, MIGRATION_3_4).
+- Sağlayıcıya özel çıktı normalizer'ları (Claude, Gemini, OpenAI, DeepSeek, Kimi, genel); model kimliğine göre seçilir.
+- Kod bloğu ayrıştırıcı genişletildi: dil+yol biçimleri, yorum/önceki satır etiketi, uzun çitler, iç içe markdown, kapanmamış blok tespiti. Yalnız dil etiketli bloklar artık dosya sayılmaz.
+- Eksik/bozuk çıktıda otomatik yeniden deneme (`RetryingAiGenerator`, en çok 3 deneme).
+- Düz http yalnız yerel/özel ağ adreslerine izinli (`network_security_config.xml` genel izin verir, sınır `ProxyProvider`'dadır).
+- Not: ilk derlemede üretilen `app/schemas/.../4.json` dosyası commit edilmelidir.
+
 ### Eklendi (düğüm grafiği)
 - Run artık düğüm grafiğiyle sunulur: katalog çıkarma → paralel çalışan yapay zekalar → katalog birleştirme → nihai birleştirme. Güçlü hesapların düğümü daha büyük çizilir; işler hesap gücüne göre dağıtılır.
 - Yüzlerce prompt belirli bir formatta (`## KATALOG:` / `### PROMPT:` başlıkları ya da klasör başına bir katalog olan zip) kataloglara ayrılır; zip doğrudan **Zip'ten çalıştır** ile yüklenebilir.

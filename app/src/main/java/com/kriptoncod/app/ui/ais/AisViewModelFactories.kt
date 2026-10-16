@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.kriptoncod.app.AppContainer
 import com.kriptoncod.app.KriptonCodApp
+import com.kriptoncod.app.R
 import com.kriptoncod.app.data.providers.ProviderCatalog
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -38,6 +39,7 @@ internal fun rememberEditorViewModelFactory(accountId: Long?): ViewModelProvider
                     repository = container.aiAccountRepository,
                     discover = { endpoint, key -> container.modelService.discover(endpoint, key) },
                     providerName = { provider -> context.getString(provider.nameRes) },
+                    proxyName = context.getString(R.string.provider_proxy_short),
                 )
             }
         }

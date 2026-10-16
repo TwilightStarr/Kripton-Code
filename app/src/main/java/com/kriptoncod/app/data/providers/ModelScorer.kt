@@ -1,7 +1,12 @@
 package com.kriptoncod.app.data.providers
 
 /** Sağlayıcıdan gelen sohbet modeli. [id], sohbet isteğinde kullanılacak adın aynısıdır. */
-data class RemoteModel(val id: String, val contextLength: Long? = null)
+data class RemoteModel(
+    val id: String,
+    val contextLength: Long? = null,
+    /** `/models` yanıtındaki `owned_by` (CLIProxyAPI'de yukarı akış sağlayıcısı); yoksa null. */
+    val ownedBy: String? = null,
+)
 
 data class RankedModel(val model: RemoteModel, val score: Int)
 

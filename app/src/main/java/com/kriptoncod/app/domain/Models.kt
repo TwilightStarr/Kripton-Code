@@ -1,6 +1,10 @@
 package com.kriptoncod.app.domain
 
-enum class AuthType { API_KEY, GOOGLE, EMAIL, KIMI }
+/**
+ * Hesap türü. [PROXY]: CLIProxyAPI uyumlu (OpenAI biçimli) kullanıcı proxy'si — taban adres + anahtar.
+ * Anahtar her türde KeyVault'ta saklanır.
+ */
+enum class AuthType { API_KEY, GOOGLE, EMAIL, KIMI, PROXY }
 
 enum class AccountStatus { READY, WAITING, ERROR }
 

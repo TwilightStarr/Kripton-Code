@@ -44,6 +44,17 @@ Gradle wrapper (`gradle-wrapper.jar` dahil) repoda hazırdır; ayrıca Gradle ku
 
 Gemini'yi Google hesabıyla kullanmak için Google Cloud Console'da Android tipinde bir OAuth istemci kimliği oluştur ve uygulamada **Ayarlar → Google OAuth** alanına gir.
 
+## Proxy (CLIProxyAPI uyumlu) hesap türü
+
+Kendi (ya da arkadaşının) [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) sunucusunu hesap olarak ekleyebilirsin: **Hesaplar → Ekle → Proxy (CLIProxyAPI uyumlu)**.
+
+- **Bağlantı:** taban adres (`http://192.168.1.20:8317`, `/v1` otomatik eklenir) + sunucunun istemci anahtarı (`api-keys`). Anahtar yalnız KeyVault'ta şifreli durur; Room'da yalnız adres vardır.
+- **Düz http** yalnız yerel/özel ağ adreslerinde (localhost, LAN, Tailscale, `.local`) kabul edilir; internet adresleri için **https** zorunludur. Adreste kullanıcı bilgisi/sorgu olamaz.
+- **Birden çok hesap:** aynı sağlayıcı için istediğin kadar proxy hesabı eklenebilir (ör. "Benim hesabım", "Arkadaşım"); her birinin adresi, anahtarı ve modeli ayrıdır.
+- **Sağlayıcı/model:** `/v1/models` listesi çekilir; Claude · Gemini · OpenAI · DeepSeek · Kimi · Diğer çipleriyle süzülür, hesap seçilen modelin sağlayıcısıyla kaydedilir.
+- **Çıktı ayrıştırma:** yanıt **model kimliğine göre** seçilen normalizer'dan geçer (`data/ai/normalize`): muhakeme blokları (`<think>`, `thinking` parçaları, `reasoning_content`) atılır, özel belirteçler temizlenir, `finish_reason` sınıflanır. Kod blokları ```` ```yol ````, ```` ```kotlin yol ````, ```` ```kotlin:yol ````, `title="yol"`, ilk satır `// File: yol` ve önceki satır `**File: yol**` biçimlerinde okunur; 4'lü çitler ve iç içe markdown desteklenir.
+- **Otomatik yeniden deneme:** boş/okunamayan yanıt, uzunlukta kesilen çıktı, kapanmamış kod bloğu ve (birleştirme isteklerinde) eksik kod bloğu aynı hesapla en çok 3 kez denenir; sonda eksik kod asla kaydedilmez.
+
 ## Düğüm grafiği ve katalog formatı
 
 Bir prompt seti ya da zip çalıştırıldığında girdi kataloglara ayrılır, her katalog ayrı yapay zekalara dağıtılır, katalog sonuçları birleştirilir ve nihai çıktı tek yapay zekayla toplanır. Metin biçimi: `## KATALOG: ad` altında `### PROMPT: başlık` blokları. Zip biçimi: her klasör bir katalog, içindeki `.md`/`.txt` dosyaları birer prompt. Run ekranında düğümlere dokunarak çıktıyı canlı izleyebilir, kaydedebilir, run'ı duraklatıp sürdürebilirsiniz.

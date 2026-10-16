@@ -43,7 +43,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kriptoncod.app.R
 import com.kriptoncod.app.data.db.AiAccount
 import com.kriptoncod.app.data.providers.ProviderCatalog
+import com.kriptoncod.app.data.providers.UpstreamProvider
 import com.kriptoncod.app.domain.AccountStatus
+import com.kriptoncod.app.domain.AuthType
 import com.kriptoncod.app.ui.ais.AisUiState
 import com.kriptoncod.app.ui.ais.AisViewModel
 import com.kriptoncod.app.ui.ais.ListError
@@ -173,7 +175,14 @@ private fun AccountCard(
 ) {
     val k = KriptonTheme.colors
     val scheme = MaterialTheme.colorScheme
-    val providerName = ProviderCatalog.byId(account.providerId)?.let { stringResource(it.nameRes) } ?: account.providerId
+    val isProxy = account.authType == AuthType.PROXY
+    val providerName = if (isProxy) {
+        val upstream = UpstreamProvider.fromId(account.providerId)
+            ?.let { stringResource(it.labelRes()) } ?: account.providerId
+        stringResource(R.string.account_proxy_line, upstream)
+    } else {
+        ProviderCatalog.byId(account.providerId)?.let { stringResource(it.nameRes) } ?: account.providerId
+    }
     val toggleLabel = stringResource(R.string.account_toggle_description, account.displayName)
     val editLabel = stringResource(R.string.account_edit_description, account.displayName)
     val deleteLabel = stringResource(R.string.account_delete_description, account.displayName)
@@ -194,6 +203,9 @@ private fun AccountCard(
                 Text(account.displayName, style = MaterialTheme.typography.titleMedium)
                 Text(providerName, style = MaterialTheme.typography.bodyMedium, color = k.muted)
                 Text(account.modelId, style = MaterialTheme.typography.bodySmall, color = k.muted)
+                if (isProxy && !account.baseUrl.isNullOrBlank()) {
+                    Text(account.baseUrl, style = MaterialTheme.typography.bodySmall, color = k.muted)
+                }
             }
             Switch(
                 checked = account.enabled,

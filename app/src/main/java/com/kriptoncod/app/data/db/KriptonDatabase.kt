@@ -28,7 +28,7 @@ abstract class KriptonDatabase : RoomDatabase() {
     abstract fun jobDao(): JobDao
 
     companion object {
-        const val VERSION = 3
+        const val VERSION = 4
         const val NAME = "kriptoncod.db"
 
         fun build(context: Context): KriptonDatabase =

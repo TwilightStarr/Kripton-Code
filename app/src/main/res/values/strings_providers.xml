@@ -11,6 +11,33 @@
     <string name="provider_kimi">Moonshot Kimi</string>
     <string name="provider_kimi_auth">Kimi oturumu</string>
 
+    <!-- Proxy (CLIProxyAPI uyumlu) -->
+    <string name="provider_proxy">Proxy (CLIProxyAPI uyumlu)</string>
+    <string name="provider_proxy_short">Proxy</string>
+    <string name="provider_proxy_badge">Kendi proxy\'n</string>
+    <string name="proxy_hint">Kendi (ya da arkadaşının) CLIProxyAPI sunucusunun adresini ve o sunucunun istemci anahtarını gir. Aynı sağlayıcı için istediğin kadar proxy hesabı ekleyebilirsin.</string>
+    <string name="proxy_name_label">Hesap adı (isteğe bağlı)</string>
+    <string name="proxy_name_hint">Örn. Benim hesabım, Arkadaşım</string>
+    <string name="proxy_url_label">Proxy adresi</string>
+    <string name="proxy_url_hint">Örn. http://192.168.1.20:8317 — düz http yalnız yerel ağ adreslerinde (localhost, LAN, Tailscale) kabul edilir; internet adresleri için https gerekir.</string>
+    <string name="proxy_key_label">Proxy istemci anahtarı</string>
+    <string name="step_proxy_connection">2. Proxy bağlantısı</string>
+    <string name="step_upstream">3. Sağlayıcı seç</string>
+    <string name="step_model_proxy">4. Model seç</string>
+    <string name="upstream_all">Tümü</string>
+    <string name="upstream_claude">Claude</string>
+    <string name="upstream_gemini">Gemini</string>
+    <string name="upstream_openai">OpenAI</string>
+    <string name="upstream_deepseek">DeepSeek</string>
+    <string name="upstream_kimi">Kimi</string>
+    <string name="upstream_other">Diğer</string>
+    <string name="account_proxy_line">Proxy · %1$s</string>
+    <string name="err_proxy_url_empty">Proxy adresini gir.</string>
+    <string name="err_proxy_url_malformed">Adres geçersiz. Örnek: http://192.168.1.20:8317</string>
+    <string name="err_proxy_url_credentials">Adresin içine kullanıcı adı/şifre yazma; anahtarı ayrı alana gir.</string>
+    <string name="err_proxy_url_query">Adreste soru işareti (?) veya # bulunamaz.</string>
+    <string name="err_proxy_url_insecure">İnternet adresleri için https gerekir. Düz http yalnız localhost ve yerel ağ adreslerinde kullanılabilir.</string>
+
     <string name="kimi_auth_title">Kimi ile bağlan</string>
     <string name="kimi_auth_hint">Kimi (kimi.com) e-postan ve şifrenle oturum aç. Kimlik bilgileri yalnız cihazında şifreli saklanır.</string>
     <string name="kimi_auth_email_label">E-posta</string>

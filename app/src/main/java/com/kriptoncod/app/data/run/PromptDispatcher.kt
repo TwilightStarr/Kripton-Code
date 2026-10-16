@@ -7,7 +7,7 @@ import com.kriptoncod.app.data.db.AiAccount
 import com.kriptoncod.app.data.db.Job
 import com.kriptoncod.app.data.db.PromptItem
 import com.kriptoncod.app.data.kimi.KimiCodeRepository
-import com.kriptoncod.app.data.providers.ProviderCatalog
+import com.kriptoncod.app.data.providers.AccountEndpoints
 import com.kriptoncod.app.data.providers.ProviderEndpoint
 import com.kriptoncod.app.data.repo.AiAccountRepository
 import com.kriptoncod.app.data.repo.PromptRepository
@@ -36,8 +36,7 @@ class PromptDispatcher(
     private val credentials: CredentialProvider,
     private val generator: AiGenerator,
     private val now: () -> Long = System::currentTimeMillis,
-    private val resolveEndpoint: (AiAccount) -> ProviderEndpoint? =
-        { ProviderCatalog.byId(it.providerId)?.resolve() },
+    private val resolveEndpoint: (AiAccount) -> ProviderEndpoint? = AccountEndpoints::resolve,
     private val onAllJobsDone: suspend (runId: Long) -> RunStatus = { RunStatus.DONE },
     private val kimiCodes: KimiCodeRepository? = null,
     private val graph: RunGraphBuilder? = null,

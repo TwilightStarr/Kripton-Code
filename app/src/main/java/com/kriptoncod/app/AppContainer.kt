@@ -3,6 +3,7 @@ package com.kriptoncod.app
 import android.content.Context
 import com.kriptoncod.app.data.ai.AiGenerator
 import com.kriptoncod.app.data.ai.OpenAiCompatibleGenerator
+import com.kriptoncod.app.data.ai.RetryingAiGenerator
 import com.kriptoncod.app.data.db.KriptonDatabase
 import com.kriptoncod.app.data.email.EmailAuthClient
 import com.kriptoncod.app.data.email.EmailTokenStore
@@ -64,7 +65,8 @@ class AppContainer(context: Context) {
     val runRepository: RunRepository by lazy { RunRepository(database, outputStore, historyStore) }
 
     // --- AI üretimi ---
-    val aiGenerator: AiGenerator by lazy { OpenAiCompatibleGenerator() }
+    /** Normalizer'lı üretici; eksik/bozuk çıktıda aynı hesapla otomatik yeniden dener. */
+    val aiGenerator: AiGenerator by lazy { RetryingAiGenerator(OpenAiCompatibleGenerator()) }
 
     // --- GitHub ---
     val githubTokenStore: GitHubTokenStore by lazy { GitHubTokenStore(keyVault) }
