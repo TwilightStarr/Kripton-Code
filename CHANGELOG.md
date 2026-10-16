@@ -5,6 +5,11 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
+### Değişti (düğüm grafiği kullanılabilirliği)
+- Grafik artık ekranın kalan tüm alanını kullanır; ayrıntı paneli grafiğin üzerine alttan (yarım yükseklikte) açılır, grafiği küçültmez. Kapatma düğmesi ve geri tuşu paneli kapatır; aynı düğüme tekrar dokunmak da kapatır.
+- Sürükleyerek kaydırma ve iki parmakla yakınlaştırma/uzaklaştırma; sağ üstte **+ / − / Sığdır** düğmeleri. Seçilen düğüm panelin altında kalıyorsa görünür alana kaydırılır.
+- Satır başına düğüm sayısı ekran genişliğine göre seçilir (telefonda ilk açılışta yatay kaydırma gerekmez); düğümler en az 48dp (dokunma hedefi), harfler kalın ve büyük; kısa bir açıklama (K/sayı/B/N) eklendi. Başlık bölümü sıkıştırıldı.
+
 ### Eklendi (Proxy hesap türü)
 - Yeni hesap türü **Proxy (CLIProxyAPI uyumlu)**: taban adres + anahtar (anahtar KeyVault'ta şifreli); aynı sağlayıcı için birden çok hesap; hesap başına sağlayıcı/model seçimi (veritabanı şeması 4, `ai_accounts.baseUrl`, MIGRATION_3_4).
 - Sağlayıcıya özel çıktı normalizer'ları (Claude, Gemini, OpenAI, DeepSeek, Kimi, genel); model kimliğine göre seçilir.

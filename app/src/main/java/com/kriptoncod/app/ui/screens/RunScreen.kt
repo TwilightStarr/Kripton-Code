@@ -3,7 +3,16 @@ package com.kriptoncod.app.ui.screens
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Surface
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -48,7 +57,6 @@ import com.kriptoncod.app.ui.components.KBadge
 import com.kriptoncod.app.ui.components.KButton
 import com.kriptoncod.app.ui.components.KButtonStyle
 import com.kriptoncod.app.ui.components.NodeAccent
-import com.kriptoncod.app.ui.components.NodeCard
 import com.kriptoncod.app.ui.components.RunGraph
 import com.kriptoncod.app.ui.theme.KriptonTheme
 import java.text.SimpleDateFormat
@@ -154,26 +162,22 @@ fun RunScreen(
     val selected = jobs.firstOrNull { it.id == selectedId }
     val anyWaiting = jobs.any { it.state == JobState.WAITING }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+    // Ayrıntı paneli açıkken geri tuşu önce paneli kapatır.
+    BackHandler(enabled = selected != null) { selectedId = null }
+
+    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp)) {
+        // Kompakt başlık: grafiğe en çok yeri bırakmak için başlık, run bilgisi ve durum tek satırda.
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
             }
-            Text(
-                text = stringResource(R.string.run_title),
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.weight(1f),
-            )
-            if (status != null && status in CANCELLABLE && status != RunStatus.PAUSED) {
-                CircularProgressIndicator(modifier = Modifier.width(24.dp).height(24.dp))
-            }
-        }
-        Spacer(Modifier.height(8.dp))
-
-        currentRun?.let { r ->
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Column(Modifier.weight(1f)) {
-                    Text("Run #${r.id}", style = MaterialTheme.typography.titleMedium)
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = currentRun?.let { "${stringResource(R.string.run_title)} #${it.id}" }
+                        ?: stringResource(R.string.run_title),
+                    style = MaterialTheme.typography.titleLarge,
+                )
+                currentRun?.let { r ->
                     Text(
                         SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()).format(Date(r.createdAt)) +
                             (r.repo?.let { " · $it" } ?: ""),
@@ -181,7 +185,10 @@ fun RunScreen(
                         color = k.muted,
                     )
                 }
-                RunStatusBadge(status = r.status)
+            }
+            currentRun?.let { RunStatusBadge(status = it.status) }
+            if (status != null && status in CANCELLABLE && status != RunStatus.PAUSED) {
+                CircularProgressIndicator(modifier = Modifier.width(24.dp).height(24.dp))
             }
         }
         if (anyWaiting && status == RunStatus.RUNNING) {
@@ -189,10 +196,10 @@ fun RunScreen(
                 stringResource(R.string.run_waiting_info),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.tertiary,
-                modifier = Modifier.padding(top = 4.dp),
+                modifier = Modifier.padding(start = 4.dp, top = 2.dp),
             )
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(6.dp))
 
         // Denetim düğmeleri
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -227,36 +234,65 @@ fun RunScreen(
                 )
             }
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(8.dp))
 
-        NodeCard(modifier = Modifier.weight(1f).fillMaxWidth()) {
+        // Grafik kalan TÜM alanı kullanır; ayrıntı paneli grafiğin üzerine (alttan) açılır, grafiği küçültmez.
+        val graphShape = RoundedCornerShape(16.dp)
+        BoxWithConstraints(
+            Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .clip(graphShape)
+                .background(k.nodeFill)
+                .border(1.5.dp, k.nodeBorder, graphShape),
+        ) {
+            val panelHeight = maxHeight * 0.5f
             if (nodes.isEmpty()) {
-                Text(stringResource(R.string.run_graph_empty), style = MaterialTheme.typography.bodyMedium, color = k.muted)
+                Text(
+                    stringResource(R.string.run_graph_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = k.muted,
+                    modifier = Modifier.padding(16.dp),
+                )
             } else {
                 RunGraph(
                     nodes = nodes,
                     selectedId = selectedId,
-                    onSelect = { selectedId = it },
+                    onSelect = { selectedId = if (selectedId == it) null else it },
                     modifier = Modifier.fillMaxSize(),
+                    bottomInset = if (selected != null) panelHeight else 0.dp,
                 )
+            }
+            if (selected != null) {
+                Surface(
+                    modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(panelHeight),
+                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.5.dp, k.nodeBorder),
+                    tonalElevation = 0.dp,
+                    shadowElevation = 0.dp,
+                ) {
+                    NodeDetail(
+                        job = selected,
+                        accountName = accounts.firstOrNull { it.id == selected.accountId }?.displayName,
+                        container = container,
+                        onSave = { text ->
+                            pendingNodeText = text
+                            saveNode.launch("node-${selected.id}.md")
+                        },
+                        onClose = { selectedId = null },
+                        modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 12.dp),
+                    )
+                }
             }
         }
-        Spacer(Modifier.height(12.dp))
-
-        NodeCard(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            if (selected == null) {
-                Text(stringResource(R.string.run_node_hint), style = MaterialTheme.typography.bodyMedium, color = k.muted)
-            } else {
-                NodeDetail(
-                    job = selected,
-                    accountName = accounts.firstOrNull { it.id == selected.accountId }?.displayName,
-                    container = container,
-                    onSave = { text ->
-                        pendingNodeText = text
-                        saveNode.launch("node-${selected.id}.md")
-                    },
-                )
-            }
+        if (selected == null && nodes.isNotEmpty()) {
+            Text(
+                stringResource(R.string.run_node_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = k.muted,
+                modifier = Modifier.padding(start = 4.dp, top = 6.dp),
+            )
         }
     }
 }
@@ -267,6 +303,8 @@ private fun NodeDetail(
     accountName: String?,
     container: AppContainer,
     onSave: (String) -> Unit,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val k = KriptonTheme.colors
     var output by remember(job.id) { mutableStateOf<String?>(null) }
@@ -275,7 +313,7 @@ private fun NodeDetail(
         output = container.runRepository.readOutput(job.id)
     }
 
-    Column(Modifier.fillMaxSize()) {
+    Column(modifier.fillMaxSize()) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(Modifier.weight(1f)) {
                 Text(
@@ -292,8 +330,11 @@ private fun NodeDetail(
                 )
             }
             JobStateBadge(state = job.state)
+            IconButton(onClick = onClose) {
+                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.run_node_close))
+            }
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(4.dp))
         val text = output
         Box(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
             SelectionContainer {
@@ -310,7 +351,7 @@ private fun NodeDetail(
                 text = stringResource(R.string.node_save),
                 onClick = { onSave(text) },
                 style = KButtonStyle.Outline,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(end = 8.dp),
             )
         }
     }

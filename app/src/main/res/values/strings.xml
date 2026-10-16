@@ -203,7 +203,13 @@
     <string name="run_resume">Devam et</string>
     <string name="run_waiting_info">Bazı hesapların kotası doldu; kota yenilenene kadar bekleniyor, uygulama kendiliğinden devam eder.</string>
     <string name="run_graph_empty">Düğümler hazırlanıyor…</string>
-    <string name="run_node_hint">Çıktısını görmek için bir düğüme dokunun.</string>
+    <string name="run_node_hint">Çıktısını görmek için bir düğüme dokunun. Sürükleyerek kaydır, iki parmakla yakınlaştır.</string>
+    <string name="run_graph_legend">K katalog · sayı prompt · B birleştirme · N nihai</string>
+    <string name="run_graph_zoom_in">Yakınlaştır</string>
+    <string name="run_graph_zoom_out">Uzaklaştır</string>
+    <string name="run_graph_fit">Sığdır</string>
+    <string name="run_graph_fit_desc">Tüm grafiği ekrana sığdır</string>
+    <string name="run_node_close">Ayrıntıyı kapat</string>
     <string name="run_node_no_account">Hesap atanmadı</string>
     <string name="run_node_attempts" tools:ignore="PluralsCandidate">%1$d deneme</string>
     <string name="run_node_no_output">Henüz çıktı yok.</string>

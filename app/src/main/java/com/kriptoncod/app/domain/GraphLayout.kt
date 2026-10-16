@@ -32,8 +32,8 @@ object GraphLayout {
     fun layout(
         nodes: List<GraphNodeUi>,
         maxPerRow: Int = 6,
-        minSize: Float = 40f,
-        maxSize: Float = 80f,
+        minSize: Float = 48f,
+        maxSize: Float = 84f,
         gap: Float = 20f,
         padding: Float = 16f,
     ): GraphLayoutResult {
