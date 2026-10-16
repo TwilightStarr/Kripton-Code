@@ -9,15 +9,11 @@ import java.util.zip.ZipInputStream
 /**
  * Sağlayıcının verdiği dosyayı (zip veya tek dosya) projenin standart biçimine, yani
  * ```yol/dosya kod bloklarına çevirir. Böylece [com.kriptoncod.app.data.run.RunFinalizer] hiç
- * değişmeden çalışır. Güvenli olmayan yollar, ikili dosyalar ve aşırı büyük girdiler atlanır.
+ * değişmeden çalışır. Güvenli olmayan yollar ve ikili dosyalar atlanır; boyut sınırı yoktur.
  */
 object ZipBlocks {
 
     data class Converted(val text: String, val skipped: List<String>)
-
-    const val MAX_FILES = 500
-    const val MAX_FILE_BYTES = 2 * 1024 * 1024
-    const val MAX_TOTAL_BYTES = 20 * 1024 * 1024
 
     fun isZip(bytes: ByteArray): Boolean =
         bytes.size > 3 && bytes[0] == 0x50.toByte() && bytes[1] == 0x4B.toByte() &&
@@ -35,49 +31,22 @@ object ZipBlocks {
     fun fromZip(bytes: ByteArray): Converted {
         val out = StringBuilder()
         val skipped = mutableListOf<String>()
-        var files = 0
-        var total = 0L
         ZipInputStream(ByteArrayInputStream(bytes)).use { zis ->
             while (true) {
                 val entry = zis.nextEntry ?: break
                 if (entry.isDirectory) continue
                 val name = entry.name
-                if (files >= MAX_FILES || total >= MAX_TOTAL_BYTES) {
-                    skipped += name
-                    continue
-                }
-                val data = readLimited(zis)
-                if (data == null) {
-                    skipped += name
-                    continue
-                }
+                val data = zis.readBytes()
                 val safe = safePath(name)
                 val text = decodeText(data)
                 if (safe == null || text == null) {
                     skipped += name
                     continue
                 }
-                files++
-                total += data.size
                 out.append(block(safe, text)).append('\n')
             }
         }
         return Converted(out.toString().trimEnd(), skipped)
-    }
-
-    private fun readLimited(zis: ZipInputStream): ByteArray? {
-        val buf = java.io.ByteArrayOutputStream()
-        val chunk = ByteArray(8192)
-        var n = zis.read(chunk)
-        var tooBig = false
-        while (n >= 0) {
-            if (!tooBig) {
-                buf.write(chunk, 0, n)
-                if (buf.size() > MAX_FILE_BYTES) tooBig = true
-            }
-            n = zis.read(chunk)
-        }
-        return if (tooBig) null else buf.toByteArray()
     }
 
     private fun safePath(raw: String): String? {

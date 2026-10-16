@@ -60,11 +60,12 @@ class AiGenerationException(
 
     /** [Kind.RATE_LIMITED] için hesabın bekleme bitiş zamanı (epoch ms). */
     fun waitUntil(nowMs: Long, defaultWaitMs: Long = DEFAULT_WAIT_MS): Long =
-        nowMs + (retryAfterMs ?: defaultWaitMs).coerceIn(MIN_WAIT_MS, MAX_WAIT_MS)
+        (retryAfterMs ?: defaultWaitMs).coerceAtLeast(MIN_WAIT_MS).let { w ->
+            if (w > Long.MAX_VALUE - nowMs) Long.MAX_VALUE else nowMs + w // üst sınır yok; yalnız taşma korunur
+        }
 
     companion object {
         const val DEFAULT_WAIT_MS = 60_000L
         private const val MIN_WAIT_MS = 1_000L
-        private const val MAX_WAIT_MS = 24L * 60 * 60 * 1000
     }
 }

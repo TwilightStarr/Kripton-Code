@@ -54,8 +54,8 @@ class CiLogSummarizerTest {
         val lines = (1..100).joinToString("\n") { "line $it" }
         val s = CiLogSummarizer.summarize(zip("a.txt" to lines))
         assertTrue(s.contains("line 100"))
-        assertFalse(s.contains("line 1\n"))
-        assertEquals(40, s.lines().size)
+        assertTrue(s.contains("line 1\n"))
+        assertEquals(100, s.lines().size)
     }
 
     @Test fun truncatesToMaxChars() {

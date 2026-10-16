@@ -68,7 +68,7 @@ class WebAccountViewModel(
         }
     }
 
-    fun onLabel(v: String) = _state.update { it.copy(label = v.take(60)) }
+    fun onLabel(v: String) = _state.update { it.copy(label = v) }
     fun onWarningChecked(v: Boolean) = _state.update { it.copy(warningChecked = v) }
     fun onGeminiKey(v: String) = _state.update { it.copy(geminiKey = v.trim(), error = null) }
     fun dismissError() = _state.update { it.copy(error = null) }

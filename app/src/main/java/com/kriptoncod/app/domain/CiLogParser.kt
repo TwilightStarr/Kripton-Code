@@ -45,7 +45,7 @@ object CiLogParser {
                     errors += CiError("", -1, m.groupValues[1])
                 }
                 GENERIC.containsMatchIn(line) && line.length > 10 -> {
-                    errors += CiError("", -1, line.take(300))
+                    errors += CiError("", -1, line)
                 }
             }
         }

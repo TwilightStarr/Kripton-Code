@@ -24,7 +24,6 @@ data class Catalog(val name: String, val prompts: List<CatalogPrompt>) {
  */
 object CatalogParser {
     const val DEFAULT_CATALOG = "genel"
-    private const val MAX_FILE_BYTES = 1_000_000
 
     private val CATALOG_RE = Regex("""^##\s*KATALOG\s*:\s*(.+?)\s*$""", RegexOption.IGNORE_CASE)
     private val PROMPT_RE = Regex("""^###\s*PROMPT\s*:\s*(.*?)\s*$""", RegexOption.IGNORE_CASE)
@@ -71,8 +70,8 @@ object CatalogParser {
     fun parseZip(entries: List<Pair<String, ByteArray>>): List<Catalog> {
         val files = entries
             .map { (path, bytes) -> path.replace('\\', '/').trim('/') to bytes }
-            .filter { (path, bytes) ->
-                path.isNotEmpty() && bytes.size <= MAX_FILE_BYTES &&
+            .filter { (path, _) ->
+                path.isNotEmpty() &&
                     path.split('/').none { it.startsWith(".") || it == "__MACOSX" } &&
                     path.substringAfterLast('.', "").lowercase() in TEXT_EXT
             }

@@ -118,7 +118,7 @@ class PromptDispatcher(
         builder.build(plan.runId, catalogs)
     }
 
-    /** Birleştirme düğümünün girdisi: bağımlı düğümlerin çıktıları (uzun çıktılar kısaltılır). */
+    /** Birleştirme düğümünün girdisi: bağımlı düğümlerin çıktıları (çıktılar KISALTILMAZ, eksiksiz aktarılır). */
     private suspend fun mergeBody(job: Job, all: List<Job>): String? {
         val sources: List<Pair<String, Job>> = when (job.kind) {
             JobKind.CATALOG_MERGE ->
@@ -135,7 +135,6 @@ class PromptDispatcher(
             else -> return null
         }
         if (sources.isEmpty()) return null
-        val cap = (MAX_MERGE_CHARS / sources.size).coerceAtLeast(MIN_PER_OUTPUT_CHARS)
         val header = if (job.kind == JobKind.FINAL_MERGE) {
             "Aşağıda bir yazılım işinin katalog bazında birleştirilmiş çıktıları var. Hepsini çakışmaları gidererek, " +
                 "eksikleri tamamlayarak derlenir ve tutarlı TEK bir nihai pakete dönüştür. "
@@ -149,7 +148,7 @@ class PromptDispatcher(
             for ((name, src) in sources) {
                 val text = runs.readOutput(src.id).orEmpty()
                 appendLine("=== $name ===")
-                appendLine(if (text.length > cap) text.take(cap) + "\n[... kısaltıldı]" else text)
+                appendLine(text)
                 appendLine()
             }
         }
@@ -355,7 +354,5 @@ class PromptDispatcher(
         const val RETRY_BASE_MS = 15_000L
         private const val MIN_DELAY_MS = 1_000L
         private val OPEN_STATES = setOf(JobState.PENDING, JobState.RUNNING, JobState.WAITING)
-        private const val MAX_MERGE_CHARS = 120_000
-        private const val MIN_PER_OUTPUT_CHARS = 4_000
     }
 }

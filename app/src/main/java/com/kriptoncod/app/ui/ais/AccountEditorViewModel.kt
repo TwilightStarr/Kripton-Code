@@ -161,7 +161,7 @@ class AccountEditorViewModel(
         verifyJob?.cancel()
         _state.update {
             it.copy(
-                baseUrl = raw.trim().take(MAX_URL_LENGTH),
+                baseUrl = raw.trim(),
                 verifying = false,
                 verified = false,
                 models = emptyList(),
@@ -176,7 +176,7 @@ class AccountEditorViewModel(
     fun onNameChanged(raw: String) {
         val s = _state.value
         if (s.saving || s.loading || !s.isProxy) return
-        _state.update { it.copy(accountName = raw.take(MAX_NAME_LENGTH)) }
+        _state.update { it.copy(accountName = raw) }
     }
 
     /**
@@ -197,7 +197,7 @@ class AccountEditorViewModel(
         val s = _state.value
         if (s.saving || s.loading) return
         verifyJob?.cancel()
-        val key = raw.filterNot { it.isWhitespace() }.take(MAX_KEY_LENGTH)
+        val key = raw.filterNot { it.isWhitespace() }
         _state.update {
             it.copy(
                 apiKey = SecretText(key),
@@ -415,9 +415,6 @@ class AccountEditorViewModel(
     }
 
     companion object {
-        const val MAX_KEY_LENGTH = 512
-        const val MAX_URL_LENGTH = 300
-        const val MAX_NAME_LENGTH = 40
 
         /** Özel sağlayıcı kalıcı adres alanı olmadığı için akışta yer almaz. */
         val SELECTABLE_PROVIDERS: List<Provider> = ProviderCatalog.all.filterNot { it.isCustom }

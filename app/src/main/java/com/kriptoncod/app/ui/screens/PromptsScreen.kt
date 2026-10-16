@@ -72,15 +72,12 @@ fun PromptsScreen(onOpenSet: (Long) -> Unit, onRunStarted: (Long) -> Unit = {}) 
                 val parsed = withContext(Dispatchers.IO) {
                     try {
                         val entries = mutableListOf<Pair<String, ByteArray>>()
-                        var total = 0L
                         context.contentResolver.openInputStream(uri)?.use { input ->
                             ZipInputStream(input).use { zin ->
                                 while (true) {
                                     val e = zin.nextEntry ?: break
                                     if (e.isDirectory) continue
                                     val bytes = zin.readBytes()
-                                    total += bytes.size
-                                    if (total > 50L * 1024 * 1024) break
                                     entries += e.name to bytes
                                 }
                             }

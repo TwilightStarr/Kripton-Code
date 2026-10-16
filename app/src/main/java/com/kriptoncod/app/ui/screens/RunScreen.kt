@@ -8,6 +8,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.Close
@@ -336,13 +337,27 @@ private fun NodeDetail(
         }
         Spacer(Modifier.height(4.dp))
         val text = output
-        Box(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
-            SelectionContainer {
+        // Çıktı sınırsız uzun olabilir: tek bir dev Text yerine satır gruplarıyla tembel çizilir (kesilmez).
+        val chunks = remember(text) { text?.let { chunkLines(it) }.orEmpty() }
+        Box(Modifier.weight(1f).fillMaxWidth()) {
+            if (text == null) {
                 Text(
-                    text ?: stringResource(R.string.run_node_no_output),
+                    stringResource(R.string.run_node_no_output),
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (text == null) k.muted else MaterialTheme.colorScheme.onSurface,
+                    color = k.muted,
                 )
+            } else {
+                SelectionContainer {
+                    LazyColumn(Modifier.fillMaxSize()) {
+                        items(chunks.size) { i ->
+                            Text(
+                                chunks[i],
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
+                }
             }
         }
         if (text != null) {
@@ -355,6 +370,20 @@ private fun NodeDetail(
             )
         }
     }
+}
+
+/** Metni ~120 satırlık parçalara böler; hiçbir karakter atılmaz. */
+private fun chunkLines(text: String, linesPerChunk: Int = 120): List<String> {
+    val out = ArrayList<String>()
+    val sb = StringBuilder()
+    var n = 0
+    text.lineSequence().forEach { line ->
+        if (n > 0) sb.append('\n')
+        sb.append(line)
+        if (++n >= linesPerChunk) { out += sb.toString(); sb.setLength(0); n = 0 }
+    }
+    if (n > 0) out += sb.toString()
+    return out
 }
 
 private fun kindLabel(kind: JobKind): String = when (kind) {

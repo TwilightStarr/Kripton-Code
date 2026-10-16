@@ -65,7 +65,7 @@ object WebSelectors {
     /** Cihazdaki `web-selectors.json` (sağlayıcı kimliği -> SiteSelectors) varsa varsayılanı ezer. */
     fun load(provider: WebProvider, overrideFile: File?): SiteSelectors {
         val base = defaults(provider)
-        val f = overrideFile?.takeIf { it.isFile && it.length() in 1..1_000_000 } ?: return base
+        val f = overrideFile?.takeIf { it.isFile && it.length() > 0 } ?: return base
         return runCatching {
             val map = json.decodeFromString<Map<String, SiteSelectors>>(f.readText())
             map[provider.id] ?: base

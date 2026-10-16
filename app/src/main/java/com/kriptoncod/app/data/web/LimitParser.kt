@@ -11,7 +11,6 @@ object LimitParser {
 
     const val DEFAULT_WAIT_MS = 30L * 60 * 1000
     private const val MIN_WAIT_MS = 60_000L
-    private const val MAX_WAIT_MS = 24L * 60 * 60 * 1000
     private const val BUFFER_MS = 60_000L
 
     private val LIMIT_WORDS = listOf(
@@ -35,7 +34,7 @@ object LimitParser {
 
     /**
      * [text] içindeki beklemeyi (ms) çözer; "2 hours 15 minutes", "in 45 min", "resets at 3 PM",
-     * "2 saat 10 dakika sonra" gibi. Sonuç 1 dk – 24 saat aralığına sıkıştırılır.
+     * "2 saat 10 dakika sonra" gibi. Sonuç en az 1 dk'dır; üst sınır yoktur.
      */
     fun waitMs(
         text: String?,
@@ -46,7 +45,7 @@ object LimitParser {
         val t = text.orEmpty()
         val rel = relativeMs(t)
         val ms = rel ?: absoluteMs(t, nowMs, zone) ?: defaultMs
-        return (ms + BUFFER_MS).coerceIn(MIN_WAIT_MS, MAX_WAIT_MS)
+        return if (ms > Long.MAX_VALUE - BUFFER_MS) Long.MAX_VALUE else (ms + BUFFER_MS).coerceAtLeast(MIN_WAIT_MS)
     }
 
     private fun relativeMs(t: String): Long? {

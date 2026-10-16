@@ -134,7 +134,7 @@ class ModelService(
     }
 
     companion object {
-        private const val MAX_BODY_BYTES = 8L * 1024 * 1024
+        private const val MAX_BODY_BYTES = Long.MAX_VALUE
         private val INVALID_KEY_HINTS = listOf("api key not valid", "api_key_invalid")
 
         /** Yönlendirme kapalı: anahtar başka bir adrese sızdırılmaz. */

@@ -57,9 +57,9 @@ class LimitParserTest {
         assertEquals(((21 * 60 + 30) + 1) * 60_000L, ms)
     }
 
-    @Test fun unknownFallsBackToDefaultAndIsClamped() {
+    @Test fun unknownFallsBackToDefaultAndHasNoUpperCap() {
         assertEquals(LimitParser.DEFAULT_WAIT_MS + 60_000L, LimitParser.waitMs("slow down", now, ZoneOffset.UTC))
-        assertEquals(24L * 3_600_000L, LimitParser.waitMs("try again in 5 days", now, ZoneOffset.UTC))
+        assertEquals(5 * 24L * 3_600_000L + 60_000L, LimitParser.waitMs("try again in 5 days", now, ZoneOffset.UTC))
         assertEquals(65_000L, LimitParser.waitMs("try again in 5 seconds", now, ZoneOffset.UTC))
     }
 
@@ -96,13 +96,6 @@ class ZipBlocksTest {
         assertEquals("```Main.kt\nval x = 1\n```", r.text)
         assertEquals("", ZipBlocks.convert(WebFile("a b.kt", "x".toByteArray())).text)
         assertEquals("", ZipBlocks.convert(WebFile("a.bin", byteArrayOf(0, 1))).text)
-    }
-
-    @Test fun oversizedEntriesAreSkipped() {
-        val big = ByteArray(ZipBlocks.MAX_FILE_BYTES + 10) { 'a'.code.toByte() }
-        val r = ZipBlocks.fromZip(zipOf("big.txt" to big, "ok.txt" to "ok".toByteArray()))
-        assertEquals(listOf("big.txt"), r.skipped)
-        assertTrue("ok.txt" in r.text)
     }
 }
 

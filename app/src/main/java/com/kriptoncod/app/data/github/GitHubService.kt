@@ -53,10 +53,12 @@ class GitHubService(
             .flatMap { decode<UserDto>(it) }
             .map { GitHubUser(it.login) }
 
-    /** Yazma izni olan, arşivlenmemiş repoları günceller sırayla listeler (en çok 500). */
+    /** Yazma izni olan, arşivlenmemiş repoları günceller sırayla listeler (tüm sayfalar). */
     suspend fun listRepos(token: String): ApiResult<List<GitHubRepo>> {
         val all = mutableListOf<GitHubRepo>()
-        for (page in 1..MAX_REPO_PAGES) {
+        var page = 0
+        while (true) {
+            page++
             val u = url(
                 "user/repos",
                 "per_page" to PAGE_SIZE.toString(),
@@ -373,9 +375,8 @@ class GitHubService(
         const val API_VERSION = "2022-11-28"
         private const val USER_AGENT = "KriptonCod-Android"
         private const val PAGE_SIZE = 100
-        private const val MAX_REPO_PAGES = 5
-        private const val MAX_JSON_BYTES = 16L * 1024 * 1024
-        private const val MAX_LOG_BYTES = 50L * 1024 * 1024
+        private const val MAX_JSON_BYTES = Long.MAX_VALUE
+        private const val MAX_LOG_BYTES = Long.MAX_VALUE
         const val DEFAULT_WAIT_MS = 15L * 60 * 1000
         const val DEFAULT_POLL_MS = 10_000L
         private val JSON_MEDIA = "application/json; charset=utf-8".toMediaType()

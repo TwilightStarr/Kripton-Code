@@ -28,6 +28,7 @@ class OpenAiCompatibleGeneratorTest {
                 .readTimeout(500, TimeUnit.MILLISECONDS)
                 .callTimeout(3, TimeUnit.SECONDS)
                 .build(),
+            maxContinuations = 0,
         )
     }
 
@@ -124,9 +125,11 @@ class OpenAiCompatibleGeneratorTest {
         }
     }
 
-    @Test fun waitUntilIsClamped() {
+    @Test fun waitUntilHasNoUpperCapButDoesNotOverflow() {
         val huge = AiGenerationException(Kind.RATE_LIMITED, 429, retryAfterMs = Long.MAX_VALUE / 4)
-        assertEquals(24L * 3600 * 1000, huge.waitUntil(0))
+        assertEquals(Long.MAX_VALUE / 4, huge.waitUntil(0))
+        val max = AiGenerationException(Kind.RATE_LIMITED, 429, retryAfterMs = Long.MAX_VALUE)
+        assertEquals(Long.MAX_VALUE, max.waitUntil(10))
         val zero = AiGenerationException(Kind.RATE_LIMITED, 429, retryAfterMs = 0)
         assertEquals(1_000L, zero.waitUntil(0))
     }
@@ -180,6 +183,22 @@ class OpenAiCompatibleGeneratorTest {
         val e = failure { generate() }
         assertEquals(Kind.TRUNCATED, e.kind)
         assertFalse(e.kind.retryable)
+    }
+
+    @Test fun truncatedReplyIsContinuedAndMergedWithoutLimit() {
+        val continuing = OpenAiCompatibleGenerator(
+            OpenAiCompatibleGenerator.defaultClient().newBuilder()
+                .readTimeout(2, TimeUnit.SECONDS).callTimeout(5, TimeUnit.SECONDS).build(),
+            maxContinuations = 5,
+        )
+        server.enqueue(reply("```a.txt\nilk", finish = "length"))
+        server.enqueue(reply("\nikinci", finish = "length"))
+        server.enqueue(reply("\nson\n```", finish = "stop"))
+        val out = runBlocking { continuing.generate(endpoint(), "m-1", key, "Yaz") }
+        assertTrue("ilk" in out && "ikinci" in out && "son" in out)
+        assertEquals(3, server.requestCount)
+        server.takeRequest(); server.takeRequest()
+        assertTrue("assistant" in server.takeRequest().body.readUtf8())
     }
 
     // ---- girdi doğrulama

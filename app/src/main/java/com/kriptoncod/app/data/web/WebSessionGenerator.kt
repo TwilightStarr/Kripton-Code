@@ -21,7 +21,7 @@ class WebSessionGenerator(
     private val driver: WebChatDriver,
     private val pacer: WebPacer = WebPacer(),
     private val now: () -> Long = System::currentTimeMillis,
-    private val maxContinues: Int = 8,
+    private val maxContinues: Int = 40,
 ) {
 
     /**

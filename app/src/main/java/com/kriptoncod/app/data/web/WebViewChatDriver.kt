@@ -131,19 +131,17 @@ class WebViewChatDriver(
         override suspend fun download(url: String): WebFile? {
             val wv = webView ?: return null
             if (!allowedUrl(url)) return null
+            // Dosya tek parça base64 olarak taşınmaz (dev dizgi WebView köprüsünü bozar): blob WebView'de
+            // tutulur ve parça parça okunur; boyut sınırı yoktur.
             val js = """
-                (function(u){window.__krdl={done:false,b64:'',name:'',err:''};
+                (function(u){window.__krdl={done:false,size:0,name:'',err:'',blob:null};
                 fetch(u,{credentials:'include'}).then(function(r){
                   if(!r.ok) throw new Error('http '+r.status);
                   var cd=r.headers.get('content-disposition')||'';
                   var m=cd.match(/filename\*?=(?:UTF-8'')?"?([^";]+)/i); window.__krdl.name=m?decodeURIComponent(m[1]):'';
                   return r.blob();
                 }).then(function(b){
-                  if(b.size>$MAX_DOWNLOAD_BYTES) throw new Error('too big');
-                  var fr=new FileReader();
-                  fr.onload=function(){window.__krdl.b64=String(fr.result).split(',')[1]||'';window.__krdl.done=true;};
-                  fr.onerror=function(){window.__krdl.err='read';window.__krdl.done=true;};
-                  fr.readAsDataURL(b);
+                  window.__krdl.blob=b; window.__krdl.size=b.size; window.__krdl.done=true;
                 }).catch(function(e){window.__krdl.err=String(e);window.__krdl.done=true;});
                 return 'started';})(${Json.encodeToString(url)});
             """.trimIndent()
@@ -156,12 +154,47 @@ class WebViewChatDriver(
                 )
                 if (state.isEmpty()) continue
                 if (state == "ERR") return null
-                val b64 = WebCookies.unquote(WebCookies.evalString(wv, "window.__krdl.b64"))
+                val size = WebCookies.unquote(WebCookies.evalString(wv, "String(window.__krdl.size)")).toLongOrNull()
+                    ?: return null
                 val name = WebCookies.unquote(WebCookies.evalString(wv, "window.__krdl.name"))
-                val bytes = runCatching { Base64.decode(b64, Base64.DEFAULT) }.getOrNull() ?: return null
+                val bytes = readBlobInChunks(wv, size) ?: return null
+                runCatching { WebCookies.evalString(wv, "window.__krdl=null;window.__krc=null;0") }
                 return WebFile(name.ifBlank { url.substringBefore('?').substringAfterLast('/').ifBlank { "download" } }, bytes)
             }
             return null
+        }
+
+        /** `window.__krdl.blob`'u [CHUNK_BYTES]'lık dilimlerle okuyup birleştirir; hata olursa null. */
+        private suspend fun readBlobInChunks(wv: WebView, size: Long): ByteArray? {
+            val out = java.io.ByteArrayOutputStream()
+            var offset = 0L
+            while (offset < size) {
+                val endOff = minOf(offset + CHUNK_BYTES, size)
+                WebCookies.evalString(
+                    wv,
+                    """(function(o,e){window.__krc={done:false,b64:'',err:''};var fr=new FileReader();
+                    fr.onload=function(){window.__krc.b64=String(fr.result).split(',')[1]||'';window.__krc.done=true;};
+                    fr.onerror=function(){window.__krc.err='read';window.__krc.done=true;};
+                    fr.readAsDataURL(window.__krdl.blob.slice(o,e));return 'started';})($offset,$endOff)""",
+                )
+                val chunkEnd = System.currentTimeMillis() + CHUNK_TIMEOUT_MS
+                var b64: String? = null
+                while (System.currentTimeMillis() < chunkEnd) {
+                    delay(40)
+                    val st = WebCookies.unquote(
+                        WebCookies.evalString(wv, "(function(){var d=window.__krc;return d&&d.done?(d.err?'ERR':'OK'):'';})()"),
+                    )
+                    if (st.isEmpty()) continue
+                    if (st == "ERR") return null
+                    b64 = WebCookies.unquote(WebCookies.evalString(wv, "window.__krc.b64"))
+                    break
+                }
+                val raw = b64 ?: return null
+                val bytes = runCatching { Base64.decode(raw, Base64.DEFAULT) }.getOrNull() ?: return null
+                out.write(bytes)
+                offset = endOff
+            }
+            return out.toByteArray()
         }
 
         private fun allowedUrl(url: String): Boolean {
@@ -206,7 +239,8 @@ class WebViewChatDriver(
         const val PAGE_LOAD_TIMEOUT_MS = 60_000L
         const val SETTLE_MS = 2_500L
         const val POLL_MS = 1_500L
-        const val DOWNLOAD_TIMEOUT_MS = 90_000L
-        const val MAX_DOWNLOAD_BYTES = 12 * 1024 * 1024
+        const val DOWNLOAD_TIMEOUT_MS = 30L * 60_000L // yalnız ağdan inmesi için; takılmayı sonlandırır
+        const val CHUNK_BYTES = 1L * 1024 * 1024
+        const val CHUNK_TIMEOUT_MS = 60_000L
     }
 }

@@ -21,7 +21,7 @@ class ProxyGenerationTest {
     private lateinit var other: MockWebServer
     private val client = OpenAiCompatibleGenerator.defaultClient().newBuilder()
         .readTimeout(1, TimeUnit.SECONDS).callTimeout(5, TimeUnit.SECONDS).build()
-    private val generator = RetryingAiGenerator(OpenAiCompatibleGenerator(client), backoff = {})
+    private val generator = RetryingAiGenerator(OpenAiCompatibleGenerator(client, maxContinuations = 0), backoff = {})
 
     @Before fun setUp() {
         server = MockWebServer().apply { start() }

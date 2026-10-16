@@ -8,6 +8,8 @@ import com.kriptoncod.app.data.ai.normalize.ProviderNormalizer
 import com.kriptoncod.app.data.http.await
 import com.kriptoncod.app.data.providers.ProviderEndpoint
 import com.kriptoncod.app.data.providers.UpstreamProvider
+import com.kriptoncod.app.data.web.ContinuationMerger
+import com.kriptoncod.app.data.web.PromptWrapper
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
@@ -31,13 +33,15 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * - Hata gövdesi okunur ama hata nesnesine konmaz (sağlayıcılar isteği yansıtabilir).
  * - Yanıt, **model kimliğine göre** seçilen [ProviderNormalizer] ile temizlenir (Claude, Gemini, OpenAI,
  *   DeepSeek, Kimi; tanınmayanlar için genel): muhakeme blokları atılır, `finish_reason` sınıflanır.
- * - Kesik çıktı (`length`, `max_tokens`, `MAX_TOKENS` …) KAYDEDİLMEZ ([Kind.TRUNCATED]).
+ * - Kesik çıktı (`length`, `max_tokens`, `MAX_TOKENS` …) otomatik "devam et" turlarıyla tamamlanır
+ *   (en çok [maxContinuations] tur); yine de bitmezse KAYDEDİLMEZ ([Kind.TRUNCATED]). Karakter sınırı yoktur.
  *
  * Çıktının kaydı çağıranındır: `RunRepository.completeJob` → `OutputStore.write` (atomik).
  */
 class OpenAiCompatibleGenerator(
     private val client: OkHttpClient = defaultClient(),
     private val json: Json = Json { ignoreUnknownKeys = true; isLenient = true },
+    private val maxContinuations: Int = DEFAULT_MAX_CONTINUATIONS,
 ) : AiGenerator {
 
     override suspend fun generate(
@@ -51,15 +55,36 @@ class OpenAiCompatibleGenerator(
         require(modelId.isNotBlank()) { "Model kimliği boş" }
         require(prompt.isNotBlank()) { "Prompt boş" }
 
+        val normalizer = Normalizers.forModel(modelId, UpstreamProvider.fromId(endpoint.providerId))
+        val parts = mutableListOf<String>()
+        var continuations = 0
+        while (true) {
+            val body = post(endpoint, modelId, key, messagesFor(prompt, parts))
+            val chunk = withContext(Dispatchers.Default) { extract(body, normalizer) }
+            parts += chunk.text
+            if (!chunk.truncated) {
+                return if (parts.size == 1) parts[0] else ContinuationMerger.merge(parts)
+            }
+            // Kesik çıktı: kaydedilmez; kaldığı yerden devam ettirilir.
+            if (continuations >= maxContinuations) throw AiGenerationException(Kind.TRUNCATED)
+            continuations++
+        }
+    }
+
+    /** İlk tur: yalnız prompt. Sonraki turlar: o ana kadarki yanıt + "devam et" mesajı. */
+    private fun messagesFor(prompt: String, parts: List<String>) = buildJsonArray {
+        add(buildJsonObject { put("role", "user"); put("content", prompt) })
+        if (parts.isNotEmpty()) {
+            add(buildJsonObject { put("role", "assistant"); put("content", ContinuationMerger.merge(parts)) })
+            add(buildJsonObject { put("role", "user"); put("content", PromptWrapper.continuation()) })
+        }
+    }
+
+    private suspend fun post(endpoint: ProviderEndpoint, modelId: String, key: String, messages: kotlinx.serialization.json.JsonArray): String {
         val payload = buildJsonObject {
             put("model", modelId.trim())
             put("stream", false)
-            put(
-                "messages",
-                buildJsonArray {
-                    add(buildJsonObject { put("role", "user"); put("content", prompt) })
-                },
-            )
+            put("messages", messages)
         }
         val request = try {
             endpoint.authMethod.authorize(
@@ -82,8 +107,7 @@ class OpenAiCompatibleGenerator(
         }
 
         if (code !in 200..299) throw failure(code, retryAfter, body)
-        val normalizer = Normalizers.forModel(modelId, UpstreamProvider.fromId(endpoint.providerId))
-        return withContext(Dispatchers.Default) { extract(body, normalizer) }
+        return body
     }
 
     private fun failure(code: Int, retryAfter: String?, body: String): AiGenerationException {
@@ -100,16 +124,18 @@ class OpenAiCompatibleGenerator(
 
     /** Yalnız saniye biçimi desteklenir; HTTP-date veya geçersiz değer null. */
     private fun parseRetryAfter(value: String?): Long? =
-        value?.trim()?.toLongOrNull()?.takeIf { it in 0..MAX_RETRY_AFTER_S }?.times(1000)
+        value?.trim()?.toLongOrNull()?.takeIf { it >= 0 }?.let { if (it > Long.MAX_VALUE / 1000) Long.MAX_VALUE else it * 1000 }
 
     /**
      * Yanıtı ayrıştırır: `choices[0]` → [ChoiceReader] (içerik biçimleri, muhakeme parçaları) →
      * model ailesine özgü [ProviderNormalizer] (temizlik + `finish_reason` sınıflaması).
      *
      * - Metin boş / reddedilmiş (içerik filtresi, `refusal`) → [Kind.BAD_RESPONSE]
-     * - Çıktı uzunluk sınırında kesilmiş → [Kind.TRUNCATED]
+     * - Çıktı uzunluk sınırında kesilmiş → [Chunk.truncated] (çağıran devam turu ister)
      */
-    private fun extract(body: String, normalizer: ProviderNormalizer): String {
+    private class Chunk(val text: String, val truncated: Boolean)
+
+    private fun extract(body: String, normalizer: ProviderNormalizer): Chunk {
         val choice: JsonObject = (
             try {
                 json.parseToJsonElement(body).jsonObject["choices"]?.jsonArray?.firstOrNull()?.jsonObject
@@ -120,14 +146,13 @@ class OpenAiCompatibleGenerator(
 
         val out = normalizer.normalize(ChoiceReader.read(choice))
         if (out.text.isEmpty() || out.finish == Finish.FILTERED) throw AiGenerationException(Kind.BAD_RESPONSE)
-        if (out.finish == Finish.TRUNCATED) throw AiGenerationException(Kind.TRUNCATED)
-        return out.text
+        return Chunk(out.text, truncated = out.finish == Finish.TRUNCATED)
     }
 
     companion object {
         private val JSON_MEDIA = "application/json; charset=utf-8".toMediaType()
-        private const val MAX_BODY_BYTES = 16L * 1024 * 1024
-        private const val MAX_RETRY_AFTER_S = 7L * 24 * 3600
+        const val DEFAULT_MAX_CONTINUATIONS = 20
+        private const val MAX_BODY_BYTES = Long.MAX_VALUE
         private val INVALID_KEY_HINTS = listOf("api key not valid", "api_key_invalid")
 
         /** Uzun üretimler için geniş zaman aşımı; yönlendirme kapalı (anahtar başka adrese sızmaz). */
