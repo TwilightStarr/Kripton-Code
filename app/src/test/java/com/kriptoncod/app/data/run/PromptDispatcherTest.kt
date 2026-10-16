@@ -151,6 +151,34 @@ class PromptDispatcherTest {
         assertEquals(AccountStatus.ERROR, accounts.get(bad)!!.status)
     }
 
+    @Test fun manualAccountClosedFallsBackToPoolInsteadOfFailing() = runBlocking {
+        val bad = account("bad", 5)
+        account("good", 1)
+        val runId = runWithOnePrompt(bad, AssignmentMode.MANUAL)
+        val gen = ScriptedGenerator { model ->
+            if (model == "bad") throw AiGenerationException(Kind.UNAUTHORIZED, 401) else "ok"
+        }
+
+        assertEquals(DispatchOutcome.Finished(RunStatus.DONE), dispatcher(gen).process(runId))
+        assertEquals(listOf("bad", "good"), gen.calls)
+        assertEquals(AccountStatus.ERROR, accounts.get(bad)!!.status)
+    }
+
+    @Test fun noUsableAccountKeepsJobWaitingAndResumesWhenAccountAdded() = runBlocking {
+        val only = account("only", 1)
+        val runId = runWithOnePrompt()
+        val dead = ScriptedGenerator { throw AiGenerationException(Kind.UNAUTHORIZED, 401) }
+
+        assertEquals(DispatchOutcome.Wait(PromptDispatcher.NO_ACCOUNT_WAIT_MS), dispatcher(dead).process(runId))
+        assertEquals(JobState.WAITING, runs.getJobs(runId).single().state)
+        assertEquals(AccountStatus.ERROR, accounts.get(only)!!.status)
+
+        account("new", 1) // kullanıcı yeni/yedek hesap ekledi
+        val ok = ScriptedGenerator { "ok" }
+        assertEquals(DispatchOutcome.Finished(RunStatus.DONE), dispatcher(ok).process(runId))
+        assertEquals(listOf("new"), ok.calls)
+    }
+
     @Test fun allAccountsRateLimitedReturnsWaitWithEarliestRelease() = runBlocking {
         account("a", 5)
         account("b", 1)

@@ -1,5 +1,6 @@
 package com.kriptoncod.app.data.web
 
+import android.annotation.SuppressLint
 import android.webkit.CookieManager
 import android.webkit.ValueCallback
 import android.webkit.WebSettings
@@ -29,6 +30,7 @@ object WebUserAgent {
      * kullanıcı-aracısı, `X-Requested-With: <paket adı>` başlığı ve `Sec-CH-UA` ipuçları ("Android WebView").
      * Üçü de masaüstü Chrome ile tutarlı hâle getirilir. Desteklenmeyen sürümlerde sessizce atlanır.
      */
+    @SuppressLint("RestrictedApi")
     fun apply(settings: WebSettings) {
         settings.userAgentString = DESKTOP
         runCatching {

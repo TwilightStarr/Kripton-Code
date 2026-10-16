@@ -176,7 +176,8 @@ class PromptDispatcher(
             return JobResult.Failed
         }
         val item = PromptItem(id = job.promptId, setId = 0, title = job.title.orEmpty(), body = text, order = 0)
-        val manual = prompts.getAssignment(job.promptId)?.mode == AssignmentMode.MANUAL
+        // MANUAL atama yalnız hesap sağlıklıyken geçerlidir; hesap kapanır/düşerse iş kaybolmaz, havuza geçer.
+        var manual = prompts.getAssignment(job.promptId)?.mode == AssignmentMode.MANUAL
         val tried = mutableSetOf<Long>()
 
         while (true) {
@@ -187,8 +188,13 @@ class PromptDispatcher(
                     return JobResult.Wait(pick.untilMs)
                 }
                 Pick.None -> {
-                    runs.failJob(job.id)
-                    return JobResult.Failed
+                    if (manual) { // atanan hesap yok/kapalı: otomatik havuza geç
+                        manual = false
+                        continue
+                    }
+                    // Kullanılabilir hesap kalmadı: iş BAŞARISIZ OLMAZ, kullanıcı hesap ekleyene/açana kadar bekler.
+                    runs.waitJob(job.id)
+                    return JobResult.Wait(now() + NO_ACCOUNT_WAIT_MS)
                 }
             }
             tried += account.id
@@ -203,10 +209,7 @@ class PromptDispatcher(
             val unusable = if (isWeb) web == null else (endpoint == null || credential.isNullOrBlank())
             if (unusable) {
                 accounts.markError(account.id)
-                if (manual) {
-                    runs.failJob(job.id)
-                    return JobResult.Failed
-                }
+                manual = false
                 continue
             }
 
@@ -229,11 +232,9 @@ class PromptDispatcher(
             } catch (e: AiGenerationException) {
                 when (e.kind) {
                     Kind.UNAUTHORIZED -> {
+                        // Hesap kapandı/oturum düştü: ERROR yap ve işi aynı turda havuzdaki diğer hesaba ver.
                         accounts.markError(account.id)
-                        if (manual) {
-                            runs.failJob(job.id)
-                            return JobResult.Failed
-                        }
+                        manual = false
                     }
                     Kind.RATE_LIMITED -> {
                         val until = e.waitUntil(now())
@@ -351,6 +352,8 @@ class PromptDispatcher(
 
     companion object {
         const val MAX_ATTEMPTS = 4
+        /** Hiç kullanılabilir hesap yokken işin yeniden denenme aralığı. */
+        const val NO_ACCOUNT_WAIT_MS = 10L * 60 * 1000
         const val RETRY_BASE_MS = 15_000L
         private const val MIN_DELAY_MS = 1_000L
         private val OPEN_STATES = setOf(JobState.PENDING, JobState.RUNNING, JobState.WAITING)
