@@ -94,7 +94,7 @@ class WebViewChatDriver(
                 }
             }
             // Ekran dışı ama ölçülü: getBoundingClientRect / görünürlük kontrolleri çalışsın.
-            wv.layerType = View.LAYER_TYPE_SOFTWARE
+            wv.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
             wv.measure(
                 View.MeasureSpec.makeMeasureSpec(1280, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(2000, View.MeasureSpec.EXACTLY),
