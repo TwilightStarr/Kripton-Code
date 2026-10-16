@@ -7,7 +7,6 @@ Android için kod odaklı, çoklu-AI üretim aracı. Büyük bir işi ayrıntıl
 ## Özellikler
 
 - **Çoklu AI hesabı:** Google Gemini, Groq, OpenRouter, Mistral, Cerebras, NVIDIA NIM, DeepSeek, Claude, OpenAI, Kimi ve OpenAI-uyumlu özel sağlayıcılar.
-- **Kimlik doğrulama:** API anahtarı (tüm sağlayıcılarda) ve Gemini için Google OAuth. Claude, OpenAI ve Kimi yalnızca resmi API anahtarıyla bağlanır: bu şirketlerin web sohbet hesabını (e-posta/şifre) üçüncü taraf uygulamaya açan bir API'si yoktur ve web arayüzünü otomatikleştirmek kullanım koşullarına aykırıdır. Ücretsiz başlamak için Gemini, Groq, OpenRouter, Cerebras, Mistral veya NVIDIA NIM anahtarı kullanabilirsin (bkz. [docs/FREE-PROVIDERS.md](docs/FREE-PROVIDERS.md)).
 - **Model seçimi:** Anahtar doğrulanınca uygun sohbet modelleri listelenir, ücretsiz olanlar öne çıkarılır.
 - **Prompt setleri:** Sıralı promptlar oluştur, yukarı/aşağı taşı, her prompta otomatik veya manuel hesap ata.
 - **Arka planda çalışma:** Üretim WorkManager ile sürer; uygulama kapansa da yarım kalan işler kurtarılır.
