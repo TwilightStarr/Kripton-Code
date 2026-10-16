@@ -36,7 +36,6 @@ import com.kriptoncod.app.domain.ThemePreference
 import com.kriptoncod.app.AppContainer
 import com.kriptoncod.app.ui.screens.AccountEditorScreen
 import com.kriptoncod.app.ui.screens.AisScreen
-import com.kriptoncod.app.ui.screens.DispatchScreen
 import com.kriptoncod.app.ui.screens.GitHubSettingsScreen
 import com.kriptoncod.app.ui.screens.HistoryScreen
 import com.kriptoncod.app.ui.screens.HomeScreen
@@ -134,6 +133,7 @@ fun AppRoot(
                     onBack = { navController.popBackStack() },
                     onAddPrompt = { navController.navigate(PromptRoutes.addPrompt(setId)) },
                     onEditPrompt = { promptId -> navController.navigate(PromptRoutes.editPrompt(setId, promptId)) },
+                    onRunStarted = { runId -> navController.navigate(ExtraRoutes.run(runId)) },
                 )
             }
             composable(
@@ -155,28 +155,21 @@ fun AppRoot(
                 PromptEditorScreen(setId = setId, promptId = promptId, onClose = { navController.popBackStack() })
             }
             composable(
-                "run/{runId}",
-                arguments = listOf(navArgument("runId") { type = NavType.LongType }),
+                ExtraRoutes.RUN,
+                arguments = listOf(navArgument(ExtraRoutes.ARG_RUN_ID) { type = NavType.LongType }),
             ) { entry ->
-                val runId = entry.arguments?.getLong("runId") ?: return@composable
-                RunScreen(runId = runId, container = container,
-                    onBack = { navController.popBackStack() })
+                val runId = entry.arguments?.getLong(ExtraRoutes.ARG_RUN_ID) ?: return@composable
+                RunScreen(runId = runId, container = container, onBack = { navController.popBackStack() })
             }
-            composable(
-                "dispatch/{setId}",
-                arguments = listOf(navArgument("setId") { type = NavType.LongType }),
-            ) { entry ->
-                val setId = entry.arguments?.getLong("setId") ?: return@composable
-                DispatchScreen(setId = setId, onBack = { navController.popBackStack() })
+            composable(ExtraRoutes.GITHUB) {
+                GitHubSettingsScreen(container = container, onBack = { navController.popBackStack() })
             }
-            composable("github") {
-                GitHubSettingsScreen(container = container,
-                    onBack = { navController.popBackStack() })
-            }
-            composable("permissions") {
+            composable(ExtraRoutes.PERMISSIONS) {
                 PermissionScreen(onDone = { navController.popBackStack() })
             }
-            composable(Route.History.path) { HistoryScreen() }
+            composable(Route.History.path) {
+                HistoryScreen(onOpenRun = { runId -> navController.navigate(ExtraRoutes.run(runId)) })
+            }
             composable(Route.Settings.path) {
                 SettingsScreen(
                     themePreference = themePreference,
@@ -186,6 +179,8 @@ fun AppRoot(
                         googleClientId = value
                         scope.launch { googleSettings.setClientId(value) }
                     },
+                    onOpenGitHub = { navController.navigate(ExtraRoutes.GITHUB) },
+                    onOpenPermissions = { navController.navigate(ExtraRoutes.PERMISSIONS) },
                 )
             }
         }

@@ -40,7 +40,7 @@ sealed interface RunWait {
     data class Failed(val failure: ApiResult.Fail) : RunWait
 }
 
-/** Doğrulama workflow'u: `kriptoncod/**` dallarına push'ta çalışır. */
+/** Doğrulama workflow'u: `kriptoncod/` ile başlayan dallara push'ta çalışır. */
 object VerifyWorkflow {
     const val PATH = ".github/workflows/kriptoncod-verify.yml"
 

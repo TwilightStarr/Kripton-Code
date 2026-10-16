@@ -40,13 +40,6 @@
     <string name="settings_google_client_id_label">OAuth istemci kimliği</string>
     <string name="settings_google_client_id_placeholder">com.example.app veya *.apps.googleusercontent.com</string>
 
-    <string name="provider_gemini">Google Gemini</string>
-    <string name="provider_groq">Groq</string>
-    <string name="provider_openrouter">OpenRouter</string>
-    <string name="provider_mistral">Mistral</string>
-    <string name="provider_cerebras">Cerebras</string>
-    <string name="provider_deepseek">DeepSeek</string>
-    <string name="provider_custom">OpenAI-uyumlu (özel)</string>
     <string name="provider_free_tier">Ücretsiz katman var</string>
     <string name="provider_paid_only">Ücretli</string>
     <string name="provider_get_key">Anahtar al</string>
@@ -163,4 +156,50 @@
     <string name="prompts_prompt_title_hint">Örn. Hero bölümü kodu</string>
     <string name="prompts_prompt_body_label">Prompt metni</string>
     <string name="prompts_prompt_body_hint">AI\'a gönderilecek ayrıntılı talimat…</string>
+
+    <!-- GitHub Ayarları -->
+    <string name="github_settings_title">GitHub Ayarları</string>
+    <string name="github_token_label">Kişisel Erişim Belirteci</string>
+    <string name="github_token_hint">GitHub → Settings → Developer Settings → Personal Access Tokens altından üret. `repo` ve `workflow` izinleri gerekir.</string>
+    <string name="github_token_clear">Token Sil</string>
+    <string name="github_settings_info_title">Güvenlik</string>
+    <string name="github_settings_info_body">Token yalnızca cihazda Android Keystore ile şifrelenir. Hiçbir loga, geçmişe veya üretilen dosyaya yazılmaz.</string>
+
+    <!-- İzin Ekranı -->
+    <string name="permissions_title">İzinler</string>
+    <string name="permissions_internet_title">İnternet Erişimi</string>
+    <string name="permissions_internet_body">Kripton Cod, AI sağlayıcılarına istek atmak ve GitHub ile iletişim kurmak için internet izni kullanır. Başka hiçbir izin gerekmez.</string>
+    <string name="permissions_note_title">Veri Gizliliği</string>
+    <string name="permissions_note_body">Tüm anahtarlar ve token\'lar yalnızca cihazda şifreli saklanır. Uygulama dışına gönderilmez.</string>
+
+    <!-- Run Ekranı -->
+    <string name="run_title">Çalıştırma</string>
+    <string name="run_jobs_title">İşler</string>
+    <string name="run_cancel">Çalıştırmayı iptal et</string>
+    <string name="run_save_zip">Zip\'i kaydet</string>
+    <string name="run_save_zip_done">Zip kaydedildi.</string>
+    <string name="run_save_zip_failed">Zip kaydedilemedi.</string>
+
+    <!-- Çalıştırmayı başlat (prompt seti) -->
+    <string name="run_launch">Çalıştır</string>
+    <string name="run_launch_title">Seti çalıştır</string>
+    <string name="run_launch_repo_label">GitHub reposu (isteğe bağlı)</string>
+    <string name="run_launch_repo_none">Yalnızca zip</string>
+    <string name="run_launch_repo_loading">Repolar yükleniyor…</string>
+    <string name="run_launch_repo_error">Repolar alınamadı. Token\'ı ve internet bağlantısını kontrol et.</string>
+    <string name="run_launch_no_token">Sonucu GitHub\'a göndermek için Ayarlar\'dan bir token ekle. Şimdilik yalnızca zip üretilir.</string>
+    <string name="run_launch_no_accounts">Çalıştırmak için önce AI\'lar sekmesinden bir hesap ekle.</string>
+    <string name="run_launch_failed">Çalıştırma başlatılamadı.</string>
+    <string name="run_launch_branch_note">Sonuç, seçilen repoda yeni bir dala tek commit olarak gönderilir ve Actions ile doğrulanır.</string>
+
+    <!-- Ayarlar: bağlantılar -->
+    <string name="settings_github">GitHub</string>
+    <string name="settings_github_hint">Token tanımla ve CI düzeltme ayarlarını yönet.</string>
+    <string name="settings_permissions">İzinler</string>
+    <string name="settings_permissions_hint">Uygulamanın hangi izinleri kullandığını gör.</string>
+    <string name="action_open">Aç</string>
+
+    <!-- GitHub: CI -->
+    <string name="github_ci_attempts_label">CI düzeltme denemesi</string>
+    <string name="github_ci_attempts_hint">Actions başarısız olursa AI en fazla bu kadar kez düzeltmeyi dener.</string>
 </resources>

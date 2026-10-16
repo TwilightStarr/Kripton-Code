@@ -30,7 +30,7 @@ class FinalAiAssembler(
 
         val doneJobs = runs.getJobs(runId).filter { it.state == JobState.DONE }
         val accCache = mutableMapOf<Long, AiAccount?>()
-        fun authTypeOf(accountId: Long?) =
+        suspend fun authTypeOf(accountId: Long?) =
             accountId?.let { id -> accCache.getOrPut(id) { accounts.get(id) }?.authType }
         if (doneJobs.isEmpty() || doneJobs.any { authTypeOf(it.accountId) != AuthType.KIMI }) {
             return false

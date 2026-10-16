@@ -8,7 +8,7 @@ A code-focused, multi-AI generation tool for Android. Split a large job into sma
 
 - **Multiple AI accounts:** Google Gemini, Groq, OpenRouter, Mistral, Cerebras, NVIDIA NIM, DeepSeek, Claude, OpenAI, Kimi, and custom OpenAI-compatible providers.
 - **Authentication:** API key (all providers) and Google OAuth for Gemini. Claude, OpenAI, and Kimi connect with an official API key only: these companies offer no API that lets a third-party app sign in to a web chat account (email/password), and automating their web interfaces violates their terms of use. To start for free, use a Gemini, Groq, OpenRouter, Cerebras, Mistral, or NVIDIA NIM key (see [docs/FREE-PROVIDERS.md](docs/FREE-PROVIDERS.md)).
-- **Model picker:** After the key is verified, suitable chat models are listed with free and recommended ones highlighted.
+- **Model picker:** After the key is verified, suitable chat models are listed with free ones highlighted.
 - **Prompt sets:** Build ordered prompts, reorder them, and assign an account to each prompt automatically or manually.
 - **Background runs:** Generation continues through WorkManager; interrupted jobs are recovered.
 - **History:** Generated outputs and prepared zip files are stored on the device.
@@ -19,7 +19,7 @@ A code-focused, multi-AI generation tool for Android. Split a large job into sma
 ## Requirements
 
 - Android 8.0 (API 26) or newer
-- For development: JDK 17, Android SDK 35 (Android Studio Ladybug or newer recommended)
+- For development: JDK 17, Android SDK 35 (Android Studio Ladybug or newer)
 
 ## Install (users)
 
@@ -35,7 +35,7 @@ A code-focused, multi-AI generation tool for Android. Split a large job into sma
 ./gradlew testDebugUnitTest      # unit tests
 ```
 
-If `gradle-wrapper.jar` is missing: `gradle wrapper --gradle-version 8.9`
+The Gradle wrapper (including `gradle-wrapper.jar`) is checked in; no separate Gradle install is needed.
 
 ### Google OAuth (optional)
 
@@ -45,8 +45,9 @@ To use Gemini with a Google account, create an Android OAuth client ID in Google
 
 1. In the **AIs** tab, pick a provider, verify the key, choose a model, and save.
 2. In the **Prompts** tab, create a set, add prompts, and assign accounts.
-3. Run the set; progress and outputs appear in the **History** tab.
-4. To push to GitHub, add a token and choose the target repository.
+3. Press **Run** on the set screen. Optionally pick a target GitHub repository; otherwise only a zip is produced.
+4. Progress and results appear in the **History** tab; open a run and use **Save zip** to store the zip on your phone.
+5. To push to GitHub, add a token under **Settings → GitHub** (needs `repo` and `workflow` scopes). The result is committed to the `kriptoncod/run-<id>` branch as a single commit and the verify workflow runs; on failure the AI sends a fix to the same branch (attempt count is set in the GitHub settings).
 
 ## Publishing a release (automatic)
 
@@ -92,4 +93,4 @@ Kotlin 2.0, Jetpack Compose (Material 3), Room, DataStore, WorkManager, OkHttp, 
 
 ## Contributing
 
-Use the Issues page for bugs and suggestions. When opening a PR, add a label matching the change; release notes are grouped by it.
+Use the Issues page for bug reports. When opening a PR, add a label matching the change; release notes are grouped by it.

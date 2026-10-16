@@ -31,6 +31,7 @@ import com.kriptoncod.app.data.run.FinalAiAssembler
 import com.kriptoncod.app.data.run.PromptDispatcher
 import com.kriptoncod.app.data.run.RunFinalizer
 import com.kriptoncod.app.data.run.RunLauncher
+import com.kriptoncod.app.data.run.RunPublisher
 import com.kriptoncod.app.data.run.VaultCredentialProvider
 import com.kriptoncod.app.domain.RunStatus
 import com.kriptoncod.app.work.RunScheduler
@@ -41,7 +42,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 /** Elle basit DI: tekil bağımlılıklar burada tembel (lazy) oluşturulur. */
 class AppContainer(context: Context) {
@@ -72,9 +72,9 @@ class AppContainer(context: Context) {
     // --- Google Auth ---
     val googleAuthSettings: GoogleAuthSettings by lazy { GoogleAuthSettings(appContext) }
     val googleTokenStore: GoogleTokenStore by lazy { GoogleTokenStore(keyVault) }
+    /** İstemci kimliği her çağrıda ayarlardan okunur; Ayarlar'da değişince yeniden başlatmak gerekmez. */
     val googleAuthClient: GoogleAuthClient by lazy {
-        val clientId = runBlocking { googleAuthSettings.clientIdFlow.first() }
-        RealGoogleAuthClient(clientId)
+        RealGoogleAuthClient { googleAuthSettings.clientIdFlow.first() }
     }
 
     // --- Email Auth ---
@@ -102,24 +102,23 @@ class AppContainer(context: Context) {
     val finalAiAssembler: FinalAiAssembler by lazy {
         FinalAiAssembler(runRepository, aiAccountRepository, credentialProvider, aiGenerator, kimiCodeRepository)
     }
+    val runPublisher: RunPublisher by lazy { RunPublisher(runRepository, githubService, githubTokenStore) }
     val promptDispatcher: PromptDispatcher by lazy {
         PromptDispatcher(
             runRepository, promptRepository, aiAccountRepository, credentialProvider, aiGenerator,
             onAllJobsDone = { runId ->
                 // Kimi run'ları: kodlar depoda toplandı; nihai paketi son AI (en güçlü API_KEY) üretir.
-                if (finalAiAssembler.assemble(runId)) {
-                    RunStatus.DONE
-                } else when (val result = runFinalizer.finalize(runId)) {
-                    is RunFinalizer.Result.Success -> {
-                        val run = runRepository.getRun(runId)
-                        if (run?.repo != null && githubTokenStore.get() != null) {
-                            runRepository.setRunStatus(runId, RunStatus.CI_WAITING)
-                            runScheduler.startCiLoop(runId)
-                        }
-                        RunStatus.DONE
+                val packaged = finalAiAssembler.assemble(runId) ||
+                    runFinalizer.finalize(runId) is RunFinalizer.Result.Success
+                when {
+                    !packaged -> RunStatus.FAILED
+                    !runPublisher.shouldPublish(runId) -> RunStatus.DONE
+                    // Repo seçilmiş: dalı gönder, ardından CI sonucunu izle.
+                    runPublisher.publish(runId) -> {
+                        runScheduler.startCiLoop(runId)
+                        RunStatus.CI_WAITING
                     }
-                    is RunFinalizer.Result.HasTruncated -> RunStatus.FAILED
-                    is RunFinalizer.Result.NeedsConflictResolution -> RunStatus.FAILED
+                    else -> RunStatus.FAILED
                 }
             },
             kimiCodes = kimiCodeRepository,
@@ -137,7 +136,10 @@ class AppContainer(context: Context) {
                 aiAccountRepository.releaseExpiredWaits()
                 // Süreç öldürüldüyse yarım kalan run'ların dağıtımını yeniden başlat (KEEP: çift çalışmaz).
                 runRepository.observeRuns().first()
-                    .filter { it.status == RunStatus.PREPARING || it.status == RunStatus.RUNNING }
+                    .filter {
+                        it.status == RunStatus.PREPARING || it.status == RunStatus.RUNNING ||
+                            it.status == RunStatus.PUSHING
+                    }
                     .forEach { runScheduler.start(it.id) }
             }
         }

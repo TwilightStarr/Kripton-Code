@@ -106,6 +106,12 @@ class RunRepository(
         return path
     }
 
+    /** Run'ın zip'indeki dosyaları (yol, içerik) olarak okur; zip yoksa boş liste. Dizin girdileri atlanır. */
+    suspend fun readZipFiles(runId: Long): List<Pair<String, ByteArray>> {
+        val path = runs.get(runId)?.zipPath ?: return emptyList()
+        return outputs.readZipEntries(path)
+    }
+
     /** Çalıştırmanın geçmiş JSON'unu (history/<runId>.json) DB durumundan üretir. */
     suspend fun saveHistory(runId: Long) {
         val run = runs.get(runId) ?: return

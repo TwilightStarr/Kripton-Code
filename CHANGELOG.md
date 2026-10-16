@@ -5,7 +5,25 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
+### Kaldırıldı
+- Var olmayan sınıflara dayanan, hiçbir yerden açılmayan "Dağıtım" ekranı ve ViewModel'i.
+- README dosyalarındaki "önerilen model" ve "öneriler" ifadeleri kaldırıldı.
+
+### Düzeltildi
+- Derlemeyi bozan hatalar: KDoc içinde `/**` içeren yorumlar (kapanmayan yorum), `\s`/`\x00` gibi geçersiz Kotlin kaçışları (`CodeBlockParser`, `PathSafety`, `CiLogParser`), `CiLoopWorker` söz dizimi, `FinalAiAssembler` içinde suspend olmayan yerden suspend çağrı, `RunFinalizer` tip uyumsuzluğu, `RunScreen` iptal düğmesinin suspend fonksiyonu doğrudan çağırması.
+- `strings.xml` ile `strings_providers.xml` arasındaki yinelenen kaynaklar (derleme hatası) ve kaçışsız kesme işareti.
+- `play-services-auth` sürümü geçerli bir sürüme (21.2.0) çekildi.
+- Run durumu: CI başlatıldıktan sonra durum yanlışlıkla `DONE` ile eziliyordu; artık `CI_WAITING` kalır. CI döngüsü doğru dal adını (`kriptoncod/run-<id>`) kullanır ve sonsuza dek yeniden denemez.
+- Google OAuth istemci kimliği Ayarlar'da değişince artık uygulamayı yeniden başlatmak gerekmez.
+- Gradle wrapper (`gradle-wrapper.jar`, resmi `gradlew`/`gradlew.bat`) repoya eklendi.
+
 ### Eklendi
+- Çıktıyı GitHub'a gönderme adımı (`RunPublisher`): yeni dal + tek commit + doğrulama workflow'u, ardından CI izleme.
+- Set ekranında **Çalıştır** düğmesi ve hedef (yalnızca zip / GitHub reposu) seçimi.
+- Geçmişten run ayrıntısına gitme; run ekranında **Zip'i kaydet** ve CI/push aşamalarında iptal.
+- Ayarlar'dan GitHub ve İzinler ekranlarına bağlantı; GitHub ayarlarında CI düzeltme denemesi sayısı.
+- Zip artık AI'ın ```yol/dosya bloklarını gerçek dosya yollarıyla içerir (blok yoksa ham çıktı `output_<id>.txt`).
+- `CodeBlockParser`, `PathSafety`, `CiLogParser` ve `GitHubService.defaultBranch` için testler.
 - Türkçe ve İngilizce README.
 - Etiketle tetiklenen otomatik sürüm yayını (`.github/workflows/release.yml`), SHA-256 dosyası ve sürüm metni şablonu.
 - İsteğe bağlı release imzalama (ortam değişkenleri/secret'lar) ve keystore üretim betiği (`scripts/create-keystore.sh`).

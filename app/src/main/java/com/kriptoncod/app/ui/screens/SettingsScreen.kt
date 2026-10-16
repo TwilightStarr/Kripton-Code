@@ -21,6 +21,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.kriptoncod.app.R
 import com.kriptoncod.app.domain.ThemePreference
+import com.kriptoncod.app.ui.components.KButton
+import com.kriptoncod.app.ui.components.KButtonStyle
 import com.kriptoncod.app.ui.components.KChip
 import com.kriptoncod.app.ui.components.NodeCard
 import com.kriptoncod.app.ui.theme.KriptonTheme
@@ -34,6 +36,8 @@ fun SettingsScreen(
     googleClientId: String,
     /** Kullanıcı değer değiştirdiğinde çağrılır; DataStore'a yazılır. */
     onGoogleClientIdChange: (String) -> Unit,
+    onOpenGitHub: () -> Unit,
+    onOpenPermissions: () -> Unit,
 ) {
     val k = KriptonTheme.colors
     Column(
@@ -65,6 +69,38 @@ fun SettingsScreen(
                         onClick = { onThemeChange(option) },
                     )
                 }
+            }
+        }
+
+        // GitHub ve izinler
+        NodeCard(modifier = Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.settings_github), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(R.string.settings_github_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = k.muted,
+                )
+                KButton(
+                    text = stringResource(R.string.action_open),
+                    onClick = onOpenGitHub,
+                    style = KButtonStyle.Outline,
+                )
+            }
+        }
+        NodeCard(modifier = Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.settings_permissions), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(R.string.settings_permissions_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = k.muted,
+                )
+                KButton(
+                    text = stringResource(R.string.action_open),
+                    onClick = onOpenPermissions,
+                    style = KButtonStyle.Outline,
+                )
             }
         }
 

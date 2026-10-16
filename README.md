@@ -8,7 +8,7 @@ Android için kod odaklı, çoklu-AI üretim aracı. Büyük bir işi ayrıntıl
 
 - **Çoklu AI hesabı:** Google Gemini, Groq, OpenRouter, Mistral, Cerebras, NVIDIA NIM, DeepSeek, Claude, OpenAI, Kimi ve OpenAI-uyumlu özel sağlayıcılar.
 - **Kimlik doğrulama:** API anahtarı (tüm sağlayıcılarda) ve Gemini için Google OAuth. Claude, OpenAI ve Kimi yalnızca resmi API anahtarıyla bağlanır: bu şirketlerin web sohbet hesabını (e-posta/şifre) üçüncü taraf uygulamaya açan bir API'si yoktur ve web arayüzünü otomatikleştirmek kullanım koşullarına aykırıdır. Ücretsiz başlamak için Gemini, Groq, OpenRouter, Cerebras, Mistral veya NVIDIA NIM anahtarı kullanabilirsin (bkz. [docs/FREE-PROVIDERS.md](docs/FREE-PROVIDERS.md)).
-- **Model seçimi:** Anahtar doğrulanınca uygun sohbet modelleri listelenir, ücretsiz olanlar ve önerilen model öne çıkar.
+- **Model seçimi:** Anahtar doğrulanınca uygun sohbet modelleri listelenir, ücretsiz olanlar öne çıkarılır.
 - **Prompt setleri:** Sıralı promptlar oluştur, yukarı/aşağı taşı, her prompta otomatik veya manuel hesap ata.
 - **Arka planda çalışma:** Üretim WorkManager ile sürer; uygulama kapansa da yarım kalan işler kurtarılır.
 - **Geçmiş:** Üretilen çıktılar ve hazırlanan zip dosyaları cihazda saklanır.
@@ -19,7 +19,7 @@ Android için kod odaklı, çoklu-AI üretim aracı. Büyük bir işi ayrıntıl
 ## Gereksinimler
 
 - Android 8.0 (API 26) veya üstü
-- Geliştirme için: JDK 17, Android SDK 35 (Android Studio Ladybug veya üstü önerilir)
+- Geliştirme için: JDK 17, Android SDK 35 (Android Studio Ladybug veya üstü)
 
 ## Kurulum (kullanıcı)
 
@@ -35,7 +35,7 @@ Android için kod odaklı, çoklu-AI üretim aracı. Büyük bir işi ayrıntıl
 ./gradlew testDebugUnitTest      # birim testler
 ```
 
-`gradle-wrapper.jar` repoda yoksa: `gradle wrapper --gradle-version 8.9`
+Gradle wrapper (`gradle-wrapper.jar` dahil) repoda hazırdır; ayrıca Gradle kurmana gerek yok.
 
 ### Google OAuth (isteğe bağlı)
 
@@ -45,8 +45,9 @@ Gemini'yi Google hesabıyla kullanmak için Google Cloud Console'da Android tipi
 
 1. **AI'lar** sekmesinden bir sağlayıcı seç, anahtarını doğrula, modeli seç ve kaydet.
 2. **Promptlar** sekmesinde bir set oluştur, promptları ekle ve hesap ata.
-3. Seti çalıştır; ilerleme ve çıktılar **Geçmiş** sekmesinde görünür.
-4. GitHub'a göndermek için bir token tanımla ve hedef repoyu seç.
+3. Set ekranındaki **Çalıştır** düğmesine bas. İstersen hedef GitHub reposunu seç; seçmezsen yalnızca zip üretilir.
+4. İlerleme ve sonuçlar **Geçmiş** sekmesinde görünür; bir çalıştırmaya dokunup **Zip'i kaydet** ile zip'i telefonuna kaydedebilirsin.
+5. GitHub'a göndermek için **Ayarlar → GitHub** altında bir token tanımla (`repo` ve `workflow` izinleri gerekir). Sonuç `kriptoncod/run-<id>` dalına tek commit olarak gider, doğrulama workflow'u çalışır; hata olursa AI düzeltmeyi aynı dala yeniden gönderir (deneme sayısı GitHub ayarlarında).
 
 ## Sürüm yayınlama (otomatik)
 
@@ -92,4 +93,4 @@ Kotlin 2.0, Jetpack Compose (Material 3), Room, DataStore, WorkManager, OkHttp, 
 
 ## Katkı
 
-Hata ve öneriler için Issues sayfasını kullan. PR açarken değişikliğe uygun bir etiket ekle; sürüm notları buna göre gruplanır.
+Hata bildirimleri için Issues sayfasını kullan. PR açarken değişikliğe uygun bir etiket ekle; sürüm notları buna göre gruplanır.

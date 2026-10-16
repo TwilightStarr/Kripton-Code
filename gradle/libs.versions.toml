@@ -17,7 +17,7 @@ ksp = "2.0.21-1.0.28"
 robolectric = "4.14.1"
 androidxTest = "1.6.1"
 androidxTestExt = "1.2.1"
-googleIdentity = "1.1.1"
+googleIdentity = "21.2.0"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }

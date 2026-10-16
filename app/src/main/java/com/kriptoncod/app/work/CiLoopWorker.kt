@@ -6,14 +6,21 @@ import androidx.work.WorkerParameters
 import com.kriptoncod.app.KriptonCodApp
 import com.kriptoncod.app.data.github.CiLogSummarizer
 import com.kriptoncod.app.data.github.GitHubFile
+import com.kriptoncod.app.data.github.GitHubService
 import com.kriptoncod.app.data.github.RunWait
 import com.kriptoncod.app.data.providers.ApiResult
+import com.kriptoncod.app.data.providers.ProviderCatalog
 import com.kriptoncod.app.data.run.CodeBlockParser
+import com.kriptoncod.app.data.run.PathSafety
 import com.kriptoncod.app.domain.AccountStatus
 import com.kriptoncod.app.domain.CiLogParser
 import com.kriptoncod.app.domain.RunStatus
 import kotlinx.coroutines.flow.first
 
+/**
+ * GitHub Actions sonucunu bekler; başarısızsa log özetini AI'a verip düzeltmeyi aynı dala commit'ler.
+ * Geçici hatalarda [Result.retry] kullanılır; [MAX_WORKER_ATTEMPTS] aşılırsa run FAILED olur.
+ */
 class CiLoopWorker(context: Context, params: WorkerParameters) :
     CoroutineWorker(context, params) {
 
@@ -25,25 +32,30 @@ class CiLoopWorker(context: Context, params: WorkerParameters) :
         val run = c.runRepository.getRun(runId) ?: return Result.failure()
         if (run.status == RunStatus.CANCELLED) return Result.success()
 
-        val repo = run.repo ?: return Result.failure()
-        val token = c.githubTokenStore.get() ?: return Result.failure()
-        val branch = "kripton-cod/${run.createdAt}"
+        val repo = run.repo ?: return failRun(runId)
+        val token = c.githubTokenStore.get() ?: return failRun(runId)
+        val branch = GitHubService.runBranch(runId)
+
+        // Geçici hata: sınırsız yeniden denemeyi önle.
+        suspend fun retryOrFail(): Result =
+            if (runAttemptCount < MAX_WORKER_ATTEMPTS) Result.retry() else failNow(c, runId)
 
         // Push yapan commit'in SHA'sı (dal ucundan okunur).
-        val headSha = c.githubService.branchSha(token, repo, branch)
-            .let { if (it is ApiResult.Ok) it.value else null }
-            ?: return Result.retry()
+        val headSha = when (val head = c.githubService.branchSha(token, repo, branch)) {
+            is ApiResult.Ok -> head.value
+            is ApiResult.Fail -> return retryOrFail()
+        }
 
         // Workflow bitene dek bekle (poll; worker ölürse retry ile sürer).
-        val waited = c.githubService.awaitRun(token, repo, branch, headSha)
-        val finished = when (waited) {
+        val finished = when (val waited = c.githubService.awaitRun(token, repo, branch, headSha)) {
             is RunWait.Completed -> waited.run
-            is RunWait.TimedOut -> return Result.retry()
-            is RunWait.Failed -> return Result.retry()
+            is RunWait.TimedOut -> return retryOrFail()
+            is RunWait.Failed -> return retryOrFail()
         }
 
         if (finished.conclusion == "success") {
             c.runRepository.setRunStatus(runId, RunStatus.DONE)
+            c.runRepository.saveHistory(runId)
             return Result.success()
         }
 
@@ -51,63 +63,75 @@ class CiLoopWorker(context: Context, params: WorkerParameters) :
         val maxAttempts = c.themeStore.ciMaxAttemptsFlow.first()
         c.runRepository.incrementCiAttempts(runId)
         val current = c.runRepository.getRun(runId) ?: return Result.failure()
-        if (current.ciAttempts >= maxAttempts) {
-            c.runRepository.setRunStatus(runId, RunStatus.FAILED)
-            return Result.success()
-        }
+        if (current.ciAttempts >= maxAttempts) return failRun(runId)
 
         // Log indir + hata çıkar
-        val logBytes = c.githubService.downloadRunLogs(token, repo, finished.id)
-        val logText = when (logBytes) {
+        val logText = when (val logBytes = c.githubService.downloadRunLogs(token, repo, finished.id)) {
             is ApiResult.Ok -> CiLogSummarizer.summarize(logBytes.value)
-            else -> return Result.retry()
+            else -> return retryOrFail()
         }
         val errors = CiLogParser.parse(logText)
-        if (errors.isEmpty()) {   // çözülemezse yeniden dene
-            c.runRepository.setRunStatus(runId, RunStatus.FAILED)
-            return Result.success()
-        }
+        if (errors.isEmpty()) return failRun(runId) // hata çözümlenemedi
 
         // En güçlü hazır AI ile düzelt
         val fixPrompt = buildString {
-            appendLine("Aşağıdaki CI hatalarını düzelt. Yalnızca düzeltilmiş dosyaları " +
-                "```yol/dosya biçiminde döndür.")
+            appendLine(
+                "Aşağıdaki CI hatalarını düzelt. Yalnızca düzeltilmiş dosyaları " +
+                    "```yol/dosya biçiminde kod bloklarıyla döndür.",
+            )
             appendLine(CiLogParser.toPromptSummary(errors))
         }
         val account = c.aiAccountRepository.observeAll().first()
-            .filter { it.status == AccountStatus.READY }
-            .maxByOrNull { it.powerRank } ?: return Result.retry()
+            .filter { it.enabled && it.status == AccountStatus.READY }
+            .maxByOrNull { it.powerRank } ?: return retryOrFail()
 
-        val credential = c.credentialProvider.credentialFor(account)
-            ?: return Result.retry()
-        val endpoint = com.kriptoncod.app.data.providers.ProviderCatalog
-            .byId(account.providerId)?.resolve() ?: return Result.retry()
+        val credential = c.credentialProvider.credentialFor(account) ?: return retryOrFail()
+        val endpoint = ProviderCatalog.byId(account.providerId)?.resolve() ?: return retryOrFail()
 
         c.runRepository.setRunStatus(runId, RunStatus.FIXING)
         val fixed = try {
             c.aiGenerator.generate(endpoint, account.modelId, credential, fixPrompt)
-        } catch (e: Exception) { return Result.retry() }
-
-        val blocks = CodeBlockParser.parse(fixed).filter {
-            com.kriptoncod.app.data.run.PathSafety.validate(it.path)
-                is com.kriptoncod.app.data.run.PathSafety.Result.Safe
+        } catch (e: Exception) {
+            return retryOrFail()
         }
-        if (blocks.isEmpty()) return Result.retry()
+
+        val blocks = CodeBlockParser.parse(fixed).mapNotNull { b ->
+            when (val r = PathSafety.validate(b.path)) {
+                is PathSafety.Result.Safe -> b.copy(path = r.normalized)
+                is PathSafety.Result.Rejected -> null
+            }
+        }.associateBy { it.path }.values.toList() // aynı yol iki kez gelirse sonuncusu
+        if (blocks.isEmpty()) return retryOrFail()
 
         // Yeni commit + push
-        val commit = c.githubService.commitFiles(
-            token, repo, branch,
-            "Kripton Cod: CI düzeltmesi (deneme ${current.ciAttempts})",
-            blocks.map { GitHubFile(it.path, it.content) },
-        )
-        return when (commit) {
-            is ApiResult.Ok -> {
-                c.runRepository.setRunStatus(runId, RunStatus.CI_WAITING)
-                Result.retry()   // yeni CI turunu izle
-            }
-            else -> Result.retry()
+        val commit = try {
+            c.githubService.commitFiles(
+                token, repo, branch,
+                "Kripton Cod: CI düzeltmesi (deneme ${current.ciAttempts})",
+                blocks.map { GitHubFile(it.path, it.content) },
+            )
+        } catch (e: IllegalArgumentException) {
+            return failRun(runId)
         }
+        if (commit is ApiResult.Ok) c.runRepository.setRunStatus(runId, RunStatus.CI_WAITING)
+        return retryOrFail() // yeni CI turunu izle
     }
 
-    companion object { const val KEY_RUN_ID = "run_id" }
+    private suspend fun failRun(runId: Long): Result {
+        failNow((applicationContext as KriptonCodApp).container, runId)
+        return Result.success() // iş bitti (başarısız); WorkManager tekrar denemesin
+    }
+
+    private suspend fun failNow(c: com.kriptoncod.app.AppContainer, runId: Long): Result {
+        runCatching {
+            c.runRepository.setRunStatus(runId, RunStatus.FAILED)
+            c.runRepository.saveHistory(runId)
+        }
+        return Result.failure()
+    }
+
+    companion object {
+        const val KEY_RUN_ID = "run_id"
+        private const val MAX_WORKER_ATTEMPTS = 20
+    }
 }

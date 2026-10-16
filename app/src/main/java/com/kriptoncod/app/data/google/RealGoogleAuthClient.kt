@@ -14,7 +14,7 @@ import kotlin.coroutines.resume
  * Üretim uygulaması: Google Identity Services [AuthorizationClient] kullanır.
  * [clientId] yoksa tüm çağrılar [GoogleAuthResult.Error] döner.
  */
-class RealGoogleAuthClient(private val clientId: String?) : GoogleAuthClient {
+class RealGoogleAuthClient(private val clientId: suspend () -> String?) : GoogleAuthClient {
 
     private val scopes = listOf(Scope(GENAI_SCOPE))
 
@@ -26,7 +26,7 @@ class RealGoogleAuthClient(private val clientId: String?) : GoogleAuthClient {
         Identity.getAuthorizationClient(activity)
 
     override suspend fun authorize(activity: Activity): GoogleAuthResult {
-        if (clientId.isNullOrBlank()) {
+        if (clientId().isNullOrBlank()) {
             return GoogleAuthResult.Error("OAuth istemci kimliği tanımlanmamış")
         }
         return withContext(Dispatchers.IO) {
@@ -34,7 +34,6 @@ class RealGoogleAuthClient(private val clientId: String?) : GoogleAuthClient {
                 client(activity).authorize(buildRequest())
                     .addOnSuccessListener { result ->
                         val token = result.accessToken
-                        val expiry = result.grantedScopes  // expiry GIS API'sinde ayrı değil
                         if (token != null) {
                             // GIS tokenları genellikle 3600 sn; varsayılan 55 dk yenileme payı
                             val expiresAt = System.currentTimeMillis() + TOKEN_LIFETIME_MS

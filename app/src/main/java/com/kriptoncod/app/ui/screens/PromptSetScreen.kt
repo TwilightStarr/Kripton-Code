@@ -57,11 +57,25 @@ fun PromptSetScreen(
     onBack: () -> Unit,
     onAddPrompt: () -> Unit,
     onEditPrompt: (Long) -> Unit,
+    onRunStarted: (Long) -> Unit,
 ) {
     val viewModel: PromptSetViewModel = viewModel(factory = rememberPromptSetViewModelFactory(setId))
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var showRun by remember { mutableStateOf(false) }
+    if (showRun) {
+        RunLaunchDialog(
+            setId = setId,
+            hasAccounts = state.accounts.isNotEmpty(),
+            onDismiss = { showRun = false },
+            onStarted = { runId ->
+                showRun = false
+                onRunStarted(runId)
+            },
+        )
+    }
     PromptSetContent(
         state = state,
+        onRun = { showRun = true },
         onBack = onBack,
         onAddPrompt = onAddPrompt,
         onEditPrompt = onEditPrompt,
@@ -82,6 +96,7 @@ private fun PromptSetContent(
     onBack: () -> Unit,
     onAddPrompt: () -> Unit,
     onEditPrompt: (Long) -> Unit,
+    onRun: () -> Unit,
     onMoveUp: (Long) -> Unit,
     onMoveDown: (Long) -> Unit,
     onAssign: (Long, Long, AssignmentMode) -> Unit,
@@ -139,17 +154,26 @@ private fun PromptSetContent(
                     action = { KButton(text = stringResource(R.string.prompts_add_prompt), onClick = onAddPrompt) },
                 )
             }
-            else -> items(state.prompts, key = { it.item.id }) { row ->
-                PromptRowCard(
-                    row = row,
-                    isFirst = state.prompts.firstOrNull()?.item?.id == row.item.id,
-                    isLast = state.prompts.lastOrNull()?.item?.id == row.item.id,
-                    onEdit = { onEditPrompt(row.item.id) },
-                    onMoveUp = { onMoveUp(row.item.id) },
-                    onMoveDown = { onMoveDown(row.item.id) },
-                    onAssign = { assignTarget = row },
-                    onDelete = { onRequestDelete(row.item.id) },
-                )
+            else -> {
+                item(key = "run") {
+                    KButton(
+                        text = stringResource(R.string.run_launch),
+                        onClick = onRun,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                items(state.prompts, key = { it.item.id }) { row ->
+                    PromptRowCard(
+                        row = row,
+                        isFirst = state.prompts.firstOrNull()?.item?.id == row.item.id,
+                        isLast = state.prompts.lastOrNull()?.item?.id == row.item.id,
+                        onEdit = { onEditPrompt(row.item.id) },
+                        onMoveUp = { onMoveUp(row.item.id) },
+                        onMoveDown = { onMoveDown(row.item.id) },
+                        onAssign = { assignTarget = row },
+                        onDelete = { onRequestDelete(row.item.id) },
+                    )
+                }
             }
         }
     }

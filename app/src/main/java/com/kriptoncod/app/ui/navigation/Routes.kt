@@ -40,3 +40,13 @@ object PromptRoutes {
     fun addPrompt(setId: Long): String = "prompts/set/$setId/add"
     fun editPrompt(setId: Long, promptId: Long): String = "prompts/set/$setId/edit/$promptId"
 }
+
+/** Alt gezinmede görünmeyen diğer ekranlar. */
+object ExtraRoutes {
+    const val ARG_RUN_ID = "runId"
+    const val RUN = "run/{$ARG_RUN_ID}"
+    const val GITHUB = "github"
+    const val PERMISSIONS = "permissions"
+
+    fun run(runId: Long): String = "run/$runId"
+}

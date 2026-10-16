@@ -104,6 +104,12 @@ class GitHubServiceTest {
 
     // ---- dal
 
+    @Test fun defaultBranchReadsRepoDefaultBranch() = runBlocking {
+        server.enqueue(json("""{"full_name":"me/app","default_branch":"trunk"}"""))
+        assertEquals("trunk", ok(service.defaultBranch(token, "me/app")))
+        assertEquals("/repos/me/app", server.takeRequest().path)
+    }
+
     @Test fun createBranchUsesBaseShaAndReturnsNewSha() = runBlocking {
         server.enqueue(json("""{"ref":"refs/heads/main","object":{"sha":"base111"}}"""))
         server.enqueue(json("""{"ref":"refs/heads/kriptoncod/run-7","object":{"sha":"base111"}}""", 201))

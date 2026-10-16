@@ -45,6 +45,7 @@ class RunScheduler(
     suspend fun cancel(runId: Long) {
         runs.setRunStatus(runId, RunStatus.CANCELLED)
         workManager.cancelUniqueWork(WorkNames.dispatch(runId))
+        workManager.cancelUniqueWork(WorkNames.ciLoop(runId))
     }
 
     private fun request(runId: Long, delayMs: Long) =

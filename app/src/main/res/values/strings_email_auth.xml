@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- E-posta auth eklentisi: mevcut strings.xml'e eklenecek satırlar -->
+<!-- E-posta giriş kartı metinleri (katalogda şu an kullanılmıyor; kod ayrı temizlik için duruyor) -->
 <resources>
-    <!-- Sağlayıcı adları (yeni) -->
+    <!-- Sağlayıcı adları -->
     <string name="provider_claude">Anthropic Claude</string>
     <string name="provider_openai">OpenAI ChatGPT</string>
     <string name="provider_email_auth">E-posta girişi</string>

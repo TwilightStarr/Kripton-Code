@@ -75,6 +75,14 @@ class GitHubService(
         return ApiResult.Ok(all.distinctBy { it.fullName })
     }
 
+    /** Reponun varsayılan dalını (`main`, `master`…) döndürür. */
+    suspend fun defaultBranch(token: String, repo: String): ApiResult<String> {
+        requireRepo(repo)
+        return execute(token, "GET", url("repos/$repo"))
+            .flatMap { decode<RepoDto>(it) }
+            .map { it.defaultBranch }
+    }
+
     // ------------------------------------------------------------------ dal / commit
 
     /**

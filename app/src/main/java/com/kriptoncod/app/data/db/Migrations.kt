@@ -7,7 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * Şema geçişleri. Şema değiştiğinde:
  *  1. KriptonDatabase.VERSION'u artır,
  *  2. Aşağıya Migration(n, n+1) ekle ve ALL'a koy,
- *  3. Derleme sonrası oluşan app/schemas/**\/<n+1>.json dosyasını commit et,
+ *  3. Derleme sonrası oluşan app/schemas/.../<n+1>.json dosyasını commit et,
  *  4. MigrationTest zinciri otomatik doğrular.
  *
  * Yıkıcı geri dönüş (fallbackToDestructiveMigration) KASITLI olarak kullanılmaz.

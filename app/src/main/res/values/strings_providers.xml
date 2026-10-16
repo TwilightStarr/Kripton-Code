@@ -7,7 +7,7 @@
     <string name="provider_cerebras">Cerebras</string>
     <string name="provider_deepseek">DeepSeek</string>
     <string name="provider_nvidia">NVIDIA NIM</string>
-    <string name="provider_custom">Özel Sağlayıcı</string>
+    <string name="provider_custom">OpenAI-uyumlu (özel)</string>
     <string name="provider_kimi">Moonshot Kimi</string>
     <string name="provider_kimi_auth">Kimi oturumu</string>
 

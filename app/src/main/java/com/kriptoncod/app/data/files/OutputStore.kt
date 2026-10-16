@@ -4,6 +4,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
 import java.util.concurrent.ConcurrentHashMap
+import java.util.zip.ZipInputStream
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -135,6 +136,21 @@ class OutputStore(
             withContext(dispatcher) { AtomicFiles.write(File(zipsDir, "$runId.zip"), writer) }
         }
         return zipRelativePath(runId)
+    }
+
+    /** Göreli yoldaki zip'in dosya girdilerini (yol, içerik) okur; dosya yoksa boş liste. */
+    suspend fun readZipEntries(relativePath: String): List<Pair<String, ByteArray>> = withContext(dispatcher) {
+        val f = safeResolve(relativePath)
+        if (f == null || !f.isFile) return@withContext emptyList()
+        val result = mutableListOf<Pair<String, ByteArray>>()
+        ZipInputStream(f.inputStream().buffered()).use { zis ->
+            while (true) {
+                val entry = zis.nextEntry ?: break
+                if (entry.isDirectory) continue
+                result += entry.name to zis.readBytes()
+            }
+        }
+        result
     }
 
     suspend fun deleteRun(runId: Long) {
