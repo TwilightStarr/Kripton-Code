@@ -30,12 +30,12 @@ jobs:
       # Gradle önbelleği (bağımlılıklar + wrapper) bu adımda yönetilir.
       - uses: gradle/actions/setup-gradle@v6
         with:
-          gradle-version: "8.14.3"
+          gradle-version: "9.7.0"
 
       - name: Wrapper jar yoksa üret
         run: |
           if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
-            gradle wrapper --gradle-version 8.14.3
+            gradle wrapper --gradle-version 9.7.0
           fi
           chmod +x gradlew
 

@@ -1,19 +1,19 @@
 [versions]
-agp = "8.7.3"
-kotlin = "2.0.21"
+agp = "9.4.1"
+kotlin = "2.2.21"
 composeBom = "2024.10.01"
 coreKtx = "1.15.0"
 activityCompose = "1.9.3"
 lifecycle = "2.8.7"
 navigationCompose = "2.8.4"
 coroutines = "1.9.0"
-room = "2.6.1"
+room = "2.8.5"
 datastore = "1.1.1"
 okhttp = "4.12.0"
 serialization = "1.7.3"
 work = "2.9.1"
 junit = "4.13.2"
-ksp = "2.0.21-1.0.28"
+ksp = "2.3.6"
 robolectric = "4.14.1"
 androidxTest = "1.6.1"
 androidxTestExt = "1.2.1"
@@ -51,7 +51,6 @@ google-identity-authorization = { module = "com.google.android.gms:play-services
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
