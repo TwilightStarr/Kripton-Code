@@ -31,7 +31,7 @@
     <string name="settings_appearance">Görünüm</string>
     <string name="settings_theme">Tema</string>
     <string name="theme_graphite">Grafit</string>
-    <string name="theme_black">Siyah</string>
+    <string name="theme_black">Siyah-Beyaz</string>
     <string name="theme_sage">Adaçayı</string>
 
     <!-- Google Auth Ayarları (SettingsScreen) -->

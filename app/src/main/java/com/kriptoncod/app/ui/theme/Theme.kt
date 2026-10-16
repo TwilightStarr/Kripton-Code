@@ -51,7 +51,7 @@ private fun ThemeSpec.toColorScheme() = darkColorScheme(
     scrim = background,
 )
 
-private val LocalKriptonColors = staticCompositionLocalOf { Palette.Graphite.toKriptonColors() }
+private val LocalKriptonColors = staticCompositionLocalOf { Palette.Black.toKriptonColors() }
 
 object KriptonTheme {
     val colors: KriptonColors

@@ -72,34 +72,34 @@ jobs:
             app/build/reports/tests/testDebugUnitTest/
           if-no-files-found: ignore
 
-      # main'e her push'ta APK, Releases bölümündeki "latest" (önsürüm) sürümüne yüklenir.
+      # main'e her push'ta o sürüme özel yeni bir release açılır (etiket: build-<sürüm>).
+      # Etiket "v" ile başlamadığı için release.yml tetiklenmez. APK adı sürümü içerir.
       # Sabit sürüm için ayrıca: git tag v0.2.0 && git push origin v0.2.0 (release.yml).
-      - name: APK dosyasını hazırla
+      - name: APK dosyasını sürüm numarasıyla adlandır
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          VERSION: ${{ steps.ver.outputs.name }}
         run: |
           mkdir -p dist
-          cp "$(ls app/build/outputs/apk/debug/*.apk | head -n 1)" dist/KriptonCod-debug.apk
-          ( cd dist && sha256sum KriptonCod-debug.apk > KriptonCod-debug.apk.sha256 )
-
-      - name: latest etiketini bu commit e taşı
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          git tag -f latest "$GITHUB_SHA"
-          git push -f origin refs/tags/latest
+          OUT="dist/KriptonCod-${VERSION}.apk"
+          cp "$(ls app/build/outputs/apk/debug/*.apk | head -n 1)" "$OUT"
+          ( cd dist && sha256sum "KriptonCod-${VERSION}.apk" > "KriptonCod-${VERSION}.apk.sha256" )
+          ls -l dist
 
       - name: Releases'e yükle
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: latest
-          name: Kripton Cod ${{ steps.ver.outputs.name }} (debug, son derleme)
+          tag_name: build-${{ steps.ver.outputs.name }}
+          target_commitish: ${{ github.sha }}
+          name: Kripton Cod ${{ steps.ver.outputs.name }}
           body: |
-            main dalının son commit'inden otomatik üretilen debug APK.
+            main dalındaki commit'ten otomatik üretilen debug APK.
             Sürüm: ${{ steps.ver.outputs.name }} (versionCode ${{ steps.ver.outputs.code }})
             Commit: ${{ github.sha }}
           prerelease: true
           make_latest: false
           fail_on_unmatched_files: true
           files: |
-            dist/KriptonCod-debug.apk
-            dist/KriptonCod-debug.apk.sha256
+            dist/KriptonCod-${{ steps.ver.outputs.name }}.apk
+            dist/KriptonCod-${{ steps.ver.outputs.name }}.apk.sha256

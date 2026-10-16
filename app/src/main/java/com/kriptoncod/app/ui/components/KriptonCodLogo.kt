@@ -6,7 +6,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -20,42 +19,29 @@ import androidx.compose.ui.unit.dp
 import com.kriptoncod.app.R
 
 /**
- * Düz, tek renkli logo: yuvarlatılmış altıgen (küp silueti) içinde kalın, sağı açık "C"
- * ve açıklıkta küçük bir düğüm noktası. Renkler aktif temadan gelir; gradyan/parlama yok.
+ * Tek renkli, tek çizgili logo: sağ kenarı açık bir altıgen ("C" harfi) ve açıklıkta bir düğüm noktası.
+ * Başlatıcı ikonuyla (res/drawable/ic_launcher_foreground.xml) aynı geometridir; renk aktif temadan gelir.
  */
 @Composable
 fun KriptonCodLogo(
     modifier: Modifier = Modifier,
     logoSize: Dp = 96.dp,
-    shapeColor: Color = MaterialTheme.colorScheme.primary,
-    markColor: Color = MaterialTheme.colorScheme.onPrimary,
+    color: Color = MaterialTheme.colorScheme.primary,
 ) {
     val description = stringResource(R.string.logo_description)
     Canvas(modifier = modifier.size(logoSize).semantics { contentDescription = description }) {
-        val s = this.size.minDimension
-        val c = Offset(s / 2f, s / 2f)
-        val r = s * 0.44f
+        // 108x108'lik başlatıcı ikonun ortadaki 22..86 penceresi (64 birim) tuvale ölçeklenir.
+        val k = size.minDimension / 64f
+        val ox = -22f * k
+        val oy = -22f * k
+        fun p(x: Float, y: Float) = Offset(ox + x * k, oy + y * k)
 
-        // Köşeleri yuvarlatmak için aynı renkte ince yuvarlak birleşimli çizgi eklenir.
-        val hex = Path().apply {
-            moveTo(c.x, c.y - r)
-            lineTo(c.x + 0.866f * r, c.y - 0.5f * r)
-            lineTo(c.x + 0.866f * r, c.y + 0.5f * r)
-            lineTo(c.x, c.y + r)
-            lineTo(c.x - 0.866f * r, c.y + 0.5f * r)
-            lineTo(c.x - 0.866f * r, c.y - 0.5f * r)
-            close()
+        val path = Path().apply {
+            val a = p(76.5f, 41f)
+            moveTo(a.x, a.y)
+            listOf(p(54f, 28f), p(31.5f, 41f), p(31.5f, 67f), p(54f, 80f), p(76.5f, 67f)).forEach { lineTo(it.x, it.y) }
         }
-        drawPath(hex, shapeColor)
-        drawPath(hex, shapeColor, style = Stroke(width = r * 0.14f, join = StrokeJoin.Round))
-
-        // "C": başlangıç 40°, 280° tarar; sağ taraf açık kalır.
-        val cr = r * 0.393f
-        drawArc(
-            color = markColor, startAngle = 40f, sweepAngle = 280f, useCenter = false,
-            topLeft = Offset(c.x - cr, c.y - cr), size = Size(cr * 2f, cr * 2f),
-            style = Stroke(width = r * 0.232f, cap = StrokeCap.Round),
-        )
-        drawCircle(color = markColor, radius = r * 0.086f, center = Offset(c.x + r * 0.41f, c.y))
+        drawPath(path, color, style = Stroke(width = 9f * k, cap = StrokeCap.Round, join = StrokeJoin.Round))
+        drawCircle(color, radius = 4.5f * k, center = p(76.5f, 54f))
     }
 }

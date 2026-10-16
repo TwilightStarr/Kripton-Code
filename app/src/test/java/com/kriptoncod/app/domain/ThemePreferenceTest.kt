@@ -8,12 +8,12 @@ class ThemePreferenceTest {
         ThemePreference.entries.forEach { assertEquals(it, ThemePreference.fromKey(it.key)) }
     }
 
-    @Test fun unknownOrNullFallsBackToGraphite() {
-        assertEquals(ThemePreference.GRAPHITE, ThemePreference.fromKey(null))
-        assertEquals(ThemePreference.GRAPHITE, ThemePreference.fromKey("neon"))
+    @Test fun unknownOrNullFallsBackToBlack() {
+        assertEquals(ThemePreference.BLACK, ThemePreference.fromKey(null))
+        assertEquals(ThemePreference.BLACK, ThemePreference.fromKey("neon"))
     }
 
-    @Test fun legacyKeysFallBackToGraphite() {
-        listOf("system", "light", "dark").forEach { assertEquals(ThemePreference.GRAPHITE, ThemePreference.fromKey(it)) }
+    @Test fun legacyKeysFallBackToBlack() {
+        listOf("system", "light", "dark").forEach { assertEquals(ThemePreference.BLACK, ThemePreference.fromKey(it)) }
     }
 }

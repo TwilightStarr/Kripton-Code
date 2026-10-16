@@ -35,7 +35,7 @@ internal class ThemeSpec(
 )
 
 internal object Palette {
-    /** Grafit: nötr koyu gri + zümrüt vurgu (varsayılan). */
+    /** Grafit: nötr koyu gri + zümrüt vurgu. */
     val Graphite = ThemeSpec(
         background = Color(0xFF131416),
         surface = Color(0xFF1A1B1E),
@@ -51,7 +51,7 @@ internal object Palette {
         dangerFill = Color(0xFF2E1A1A),
     )
 
-    /** Siyah: saf siyah (AMOLED) + tek renkli beyaz vurgu. */
+    /** Siyah-Beyaz: saf siyah (AMOLED) + beyaz vurgu (varsayılan). */
     val Black = ThemeSpec(
         background = Color(0xFF000000),
         surface = Color(0xFF0C0C0C),
