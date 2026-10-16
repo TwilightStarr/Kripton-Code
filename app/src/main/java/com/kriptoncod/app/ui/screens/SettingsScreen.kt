@@ -136,7 +136,7 @@ fun SettingsScreen(
 }
 
 private fun ThemePreference.labelRes(): Int = when (this) {
-    ThemePreference.SYSTEM -> R.string.theme_system
-    ThemePreference.LIGHT -> R.string.theme_light
-    ThemePreference.DARK -> R.string.theme_dark
+    ThemePreference.GRAPHITE -> R.string.theme_graphite
+    ThemePreference.BLACK -> R.string.theme_black
+    ThemePreference.SAGE -> R.string.theme_sage
 }

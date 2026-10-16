@@ -2,10 +2,9 @@ package com.kriptoncod.app.ui.theme
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
+import com.kriptoncod.app.domain.ThemePreference
 
-// Kripton paleti: mavi düğüm, yeşil ok, nadiren kırmızı.
-// NOT: lib/core/theme.dart yüklenmediği için değerler Kripton'un görsel kimliğine göre
-// seçildi; birebir değerleri yalnız bu dosyada güncellemek yeterli.
+// Sade, koyu temalar: nötr gri zemin + tek bir yumuşak vurgu rengi. Mavi kullanılmaz.
 
 @Immutable
 class KriptonColors(
@@ -18,50 +17,85 @@ class KriptonColors(
     val muted: Color,
 )
 
-internal object Palette {
-    // Açık
-    val LightBackground = Color(0xFFF4F7FD)
-    val LightSurface = Color(0xFFFFFFFF)
-    val LightNode = Color(0xFF2563EB)
-    val LightNodeFill = Color(0xFFE8F0FE)
-    val LightNodeBorder = Color(0xFF9DB2DA)
-    val LightText = Color(0xFF0B1630)
-    val LightMuted = Color(0xFF51607F)
-    val LightArrow = Color(0xFF16A34A)
-    val LightArrowFill = Color(0xFFE6F6EC)
-    val LightDanger = Color(0xFFDC2626)
-    val LightDangerFill = Color(0xFFFDECEC)
-
-    // Koyu
-    val DarkBackground = Color(0xFF0A1226)
-    val DarkSurface = Color(0xFF111B36)
-    val DarkNode = Color(0xFF6B9BFF)
-    val DarkNodeFill = Color(0xFF14224A)
-    val DarkNodeBorder = Color(0xFF2C4380)
-    val DarkText = Color(0xFFE6ECFA)
-    val DarkMuted = Color(0xFF9AA9C9)
-    val DarkArrow = Color(0xFF34D399)
-    val DarkArrowFill = Color(0xFF0E2A24)
-    val DarkDanger = Color(0xFFF87171)
-    val DarkDangerFill = Color(0xFF3A1519)
-}
-
-internal val LightKriptonColors = KriptonColors(
-    nodeFill = Palette.LightNodeFill,
-    nodeBorder = Palette.LightNodeBorder,
-    arrow = Palette.LightArrow,
-    arrowFill = Palette.LightArrowFill,
-    danger = Palette.LightDanger,
-    dangerFill = Palette.LightDangerFill,
-    muted = Palette.LightMuted,
+/** Bir temanın tüm renkleri; Material şeması ve [KriptonColors] buradan türetilir. */
+@Immutable
+internal class ThemeSpec(
+    val background: Color,
+    val surface: Color,
+    val raised: Color,
+    val border: Color,
+    val text: Color,
+    val muted: Color,
+    val accent: Color,
+    val onAccent: Color,
+    val success: Color,
+    val successFill: Color,
+    val danger: Color,
+    val dangerFill: Color,
 )
 
-internal val DarkKriptonColors = KriptonColors(
-    nodeFill = Palette.DarkNodeFill,
-    nodeBorder = Palette.DarkNodeBorder,
-    arrow = Palette.DarkArrow,
-    arrowFill = Palette.DarkArrowFill,
-    danger = Palette.DarkDanger,
-    dangerFill = Palette.DarkDangerFill,
-    muted = Palette.DarkMuted,
+internal object Palette {
+    /** Grafit: nötr koyu gri + zümrüt vurgu (varsayılan). */
+    val Graphite = ThemeSpec(
+        background = Color(0xFF131416),
+        surface = Color(0xFF1A1B1E),
+        raised = Color(0xFF222428),
+        border = Color(0xFF33363B),
+        text = Color(0xFFEDEDEF),
+        muted = Color(0xFF9A9DA5),
+        accent = Color(0xFF4ADE9B),
+        onAccent = Color(0xFF07140D),
+        success = Color(0xFF4ADE9B),
+        successFill = Color(0xFF15261D),
+        danger = Color(0xFFF2706B),
+        dangerFill = Color(0xFF2E1A1A),
+    )
+
+    /** Siyah: saf siyah (AMOLED) + tek renkli beyaz vurgu. */
+    val Black = ThemeSpec(
+        background = Color(0xFF000000),
+        surface = Color(0xFF0C0C0C),
+        raised = Color(0xFF171717),
+        border = Color(0xFF2B2B2B),
+        text = Color(0xFFF2F2F2),
+        muted = Color(0xFF8E8E93),
+        accent = Color(0xFFF2F2F2),
+        onAccent = Color(0xFF000000),
+        success = Color(0xFF5BD69B),
+        successFill = Color(0xFF0F1F17),
+        danger = Color(0xFFF2706B),
+        dangerFill = Color(0xFF2A1515),
+    )
+
+    /** Adaçayı: yeşilimsi koyu gri + sönük adaçayı vurgu. */
+    val Sage = ThemeSpec(
+        background = Color(0xFF111412),
+        surface = Color(0xFF181C19),
+        raised = Color(0xFF1F2420),
+        border = Color(0xFF303832),
+        text = Color(0xFFE8ECE8),
+        muted = Color(0xFF97A199),
+        accent = Color(0xFFA9CBAE),
+        onAccent = Color(0xFF0E1710),
+        success = Color(0xFF7FD6A0),
+        successFill = Color(0xFF16251B),
+        danger = Color(0xFFF2706B),
+        dangerFill = Color(0xFF2B1A19),
+    )
+}
+
+internal fun ThemePreference.spec(): ThemeSpec = when (this) {
+    ThemePreference.GRAPHITE -> Palette.Graphite
+    ThemePreference.BLACK -> Palette.Black
+    ThemePreference.SAGE -> Palette.Sage
+}
+
+internal fun ThemeSpec.toKriptonColors() = KriptonColors(
+    nodeFill = raised,
+    nodeBorder = border,
+    arrow = success,
+    arrowFill = successFill,
+    danger = danger,
+    dangerFill = dangerFill,
+    muted = muted,
 )

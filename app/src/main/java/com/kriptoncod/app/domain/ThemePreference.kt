@@ -1,12 +1,13 @@
 package com.kriptoncod.app.domain
 
+/** Sade, koyu temalar. Eski kayıtlar ("system", "light", "dark") varsayılan Grafit'e düşer. */
 enum class ThemePreference(val key: String) {
-    SYSTEM("system"),
-    LIGHT("light"),
-    DARK("dark");
+    GRAPHITE("graphite"),
+    BLACK("black"),
+    SAGE("sage");
 
     companion object {
         fun fromKey(key: String?): ThemePreference =
-            entries.firstOrNull { it.key == key } ?: SYSTEM
+            entries.firstOrNull { it.key == key } ?: GRAPHITE
     }
 }

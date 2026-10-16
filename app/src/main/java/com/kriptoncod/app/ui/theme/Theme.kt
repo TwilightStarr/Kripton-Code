@@ -1,57 +1,57 @@
 package com.kriptoncod.app.ui.theme
 
 import android.app.Activity
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import com.kriptoncod.app.domain.ThemePreference
 
-private val LightScheme = lightColorScheme(
-    primary = Palette.LightNode,
-    onPrimary = Color.White,
-    primaryContainer = Palette.LightNodeFill,
-    onPrimaryContainer = Palette.LightText,
-    secondary = Palette.LightArrow,
-    onSecondary = Color.White,
-    error = Palette.LightDanger,
-    background = Palette.LightBackground,
-    onBackground = Palette.LightText,
-    surface = Palette.LightSurface,
-    onSurface = Palette.LightText,
-    surfaceVariant = Palette.LightNodeFill,
-    onSurfaceVariant = Palette.LightMuted,
-    outline = Palette.LightNodeBorder,
-    outlineVariant = Palette.LightNodeBorder,
+private fun ThemeSpec.toColorScheme() = darkColorScheme(
+    primary = accent,
+    onPrimary = onAccent,
+    primaryContainer = raised,
+    onPrimaryContainer = text,
+    secondary = success,
+    onSecondary = background,
+    secondaryContainer = raised,
+    onSecondaryContainer = text,
+    tertiary = accent,
+    onTertiary = onAccent,
+    tertiaryContainer = raised,
+    onTertiaryContainer = text,
+    error = danger,
+    onError = background,
+    errorContainer = dangerFill,
+    onErrorContainer = text,
+    background = background,
+    onBackground = text,
+    surface = background,
+    onSurface = text,
+    surfaceVariant = raised,
+    onSurfaceVariant = muted,
+    surfaceTint = accent,
+    surfaceBright = raised,
+    surfaceDim = background,
+    surfaceContainerLowest = background,
+    surfaceContainerLow = surface,
+    surfaceContainer = surface,
+    surfaceContainerHigh = raised,
+    surfaceContainerHighest = raised,
+    outline = border,
+    outlineVariant = border,
+    inverseSurface = text,
+    inverseOnSurface = background,
+    inversePrimary = accent,
+    scrim = background,
 )
 
-private val DarkScheme = darkColorScheme(
-    primary = Palette.DarkNode,
-    onPrimary = Palette.DarkBackground,
-    primaryContainer = Palette.DarkNodeFill,
-    onPrimaryContainer = Palette.DarkText,
-    secondary = Palette.DarkArrow,
-    onSecondary = Palette.DarkBackground,
-    error = Palette.DarkDanger,
-    background = Palette.DarkBackground,
-    onBackground = Palette.DarkText,
-    surface = Palette.DarkSurface,
-    onSurface = Palette.DarkText,
-    surfaceVariant = Palette.DarkNodeFill,
-    onSurfaceVariant = Palette.DarkMuted,
-    outline = Palette.DarkNodeBorder,
-    outlineVariant = Palette.DarkNodeBorder,
-)
-
-private val LocalKriptonColors = staticCompositionLocalOf { LightKriptonColors }
+private val LocalKriptonColors = staticCompositionLocalOf { Palette.Graphite.toKriptonColors() }
 
 object KriptonTheme {
     val colors: KriptonColors
@@ -63,24 +63,21 @@ fun KriptonCodTheme(
     preference: ThemePreference,
     content: @Composable () -> Unit,
 ) {
-    val dark = when (preference) {
-        ThemePreference.SYSTEM -> isSystemInDarkTheme()
-        ThemePreference.LIGHT -> false
-        ThemePreference.DARK -> true
-    }
+    val spec = preference.spec()
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             (view.context as? Activity)?.window?.let { window ->
                 val controller = WindowCompat.getInsetsController(window, view)
-                controller.isAppearanceLightStatusBars = !dark
-                controller.isAppearanceLightNavigationBars = !dark
+                // Tüm temalar koyu: sistem çubuğu simgeleri açık renkli olmalı.
+                controller.isAppearanceLightStatusBars = false
+                controller.isAppearanceLightNavigationBars = false
             }
         }
     }
-    CompositionLocalProvider(LocalKriptonColors provides if (dark) DarkKriptonColors else LightKriptonColors) {
+    CompositionLocalProvider(LocalKriptonColors provides spec.toKriptonColors()) {
         MaterialTheme(
-            colorScheme = if (dark) DarkScheme else LightScheme,
+            colorScheme = spec.toColorScheme(),
             typography = KriptonTypography,
             content = content,
         )
