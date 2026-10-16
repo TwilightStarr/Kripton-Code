@@ -15,12 +15,19 @@ concurrency:
   group: build-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+env:
+  BASE_VERSION: "0.1"   # major.minor; patch = toplam commit sayısı (otomatik artar)
+
 jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    permissions:
+      contents: write   # main'e push'ta "latest" sürümünü güncellemek için
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0   # commit sayısı sürüm numarası için gerekli
 
       - uses: actions/setup-java@v5
         with:
@@ -39,8 +46,16 @@ jobs:
           fi
           chmod +x gradlew
 
+      - name: Sürüm numarasını hesapla
+        id: ver
+        run: |
+          COUNT=$(git rev-list --count HEAD)
+          echo "name=${BASE_VERSION}.${COUNT}" >> "$GITHUB_OUTPUT"
+          echo "code=${COUNT}" >> "$GITHUB_OUTPUT"
+          echo "Sürüm: ${BASE_VERSION}.${COUNT} (versionCode ${COUNT})"
+
       - name: Derle, lint, birim test
-        run: ./gradlew --no-daemon --continue assembleDebug lintDebug testDebugUnitTest --stacktrace
+        run: ./gradlew --no-daemon --continue assembleDebug lintDebug testDebugUnitTest -PversionName=${{ steps.ver.outputs.name }} -PversionCode=${{ steps.ver.outputs.code }} --stacktrace
 
       - uses: actions/upload-artifact@v7
         with:
@@ -56,3 +71,35 @@ jobs:
             app/build/reports/lint-results-debug.*
             app/build/reports/tests/testDebugUnitTest/
           if-no-files-found: ignore
+
+      # main'e her push'ta APK, Releases bölümündeki "latest" (önsürüm) sürümüne yüklenir.
+      # Sabit sürüm için ayrıca: git tag v0.2.0 && git push origin v0.2.0 (release.yml).
+      - name: APK dosyasını hazırla
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p dist
+          cp "$(ls app/build/outputs/apk/debug/*.apk | head -n 1)" dist/KriptonCod-debug.apk
+          ( cd dist && sha256sum KriptonCod-debug.apk > KriptonCod-debug.apk.sha256 )
+
+      - name: latest etiketini bu commit e taşı
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git tag -f latest "$GITHUB_SHA"
+          git push -f origin refs/tags/latest
+
+      - name: Releases'e yükle
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: latest
+          name: Kripton Cod ${{ steps.ver.outputs.name }} (debug, son derleme)
+          body: |
+            main dalının son commit'inden otomatik üretilen debug APK.
+            Sürüm: ${{ steps.ver.outputs.name }} (versionCode ${{ steps.ver.outputs.code }})
+            Commit: ${{ github.sha }}
+          prerelease: true
+          make_latest: false
+          fail_on_unmatched_files: true
+          files: |
+            dist/KriptonCod-debug.apk
+            dist/KriptonCod-debug.apk.sha256
