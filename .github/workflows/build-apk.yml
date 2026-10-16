@@ -73,6 +73,7 @@ jobs:
           if-no-files-found: ignore
 
       # main'e her push'ta o sürüme özel yeni bir release açılır (etiket: build-<sürüm>).
+      # Önsürüm değil, "Latest" işaretli: repo ana sayfasındaki Releases bölümünde en yeni sürüm doğrudan görünür.
       # Etiket "v" ile başlamadığı için release.yml tetiklenmez. APK adı sürümü içerir.
       # Sabit sürüm için ayrıca: git tag v0.2.0 && git push origin v0.2.0 (release.yml).
       - name: APK dosyasını sürüm numarasıyla adlandır
@@ -92,13 +93,13 @@ jobs:
         with:
           tag_name: build-${{ steps.ver.outputs.name }}
           target_commitish: ${{ github.sha }}
-          name: Kripton Cod ${{ steps.ver.outputs.name }}
+          name: Krypton Code ${{ steps.ver.outputs.name }}
           body: |
             main dalındaki commit'ten otomatik üretilen debug APK.
             Sürüm: ${{ steps.ver.outputs.name }} (versionCode ${{ steps.ver.outputs.code }})
             Commit: ${{ github.sha }}
-          prerelease: true
-          make_latest: false
+          prerelease: false
+          make_latest: true
           fail_on_unmatched_files: true
           files: |
             dist/KriptonCod-${{ steps.ver.outputs.name }}.apk

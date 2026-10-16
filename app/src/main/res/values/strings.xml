@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name">Kripton Cod</string>
-    <string name="logo_description">Kripton Cod logosu</string>
+    <string name="app_name">Krypton Code</string>
+    <string name="logo_description">Krypton Code logosu</string>
 
     <string name="nav_home">Ana</string>
     <string name="nav_ais">AI\'lar</string>
@@ -9,7 +9,7 @@
     <string name="nav_history">Geçmiş</string>
     <string name="nav_settings">Ayarlar</string>
 
-    <string name="home_title">Kripton Cod</string>
+    <string name="home_title">Krypton Code</string>
     <string name="home_subtitle">Kod odaklı çoklu-AI üretim aracı</string>
     <string name="home_empty_title">Henüz bir AI hesabı yok</string>
     <string name="home_empty_message">Başlamak için bir AI hesabı ekle, sonra promptlarını hazırla.</string>
@@ -166,7 +166,7 @@
     <!-- İzin Ekranı -->
     <string name="permissions_title">İzinler</string>
     <string name="permissions_internet_title">İnternet Erişimi</string>
-    <string name="permissions_internet_body">Kripton Cod, AI sağlayıcılarına istek atmak ve GitHub ile iletişim kurmak için internet izni kullanır. Başka hiçbir izin gerekmez.</string>
+    <string name="permissions_internet_body">Krypton Code, AI sağlayıcılarına istek atmak ve GitHub ile iletişim kurmak için internet izni kullanır. Başka hiçbir izin gerekmez.</string>
     <string name="permissions_note_title">Veri Gizliliği</string>
     <string name="permissions_note_body">Tüm anahtarlar ve token\'lar yalnızca cihazda şifreli saklanır. Uygulama dışına gönderilmez.</string>
 

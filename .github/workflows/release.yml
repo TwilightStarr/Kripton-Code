@@ -149,7 +149,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ env.TAG }}
-          name: Kripton Cod ${{ env.TAG }}
+          name: Krypton Code ${{ env.TAG }}
           body_path: release-body.md
           generate_release_notes: true
           prerelease: ${{ steps.ver.outputs.prerelease == 'true' }}

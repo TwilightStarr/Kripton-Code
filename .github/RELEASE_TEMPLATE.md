@@ -1,4 +1,4 @@
-## Kripton Cod {{VERSION}}
+## Krypton Code {{VERSION}}
 
 Android için kod odaklı çoklu-AI üretim aracı.
 

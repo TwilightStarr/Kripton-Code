@@ -1,4 +1,8 @@
-# Kripton Cod
+<p align="center">
+  <img src="docs/logo.svg" width="128" height="128" alt="Krypton Code logosu">
+</p>
+
+# Krypton Code
 
 **Türkçe** · [English](README.en.md)
 

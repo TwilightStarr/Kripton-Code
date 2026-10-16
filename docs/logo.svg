@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="512" height="512" role="img" aria-label="Krypton Code">
+  <rect width="108" height="108" rx="24" fill="#000000"/>
+  <path d="M76.5 41L54 28L31.5 41L31.5 67L54 80L76.5 67" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="76.5" cy="54" r="4.5" fill="#FFFFFF"/>
+</svg>

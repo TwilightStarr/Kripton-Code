@@ -1,6 +1,6 @@
 # Ücretsiz AI sağlayıcıları (resmi API anahtarıyla)
 
-Kripton Cod yalnızca sağlayıcıların **resmi API'lerini** ve **kendi hesabından aldığın API anahtarını** kullanır. Web sohbet arayüzlerini otomatikleştirmez, başkasının anahtarını paylaşmaz.
+Krypton Code yalnızca sağlayıcıların **resmi API'lerini** ve **kendi hesabından aldığın API anahtarını** kullanır. Web sohbet arayüzlerini otomatikleştirmez, başkasının anahtarını paylaşmaz.
 Ücretsiz katman koşulları sık değişir; kayıt olmadan önce sağlayıcının güncel sayfasını oku.
 
 | Sağlayıcı | Anahtar nereden | Uygulamada | Dikkat |
