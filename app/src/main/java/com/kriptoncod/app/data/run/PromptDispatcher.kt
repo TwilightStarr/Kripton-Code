@@ -12,6 +12,7 @@ import com.kriptoncod.app.data.providers.ProviderEndpoint
 import com.kriptoncod.app.data.repo.AiAccountRepository
 import com.kriptoncod.app.data.repo.PromptRepository
 import com.kriptoncod.app.data.repo.RunRepository
+import com.kriptoncod.app.data.web.WebSessionGenerator
 import com.kriptoncod.app.domain.AccountStatus
 import com.kriptoncod.app.domain.AssignmentMode
 import com.kriptoncod.app.domain.AuthType
@@ -40,6 +41,8 @@ class PromptDispatcher(
     private val onAllJobsDone: suspend (runId: Long) -> RunStatus = { RunStatus.DONE },
     private val kimiCodes: KimiCodeRepository? = null,
     private val graph: RunGraphBuilder? = null,
+    /** WEB_SESSION hesapları için üretici; null ise bu tür hesaplar ERROR yapılıp atlanır. */
+    private val web: WebSessionGenerator? = null,
 ) {
 
     suspend fun process(runId: Long): DispatchOutcome {
@@ -195,9 +198,11 @@ class PromptDispatcher(
                 return processKimiJob(job, account, item)
             }
 
-            val endpoint = resolveEndpoint(account)
-            val credential = credentials.credentialFor(account)
-            if (endpoint == null || credential.isNullOrBlank()) {
+            val isWeb = account.authType == AuthType.WEB_SESSION
+            val endpoint = if (isWeb) null else resolveEndpoint(account)
+            val credential = if (isWeb) null else credentials.credentialFor(account)
+            val unusable = if (isWeb) web == null else (endpoint == null || credential.isNullOrBlank())
+            if (unusable) {
                 accounts.markError(account.id)
                 if (manual) {
                     runs.failJob(job.id)
@@ -210,7 +215,12 @@ class PromptDispatcher(
             runs.startJob(job.id)
 
             try {
-                val text = generator.generate(endpoint, account.modelId, credential, item.body)
+                val text = if (isWeb) {
+                    // Web sohbeti: PLAN düz metin ister; diğer düğümler dosya bloğu bekler.
+                    web!!.generate(account, item.body, expectFiles = job.kind != JobKind.PLAN)
+                } else {
+                    generator.generate(endpoint!!, account.modelId, credential!!, item.body)
+                }
                 if (text.isBlank()) {
                     runs.failJob(job.id)
                     return JobResult.Failed

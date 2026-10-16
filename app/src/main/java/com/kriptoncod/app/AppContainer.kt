@@ -25,6 +25,11 @@ import com.kriptoncod.app.data.repo.AiAccountRepository
 import com.kriptoncod.app.data.repo.PromptRepository
 import com.kriptoncod.app.data.repo.RunRepository
 import com.kriptoncod.app.data.settings.ThemeStore
+import com.kriptoncod.app.data.web.WebChatDriver
+import com.kriptoncod.app.data.web.WebPacer
+import com.kriptoncod.app.data.web.WebSessionGenerator
+import com.kriptoncod.app.data.web.WebSessionStore
+import com.kriptoncod.app.data.web.WebViewChatDriver
 import com.kriptoncod.app.data.vault.AndroidKeystoreKeyVault
 import com.kriptoncod.app.data.vault.KeyVault
 import com.kriptoncod.app.data.run.CredentialProvider
@@ -97,6 +102,14 @@ class AppContainer(context: Context) {
     /** Kimi'nin ürettiği kod bloklarını run başına toplayan depo. */
     val kimiCodeRepository: KimiCodeRepository by lazy { KimiCodeRepository(appContext.filesDir) }
 
+    // --- Web oturumu (e-posta ile giriş, API anahtarsız) ---
+    /** Hesap başına çerez/oturum kasası (KeyVault, `web-session-<id>`). */
+    val webSessionStore: WebSessionStore by lazy { WebSessionStore(keyVault) }
+    val webChatDriver: WebChatDriver by lazy {
+        WebViewChatDriver(appContext, webSessionStore, File(appContext.filesDir, "web-selectors.json"))
+    }
+    val webSessionGenerator: WebSessionGenerator by lazy { WebSessionGenerator(webChatDriver, WebPacer()) }
+
     // --- Dağıtım (prompt → AI hesabı) ---
     val credentialProvider: CredentialProvider by lazy {
         VaultCredentialProvider(aiAccountRepository, googleTokenStore, emailTokenStore, kimiTokenStore)
@@ -126,6 +139,7 @@ class AppContainer(context: Context) {
             },
             kimiCodes = kimiCodeRepository,
             graph = runGraphBuilder,
+            web = webSessionGenerator,
         )
     }
     val runScheduler: RunScheduler by lazy { RunScheduler(WorkManager.getInstance(appContext), runRepository) }

@@ -1,6 +1,6 @@
 # Ücretsiz AI sağlayıcıları (resmi API anahtarıyla)
 
-Krypton Code yalnızca sağlayıcıların **resmi API'lerini** ve **kendi hesabından aldığın API anahtarını** kullanır. Web sohbet arayüzlerini otomatikleştirmez, başkasının anahtarını paylaşmaz.
+Bu sayfadaki sağlayıcılar **resmi API anahtarıyla** çalışır. Ayrıca isteğe bağlı olarak web sohbet hesapları e-posta ile bağlanabilir (aşağıya bakın); bu yol sağlayıcı koşullarına aykırı olabilir.
 Ücretsiz katman koşulları sık değişir; kayıt olmadan önce sağlayıcının güncel sayfasını oku.
 
 | Sağlayıcı | Anahtar nereden | Uygulamada | Dikkat |
@@ -19,9 +19,25 @@ Uygulamadaki **OpenAI-uyumlu (özel)** seçeneği HTTPS taban adresi ve API anah
 - Cloudflare Workers AI: `https://api.cloudflare.com/client/v4/accounts/<HESAP_ID>/ai/v1` (Cloudflare API token'ı ile)
 - Z.ai (GLM): `https://api.z.ai/api/paas/v4`. Ücretsiz Flash modelleri sunar, ancak model listesi uç noktasının varlığı kaynaklarda tutarsız; doğrulama başarısız olursa kullanma.
 
-## Neden e-posta/şifre ile giriş yok?
+## E-posta ile giriş (web oturumu) — RİSKLİ, isteğe bağlı
 
-Claude, ChatGPT ve Kimi'nin web sohbet hesapları üçüncü taraf uygulamalara açılmaz; web arayüzünü otomatikleştirmek kullanım koşullarına aykırıdır ve hesabının kapanmasına yol açabilir. Bu yüzden bu sağlayıcılar yalnızca ücretli resmi API anahtarıyla bağlanır. Ücretsiz kullanım için yukarıdaki tablodaki sağlayıcıları kullan.
+**AI'lar → + E-posta ile**: sağlayıcının kendi giriş sayfası uygulama içinde açılır, sen e-postanla girersin (şifreyi uygulama görmez); oturum çerezleri cihazda şifreli saklanır. Prompt'lar o hesabın web sohbetine gönderilir. Birden fazla hesap eklenebilir; kota dolunca hesap "Bekliyor" olur ve iş başka hesaba kayar.
+
+| Sağlayıcı | Çıktı |
+| --- | --- |
+| Claude | Sohbetin ürettiği zip indirilir ve açılır; zip yoksa kod blokları. **Zorunlu uyarı:** hesabın kapatılabilir. |
+| ChatGPT | Üretilen dosya/zip indirilir; yoksa kod blokları. |
+| Kimi | Uzun kod bloğu; kesilirse otomatik "devam et" ve parça birleştirme. |
+| Gemini | Giriş sonrası AI Studio'dan hesabın API anahtarı alınır; çıktılar resmi API ile üretilir (web arayüzü kullanılmaz). **Zorunlu uyarı:** hesabın kapatılabilir. |
+
+Riskler ve sınırlar:
+- Claude, ChatGPT, Kimi ve Google koşulları web arayüzünün otomatik kullanımını yasaklayabilir; hesap uyarısız kısıtlanabilir/kapatılabilir. Ana hesabını kullanma.
+- Web arayüzleri sık değişir. Seçiciler `web-selectors.json` ile (uygulama güncellemeden) ezilebilir: dosya `files/web-selectors.json`, biçim `WebSelectors.defaultsJson()` çıktısıyla aynıdır. Varsayılanlar canlı siteye karşı doğrulanmadı.
+- Arka planda çalışırken Android ön plan servisi bildirimi gösterilir.
+
+## Daha güvenli yol: Proxy
+
+Kendi sunucunda [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) çalıştırıp **Proxy** hesabı olarak ekleyebilirsin; resmi CLI girişleriyle çalışır ve web arayüzünü otomatikleştirmez. (Sağlayıcıların bu kullanıma izin verip vermediğini kendin kontrol et; Anthropic abonelik belirteçlerinin üçüncü taraf uygulamalarda kullanımını yasakladı.)
 
 ## Anahtar güvenliği
 

@@ -3,8 +3,9 @@ package com.kriptoncod.app.domain
 /**
  * Hesap türü. [PROXY]: CLIProxyAPI uyumlu (OpenAI biçimli) kullanıcı proxy'si — taban adres + anahtar.
  * Anahtar her türde KeyVault'ta saklanır.
+ * [WEB_SESSION]: sağlayıcının web sohbetine WebView ile girilen oturum (API anahtarı yok); çerezler KeyVault'ta.
  */
-enum class AuthType { API_KEY, GOOGLE, EMAIL, KIMI, PROXY }
+enum class AuthType { API_KEY, GOOGLE, EMAIL, KIMI, PROXY, WEB_SESSION }
 
 enum class AccountStatus { READY, WAITING, ERROR }
 

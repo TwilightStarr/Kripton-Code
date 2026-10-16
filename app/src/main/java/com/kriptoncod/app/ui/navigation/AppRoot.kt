@@ -45,6 +45,8 @@ import com.kriptoncod.app.ui.screens.PromptEditorScreen
 import com.kriptoncod.app.ui.screens.PromptSetScreen
 import com.kriptoncod.app.ui.screens.PromptsScreen
 import com.kriptoncod.app.ui.screens.SettingsScreen
+import com.kriptoncod.app.ui.screens.WebAccountScreen
+import com.kriptoncod.app.domain.AuthType
 import com.kriptoncod.app.ui.theme.KriptonTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -107,8 +109,25 @@ fun AppRoot(
             composable(Route.Ais.path) {
                 AisScreen(
                     onAdd = { navController.navigate(AisRoutes.ADD) },
-                    onEdit = { id -> navController.navigate(AisRoutes.edit(id)) },
+                    onAddWeb = { navController.navigate(AisRoutes.WEB_ADD) },
+                    onEdit = { id ->
+                        // Web oturumu hesabında "düzenle" = yeniden giriş; diğerleri anahtar düzenleyicisini açar.
+                        scope.launch {
+                            val web = container.aiAccountRepository.get(id)?.authType == AuthType.WEB_SESSION
+                            navController.navigate(if (web) AisRoutes.webRelogin(id) else AisRoutes.edit(id))
+                        }
+                    },
                 )
+            }
+            composable(AisRoutes.WEB_ADD) {
+                WebAccountScreen(accountId = null, onClose = { navController.popBackStack() })
+            }
+            composable(
+                AisRoutes.WEB_RELOGIN,
+                arguments = listOf(navArgument(AisRoutes.ARG_ID) { type = NavType.LongType }),
+            ) { entry ->
+                val id = entry.arguments?.getLong(AisRoutes.ARG_ID) ?: return@composable
+                WebAccountScreen(accountId = id, onClose = { navController.popBackStack() })
             }
             composable(AisRoutes.ADD) {
                 AccountEditorScreen(accountId = null, onClose = { navController.popBackStack() })

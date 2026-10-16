@@ -41,6 +41,8 @@ class AiAccountRepository(
 
     suspend fun delete(id: Long) {
         vault.delete(AiAccount.vaultKeyId(id))
+        // Web oturumu (çerezler) varsa onu da sil; yoksa sessizce geçer.
+        runCatching { vault.delete("web-session-$id") }
         dao.deleteById(id)
     }
 

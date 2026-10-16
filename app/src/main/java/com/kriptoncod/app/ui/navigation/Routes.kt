@@ -25,6 +25,12 @@ object AisRoutes {
     const val ARG_ID = "id"
     const val EDIT = "ais/edit/{$ARG_ID}"
 
+    /** E-posta ile (web oturumu) hesap ekleme ve yeniden giriş. */
+    const val WEB_ADD = "ais/web"
+    const val WEB_RELOGIN = "ais/web/{$ARG_ID}"
+
+    fun webRelogin(id: Long): String = "ais/web/$id"
+
     fun edit(id: Long): String = "ais/edit/$id"
 }
 

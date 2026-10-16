@@ -27,6 +27,8 @@ class VaultCredentialProvider(
             AuthType.GOOGLE -> googleTokens.getValid(account.id)?.accessToken
             AuthType.EMAIL -> emailTokens.getValid(account.id)?.sessionToken
             AuthType.KIMI -> kimiTokens.getValid(account.id)?.sessionToken
+            // Web oturumu bir belirteç değil çerez kümesidir; WebSessionGenerator doğrudan kendi kasasını okur.
+            AuthType.WEB_SESSION -> null
         }
     } catch (_: KeyVaultException) {
         null // çözülemeyen kayıt = kimlik bilgisi yok; çağıran hesabı ERROR yapar

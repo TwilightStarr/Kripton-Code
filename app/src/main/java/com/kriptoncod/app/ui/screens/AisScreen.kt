@@ -58,12 +58,13 @@ import com.kriptoncod.app.ui.components.NodeCard
 import com.kriptoncod.app.ui.theme.KriptonTheme
 
 @Composable
-fun AisScreen(onAdd: () -> Unit, onEdit: (Long) -> Unit) {
+fun AisScreen(onAdd: () -> Unit, onAddWeb: () -> Unit, onEdit: (Long) -> Unit) {
     val viewModel: AisViewModel = viewModel(factory = rememberAisViewModelFactory())
     val state by viewModel.state.collectAsStateWithLifecycle()
     AisContent(
         state = state,
         onAdd = onAdd,
+        onAddWeb = onAddWeb,
         onEdit = onEdit,
         onToggle = viewModel::setEnabled,
         onRequestDelete = viewModel::requestDelete,
@@ -78,6 +79,7 @@ fun AisScreen(onAdd: () -> Unit, onEdit: (Long) -> Unit) {
 private fun AisContent(
     state: AisUiState,
     onAdd: () -> Unit,
+    onAddWeb: () -> Unit,
     onEdit: (Long) -> Unit,
     onToggle: (Long, Boolean) -> Unit,
     onRequestDelete: (Long) -> Unit,
@@ -104,6 +106,14 @@ private fun AisContent(
                 )
                 KButton(text = stringResource(R.string.ais_add), onClick = onAdd)
             }
+        }
+        item(key = "add-web") {
+            KButton(
+                text = stringResource(R.string.ais_add_web),
+                onClick = onAddWeb,
+                style = KButtonStyle.Outline,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
         state.error?.let { error ->
             item(key = "error") { ErrorCard(error, onRetry, onDismissError) }

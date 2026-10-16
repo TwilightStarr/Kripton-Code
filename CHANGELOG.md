@@ -5,6 +5,14 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
+### Eklendi (e-posta ile web oturumu)
+- Yeni hesap türü `WEB_SESSION`: **AI'lar → + E-posta ile**. Claude, ChatGPT, Kimi ve Gemini için sağlayıcının kendi giriş sayfası WebView'da açılır; oturum çerezleri KeyVault'ta (hesap başına) saklanır. Şifre saklanmaz.
+- Claude ve Gemini için zorunlu "hesabın kapatılabilir" uyarısı (onay kutusu olmadan giriş açılmaz).
+- Sağlayıcıya göre çıktı: Claude/ChatGPT zip indirme + açma (kod bloğuna düşme), Kimi uzun kod bloğu + otomatik "devam et" ve birleştirme, Gemini API anahtarıyla.
+- Kota/limit iletisi tanınır (EN/TR/ZH), bekleme süresi çözülür, hesap "Bekliyor" olur ve iş başka hesaba kayar; hesap başına gönderim aralığı; oturum düşerse hesap hataya alınır ve yeniden giriş istenir.
+- WorkManager ön plan servisi (dataSync) ve bildirim; seçiciler `web-selectors.json` ile ezilebilir.
+- Not: web arayüzü seçicileri canlı siteye karşı doğrulanmadı; saf mantık birim testleriyle ve sahte sohbet sayfasıyla sınandı.
+
 ### Değişti (düğüm grafiği kullanılabilirliği)
 - Grafik artık ekranın kalan tüm alanını kullanır; ayrıntı paneli grafiğin üzerine alttan (yarım yükseklikte) açılır, grafiği küçültmez. Kapatma düğmesi ve geri tuşu paneli kapatır; aynı düğüme tekrar dokunmak da kapatır.
 - Sürükleyerek kaydırma ve iki parmakla yakınlaştırma/uzaklaştırma; sağ üstte **+ / − / Sığdır** düğmeleri. Seçilen düğüm panelin altında kalıyorsa görünür alana kaydırılır.
