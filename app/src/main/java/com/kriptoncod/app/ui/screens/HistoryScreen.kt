@@ -106,6 +106,7 @@ private fun HistoryStatusBadge(status: RunStatus) {
         RunStatus.PREPARING -> "Hazırlanıyor" to NodeAccent.Blue
         RunStatus.RUNNING -> "Çalışıyor" to NodeAccent.Blue
         RunStatus.PUSHING -> "Gönderiliyor" to NodeAccent.Blue
+        RunStatus.PAUSED -> "Duraklatıldı" to NodeAccent.Blue
         RunStatus.CI_WAITING -> "CI Bekleniyor" to NodeAccent.Blue
         RunStatus.FIXING -> "Düzeltiliyor" to NodeAccent.Blue
         RunStatus.DONE -> "Tamamlandı" to NodeAccent.Green

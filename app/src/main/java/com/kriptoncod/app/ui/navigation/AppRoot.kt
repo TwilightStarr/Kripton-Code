@@ -121,7 +121,10 @@ fun AppRoot(
                 AccountEditorScreen(accountId = id, onClose = { navController.popBackStack() })
             }
             composable(Route.Prompts.path) {
-                PromptsScreen(onOpenSet = { id -> navController.navigate(PromptRoutes.set(id)) })
+                PromptsScreen(
+                    onOpenSet = { id -> navController.navigate(PromptRoutes.set(id)) },
+                    onRunStarted = { id -> navController.navigate(ExtraRoutes.run(id)) },
+                )
             }
             composable(
                 PromptRoutes.SET,

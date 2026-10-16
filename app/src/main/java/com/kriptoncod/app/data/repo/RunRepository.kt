@@ -11,12 +11,20 @@ import com.kriptoncod.app.data.files.HistoryJob
 import com.kriptoncod.app.data.files.HistoryStore
 import com.kriptoncod.app.data.files.OutputStore
 import com.kriptoncod.app.data.files.StoreRecovery
+import com.kriptoncod.app.domain.JobKind
 import com.kriptoncod.app.domain.JobState
 import com.kriptoncod.app.domain.RunStatus
 import java.io.OutputStream
 import kotlinx.coroutines.flow.Flow
 
-data class JobSeed(val promptId: Long, val accountId: Long?)
+data class JobSeed(
+    val promptId: Long,
+    val accountId: Long?,
+    val kind: JobKind = JobKind.WORK,
+    val catalog: String? = null,
+    val title: String? = null,
+    val body: String? = null,
+)
 
 data class RecoverySummary(
     /** Çıktısı diskte tamamlanmış ama DB'de DONE olmayan işler (kilitlenme sonrası DONE yapıldı). */
@@ -49,7 +57,14 @@ class RunRepository(
 
     suspend fun enqueueJobs(runId: Long, seeds: List<JobSeed>): List<Long> {
         val t = now()
-        return jobs.insertAll(seeds.map { Job(runId = runId, promptId = it.promptId, accountId = it.accountId, updatedAt = t) })
+        return jobs.insertAll(
+            seeds.map {
+                Job(
+                    runId = runId, promptId = it.promptId, accountId = it.accountId, updatedAt = t,
+                    kind = it.kind, catalog = it.catalog, title = it.title, body = it.body,
+                )
+            },
+        )
     }
 
     suspend fun setRunStatus(runId: Long, status: RunStatus) {

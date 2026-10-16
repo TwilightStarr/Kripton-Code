@@ -5,6 +5,14 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
+### Eklendi (düğüm grafiği)
+- Run artık düğüm grafiğiyle sunulur: katalog çıkarma → paralel çalışan yapay zekalar → katalog birleştirme → nihai birleştirme. Güçlü hesapların düğümü daha büyük çizilir; işler hesap gücüne göre dağıtılır.
+- Yüzlerce prompt belirli bir formatta (`## KATALOG:` / `### PROMPT:` başlıkları ya da klasör başına bir katalog olan zip) kataloglara ayrılır; zip doğrudan **Zip'ten çalıştır** ile yüklenebilir.
+- Kota/token bitince hata verilmez: ilgili iş bekler (Retry-After), başka hesaba geçilir, kota gelince otomatik sürer.
+- Run istenildiği an **Duraklat / Devam et** ile yönetilir (veritabanı şeması 3, `Job` türü/katalog/başlık/gövde sütunları, MIGRATION_2_3).
+- Her düğümün çıktısı iş biter bitmez grafikte görülür, tek tek kaydedilebilir; tüm çıktılar zip içinde (`_kripton/nodes/`) saklanır.
+- Not: ilk derlemede üretilen `app/schemas/.../3.json` dosyası commit edilmelidir.
+
 ### Kaldırıldı
 - Var olmayan sınıflara dayanan, hiçbir yerden açılmayan "Dağıtım" ekranı ve ViewModel'i.
 - README dosyalarındaki "önerilen model" ve "öneriler" ifadeleri kaldırıldı.

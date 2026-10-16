@@ -1,6 +1,7 @@
 package com.kriptoncod.app.data.run
 
 import com.kriptoncod.app.data.repo.RunRepository
+import com.kriptoncod.app.domain.JobKind
 import com.kriptoncod.app.domain.JobState
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -31,7 +32,9 @@ class RunFinalizer(private val runs: RunRepository) {
      * Önce tüm DONE işlerin çıktılarını okur; sonra çakışma denetimi yapar.
      */
     suspend fun finalize(runId: Long): Result {
-        val jobs = runs.getJobs(runId).filter { it.state == JobState.DONE }
+        val all = runs.getJobs(runId)
+        if (all.any { it.kind != JobKind.WORK }) return finalizeGraph(runId, all)
+        val jobs = all.filter { it.state == JobState.DONE }
         if (jobs.isEmpty()) return Result.HasTruncated(emptyList())
 
         val outputs = mutableMapOf<Long, String>()
@@ -66,6 +69,42 @@ class RunFinalizer(private val runs: RunRepository) {
             } else {
                 blocks.forEach { (path, content) -> files[path] = content }
             }
+        }
+
+        runs.attachZip(runId) { os ->
+            ZipOutputStream(os).use { zos ->
+                for ((path, content) in files) {
+                    zos.putNextEntry(ZipEntry(path))
+                    zos.write(content.toByteArray(Charsets.UTF_8))
+                    zos.closeEntry()
+                }
+            }
+        }
+        return Result.Success
+    }
+
+    /**
+     * Düğüm grafiği: nihai birleştirmenin kod blokları zip'in köküne yazılır (blok yoksa `final.md`).
+     * Her düğümün çıktısı eksiksiz kayıt için ayrıca `_kripton/nodes/` altına konur.
+     */
+    private suspend fun finalizeGraph(runId: Long, all: List<com.kriptoncod.app.data.db.Job>): Result {
+        val final = all.firstOrNull { it.kind == JobKind.FINAL_MERGE && it.state == JobState.DONE }
+        val finalText = final?.let { runs.readOutput(it.id) }
+        if (final == null || finalText.isNullOrBlank()) return Result.HasTruncated(listOfNotNull(final?.id))
+
+        val files = linkedMapOf<String, String>()
+        val blocks = CodeBlockParser.parse(finalText).mapNotNull { b ->
+            when (val r = PathSafety.validate(b.path)) {
+                is PathSafety.Result.Safe -> r.normalized to b.content
+                is PathSafety.Result.Rejected -> null
+            }
+        }
+        if (blocks.isEmpty()) files["final.md"] = finalText else blocks.forEach { (p, c) -> files[p] = c }
+
+        for (job in all.filter { it.state == JobState.DONE }) {
+            val text = runs.readOutput(job.id) ?: continue
+            val name = (job.catalog ?: "").replace(Regex("[^A-Za-z0-9_-]"), "_")
+            files["_kripton/nodes/${job.id}_${job.kind.name.lowercase()}${if (name.isEmpty()) "" else "_$name"}.md"] = text
         }
 
         runs.attachZip(runId) { os ->

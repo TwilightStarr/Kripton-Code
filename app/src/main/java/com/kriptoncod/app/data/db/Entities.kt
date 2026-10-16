@@ -8,6 +8,7 @@ import androidx.room.PrimaryKey
 import com.kriptoncod.app.domain.AccountStatus
 import com.kriptoncod.app.domain.AssignmentMode
 import com.kriptoncod.app.domain.AuthType
+import com.kriptoncod.app.domain.JobKind
 import com.kriptoncod.app.domain.JobState
 import com.kriptoncod.app.domain.RunStatus
 
@@ -129,4 +130,12 @@ data class Job(
     /** filesDir'e göre göreli yol (ör. "outputs/3/7.txt"). */
     val outputPath: String? = null,
     val updatedAt: Long,
+    /** Grafikteki düğüm türü; eski kayıtlar WORK'tür. */
+    @ColumnInfo(defaultValue = "WORK") val kind: JobKind = JobKind.WORK,
+    /** WORK ve CATALOG_MERGE düğümlerinin ait olduğu katalog adı. */
+    val catalog: String? = null,
+    /** Düğüm başlığı (prompt başlığı veya birleştirme adı). */
+    val title: String? = null,
+    /** WORK/PLAN düğümlerinin kendi prompt metni; null ise `promptId` ile prompt tablosundan okunur. */
+    val body: String? = null,
 )

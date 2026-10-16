@@ -41,6 +41,10 @@ Gradle wrapper (`gradle-wrapper.jar` dahil) repoda hazırdır; ayrıca Gradle ku
 
 Gemini'yi Google hesabıyla kullanmak için Google Cloud Console'da Android tipinde bir OAuth istemci kimliği oluştur ve uygulamada **Ayarlar → Google OAuth** alanına gir.
 
+## Düğüm grafiği ve katalog formatı
+
+Bir prompt seti ya da zip çalıştırıldığında girdi kataloglara ayrılır, her katalog ayrı yapay zekalara dağıtılır, katalog sonuçları birleştirilir ve nihai çıktı tek yapay zekayla toplanır. Metin biçimi: `## KATALOG: ad` altında `### PROMPT: başlık` blokları. Zip biçimi: her klasör bir katalog, içindeki `.md`/`.txt` dosyaları birer prompt. Run ekranında düğümlere dokunarak çıktıyı canlı izleyebilir, kaydedebilir, run'ı duraklatıp sürdürebilirsiniz.
+
 ## Kullanım
 
 1. **AI'lar** sekmesinden bir sağlayıcı seç, anahtarını doğrula, modeli seç ve kaydet.

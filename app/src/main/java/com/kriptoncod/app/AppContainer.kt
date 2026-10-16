@@ -30,6 +30,7 @@ import com.kriptoncod.app.data.run.CredentialProvider
 import com.kriptoncod.app.data.run.FinalAiAssembler
 import com.kriptoncod.app.data.run.PromptDispatcher
 import com.kriptoncod.app.data.run.RunFinalizer
+import com.kriptoncod.app.data.run.RunGraphBuilder
 import com.kriptoncod.app.data.run.RunLauncher
 import com.kriptoncod.app.data.run.RunPublisher
 import com.kriptoncod.app.data.run.VaultCredentialProvider
@@ -122,10 +123,12 @@ class AppContainer(context: Context) {
                 }
             },
             kimiCodes = kimiCodeRepository,
+            graph = runGraphBuilder,
         )
     }
     val runScheduler: RunScheduler by lazy { RunScheduler(WorkManager.getInstance(appContext), runRepository) }
-    val runLauncher: RunLauncher by lazy { RunLauncher(promptRepository, runRepository, runScheduler) }
+    val runGraphBuilder: RunGraphBuilder by lazy { RunGraphBuilder(runRepository, aiAccountRepository) }
+    val runLauncher: RunLauncher by lazy { RunLauncher(promptRepository, runRepository, runScheduler, runGraphBuilder) }
 
     /** Açılışta yarım kalan dosya/iş durumlarını toparlar; hata uygulamayı düşürmez. */
     fun startRecovery() {

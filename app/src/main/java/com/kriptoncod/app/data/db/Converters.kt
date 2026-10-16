@@ -4,6 +4,7 @@ import androidx.room.TypeConverter
 import com.kriptoncod.app.domain.AccountStatus
 import com.kriptoncod.app.domain.AssignmentMode
 import com.kriptoncod.app.domain.AuthType
+import com.kriptoncod.app.domain.JobKind
 import com.kriptoncod.app.domain.JobState
 import com.kriptoncod.app.domain.RunStatus
 
@@ -20,6 +21,9 @@ class Converters {
 
     @TypeConverter fun jobStateToString(v: JobState): String = v.name
     @TypeConverter fun stringToJobState(s: String): JobState = enumOr(s, JobState.FAILED)
+
+    @TypeConverter fun jobKindToString(v: JobKind): String = v.name
+    @TypeConverter fun stringToJobKind(s: String): JobKind = enumOr(s, JobKind.WORK)
 
     @TypeConverter fun runStatusToString(v: RunStatus): String = v.name
     @TypeConverter fun stringToRunStatus(s: String): RunStatus = enumOr(s, RunStatus.FAILED)

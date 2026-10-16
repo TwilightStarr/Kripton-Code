@@ -61,10 +61,11 @@ fun PromptSetScreen(
 ) {
     val viewModel: PromptSetViewModel = viewModel(factory = rememberPromptSetViewModelFactory(setId))
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val container = com.kriptoncod.app.ui.ais.rememberContainer()
     var showRun by remember { mutableStateOf(false) }
     if (showRun) {
         RunLaunchDialog(
-            setId = setId,
+            launch = { repo -> container.runLauncher.launch(setId, repo) },
             hasAccounts = state.accounts.isNotEmpty(),
             onDismiss = { showRun = false },
             onStarted = { runId ->

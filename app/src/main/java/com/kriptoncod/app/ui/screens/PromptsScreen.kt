@@ -1,5 +1,8 @@
 package com.kriptoncod.app.ui.screens
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,7 +28,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import com.kriptoncod.app.domain.Catalog
+import com.kriptoncod.app.domain.CatalogParser
+import com.kriptoncod.app.ui.ais.rememberContainer
+import java.util.zip.ZipInputStream
+import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -36,6 +49,7 @@ import com.kriptoncod.app.R
 import com.kriptoncod.app.data.db.PromptSet
 import com.kriptoncod.app.ui.components.EmptyState
 import com.kriptoncod.app.ui.components.KButton
+import com.kriptoncod.app.ui.components.KButtonStyle
 import com.kriptoncod.app.ui.components.NodeCard
 import com.kriptoncod.app.ui.prompts.PromptsUiState
 import com.kriptoncod.app.ui.prompts.PromptsViewModel
@@ -43,10 +57,59 @@ import com.kriptoncod.app.ui.prompts.rememberPromptsViewModelFactory
 import com.kriptoncod.app.ui.theme.KriptonTheme
 
 @Composable
-fun PromptsScreen(onOpenSet: (Long) -> Unit) {
+fun PromptsScreen(onOpenSet: (Long) -> Unit, onRunStarted: (Long) -> Unit = {}) {
     val viewModel: PromptsViewModel = viewModel(factory = rememberPromptsViewModelFactory())
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val container = rememberContainer()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val accounts by container.aiAccountRepository.observeAll()
+        .collectAsStateWithLifecycle(initialValue = emptyList())
+    var zipCatalogs by remember { mutableStateOf<List<Catalog>?>(null) }
+    val pickZip = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val parsed = withContext(Dispatchers.IO) {
+                    try {
+                        val entries = mutableListOf<Pair<String, ByteArray>>()
+                        var total = 0L
+                        context.contentResolver.openInputStream(uri)?.use { input ->
+                            ZipInputStream(input).use { zin ->
+                                while (true) {
+                                    val e = zin.nextEntry ?: break
+                                    if (e.isDirectory) continue
+                                    val bytes = zin.readBytes()
+                                    total += bytes.size
+                                    if (total > 50L * 1024 * 1024) break
+                                    entries += e.name to bytes
+                                }
+                            }
+                        }
+                        CatalogParser.parseZip(entries)
+                    } catch (c: CancellationException) {
+                        throw c
+                    } catch (_: Exception) {
+                        emptyList()
+                    }
+                }
+                if (parsed.any { it.prompts.isNotEmpty() }) {
+                    zipCatalogs = parsed
+                } else {
+                    Toast.makeText(context, R.string.zip_run_invalid, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+    zipCatalogs?.let { cats ->
+        RunLaunchDialog(
+            launch = { repo -> container.runLauncher.launchCatalogs(cats, repo) },
+            hasAccounts = accounts.isNotEmpty(),
+            onDismiss = { zipCatalogs = null },
+            onStarted = { id -> zipCatalogs = null; onRunStarted(id) },
+        )
+    }
     PromptsContent(
+        onRunFromZip = { pickZip.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")) },
         state = state,
         onOpenSet = onOpenSet,
         onCreate = viewModel::createSet,
@@ -59,6 +122,7 @@ fun PromptsScreen(onOpenSet: (Long) -> Unit) {
 @Composable
 private fun PromptsContent(
     state: PromptsUiState,
+    onRunFromZip: () -> Unit,
     onOpenSet: (Long) -> Unit,
     onCreate: (String) -> Unit,
     onRequestDelete: (Long) -> Unit,
@@ -88,6 +152,14 @@ private fun PromptsContent(
                     onClick = { showCreate = true },
                 )
             }
+        }
+        item {
+            KButton(
+                text = stringResource(R.string.zip_run),
+                onClick = onRunFromZip,
+                style = KButtonStyle.Outline,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
 
         when {

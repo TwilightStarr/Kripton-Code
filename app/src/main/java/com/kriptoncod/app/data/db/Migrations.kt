@@ -20,5 +20,15 @@ object Migrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2)
+    /** 2 → 3: düğüm grafiği alanları (kind, catalog, title, body). */
+    val MIGRATION_2_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE jobs ADD COLUMN kind TEXT NOT NULL DEFAULT 'WORK'")
+            db.execSQL("ALTER TABLE jobs ADD COLUMN catalog TEXT")
+            db.execSQL("ALTER TABLE jobs ADD COLUMN title TEXT")
+            db.execSQL("ALTER TABLE jobs ADD COLUMN body TEXT")
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
 }

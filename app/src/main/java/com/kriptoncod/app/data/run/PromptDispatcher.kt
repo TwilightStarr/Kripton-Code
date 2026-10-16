@@ -15,6 +15,10 @@ import com.kriptoncod.app.data.repo.RunRepository
 import com.kriptoncod.app.domain.AccountStatus
 import com.kriptoncod.app.domain.AssignmentMode
 import com.kriptoncod.app.domain.AuthType
+import com.kriptoncod.app.domain.Catalog
+import com.kriptoncod.app.domain.CatalogParser
+import com.kriptoncod.app.domain.CatalogPrompt
+import com.kriptoncod.app.domain.JobKind
 import com.kriptoncod.app.domain.JobState
 import com.kriptoncod.app.domain.RunStatus
 import kotlinx.coroutines.flow.first
@@ -36,12 +40,13 @@ class PromptDispatcher(
         { ProviderCatalog.byId(it.providerId)?.resolve() },
     private val onAllJobsDone: suspend (runId: Long) -> RunStatus = { RunStatus.DONE },
     private val kimiCodes: KimiCodeRepository? = null,
+    private val graph: RunGraphBuilder? = null,
 ) {
 
     suspend fun process(runId: Long): DispatchOutcome {
         val run = runs.getRun(runId) ?: return DispatchOutcome.Cancelled
         when (run.status) {
-            RunStatus.CANCELLED -> return DispatchOutcome.Cancelled
+            RunStatus.CANCELLED, RunStatus.PAUSED -> return DispatchOutcome.Cancelled
             RunStatus.DONE, RunStatus.FAILED -> return DispatchOutcome.Finished(run.status)
             else -> Unit
         }
@@ -51,12 +56,24 @@ class PromptDispatcher(
         runs.getJobs(runId).filter { it.state == JobState.RUNNING }.forEach { runs.requeueJob(it.id) }
 
         var wakeAtMs: Long? = null
-        for (job in runs.getJobs(runId)) {
-            if (job.state != JobState.PENDING && job.state != JobState.WAITING) continue
-            if (runs.getRun(runId)?.status == RunStatus.CANCELLED) return DispatchOutcome.Cancelled
-            val result = processJob(job)
+        // Düğüm grafiği: işler bağımlılık sırasıyla (PLAN -> WORK -> katalog birleştirme -> nihai) çalışır.
+        // Her adımda taze liste okunur; böylece biten işlerin ardılları aynı turda hazır olur.
+        val visited = mutableSetOf<Long>()
+        while (true) {
+            val all = runs.getJobs(runId)
+            val job = all.firstOrNull {
+                it.id !in visited && (it.state == JobState.PENDING || it.state == JobState.WAITING) && isReady(it, all)
+            } ?: break
+            visited += job.id
+            when (runs.getRun(runId)?.status) {
+                RunStatus.CANCELLED, RunStatus.PAUSED -> return DispatchOutcome.Cancelled
+                else -> Unit
+            }
+            val result = processJob(job, all)
             if (result is JobResult.Wait) {
                 wakeAtMs = minOf(wakeAtMs ?: result.untilMs, result.untilMs)
+            } else if (result is JobResult.Done && job.kind == JobKind.PLAN) {
+                expandPlan(job)
             }
         }
 
@@ -66,10 +83,74 @@ class PromptDispatcher(
             return DispatchOutcome.Wait(delay)
         }
 
-        val status = if (jobs.all { it.state == JobState.DONE }) onAllJobsDone(runId) else RunStatus.FAILED
+        val isGraph = jobs.any { it.kind != JobKind.WORK }
+        val success = if (isGraph) {
+            jobs.any { it.kind == JobKind.FINAL_MERGE && it.state == JobState.DONE }
+        } else {
+            jobs.all { it.state == JobState.DONE }
+        }
+        val status = if (success) onAllJobsDone(runId) else RunStatus.FAILED
         runs.setRunStatus(runId, status)
         runs.saveHistory(runId)
         return DispatchOutcome.Finished(status)
+    }
+
+    /** WORK/PLAN hemen hazırdır; birleştirmeler bağımlı oldukları işler bitince (DONE/FAILED) hazır olur. */
+    private fun isReady(job: Job, all: List<Job>): Boolean = when (job.kind) {
+        JobKind.PLAN, JobKind.WORK -> true
+        JobKind.CATALOG_MERGE ->
+            all.filter { it.kind == JobKind.WORK && it.catalog == job.catalog }.all { it.isTerminal() }
+        JobKind.FINAL_MERGE ->
+            all.filter { it.kind == JobKind.WORK || it.kind == JobKind.CATALOG_MERGE }.all { it.isTerminal() }
+    }
+
+    private fun Job.isTerminal() = state == JobState.DONE || state == JobState.FAILED
+
+    /** Planlayıcı bitti: çıktısını kataloglara ayırır (olmazsa girdi promptlarıyla tek katalog) ve grafiği kurar. */
+    private suspend fun expandPlan(plan: Job) {
+        val builder = graph ?: return
+        val output = runs.readOutput(plan.id).orEmpty()
+        val catalogs = CatalogParser.parseText(output)
+            .ifEmpty { CatalogParser.parseText(plan.body.orEmpty()) }
+            .ifEmpty { listOf(Catalog(CatalogParser.DEFAULT_CATALOG, listOf(CatalogPrompt("Prompt", plan.body.orEmpty())))) }
+        builder.build(plan.runId, catalogs)
+    }
+
+    /** Birleştirme düğümünün girdisi: bağımlı düğümlerin çıktıları (uzun çıktılar kısaltılır). */
+    private suspend fun mergeBody(job: Job, all: List<Job>): String? {
+        val sources: List<Pair<String, Job>> = when (job.kind) {
+            JobKind.CATALOG_MERGE ->
+                all.filter { it.kind == JobKind.WORK && it.catalog == job.catalog && it.state == JobState.DONE }
+                    .map { (it.title ?: "Prompt #${it.id}") to it }
+            JobKind.FINAL_MERGE -> all.filter { it.kind == JobKind.CATALOG_MERGE }.flatMap { m ->
+                if (m.state == JobState.DONE) {
+                    listOf((m.catalog ?: "katalog") to m)
+                } else { // katalog birleştirmesi başarısızsa o katalogun ham çıktıları kullanılır
+                    all.filter { it.kind == JobKind.WORK && it.catalog == m.catalog && it.state == JobState.DONE }
+                        .map { "${m.catalog}/${it.title ?: it.id}" to it }
+                }
+            }
+            else -> return null
+        }
+        if (sources.isEmpty()) return null
+        val cap = (MAX_MERGE_CHARS / sources.size).coerceAtLeast(MIN_PER_OUTPUT_CHARS)
+        val header = if (job.kind == JobKind.FINAL_MERGE) {
+            "Aşağıda bir yazılım işinin katalog bazında birleştirilmiş çıktıları var. Hepsini çakışmaları gidererek, " +
+                "eksikleri tamamlayarak derlenir ve tutarlı TEK bir nihai pakete dönüştür. "
+        } else {
+            "Aşağıda '${job.catalog}' kataloğundaki ayrı yapay zekaların ürettiği çıktılar var. Çakışmaları gider, " +
+                "eksikleri tamamla ve bu kataloğu tutarlı tek bir bütün hâline getir. "
+        } + "Nihai dosyaları ```tam/dosya/yolu biçiminde kod bloklarıyla döndür; açıklama yazma."
+        return buildString {
+            appendLine(header)
+            appendLine()
+            for ((name, src) in sources) {
+                val text = runs.readOutput(src.id).orEmpty()
+                appendLine("=== $name ===")
+                appendLine(if (text.length > cap) text.take(cap) + "\n[... kısaltıldı]" else text)
+                appendLine()
+            }
+        }
     }
 
     private sealed interface JobResult {
@@ -84,12 +165,16 @@ class PromptDispatcher(
         data object None : Pick
     }
 
-    private suspend fun processJob(job: Job): JobResult {
-        val item = prompts.getItem(job.promptId)
-        if (item == null || item.body.isBlank()) {
+    private suspend fun processJob(job: Job, all: List<Job>): JobResult {
+        val text = when (job.kind) {
+            JobKind.CATALOG_MERGE, JobKind.FINAL_MERGE -> mergeBody(job, all)
+            else -> job.body ?: prompts.getItem(job.promptId)?.body
+        }
+        if (text.isNullOrBlank()) {
             runs.failJob(job.id)
             return JobResult.Failed
         }
+        val item = PromptItem(id = job.promptId, setId = 0, title = job.title.orEmpty(), body = text, order = 0)
         val manual = prompts.getAssignment(job.promptId)?.mode == AssignmentMode.MANUAL
         val tried = mutableSetOf<Long>()
 
@@ -235,6 +320,11 @@ class PromptDispatcher(
         }
 
         val enabled = accounts.observeAll().first().filter { it.enabled }
+        // Grafik düğümlerinde planlama sırasında güce göre seçilen hesap önceliklidir; kullanılamıyorsa
+        // en güçlü kullanılabilir hesaba (ya da bekleme bitene) geçilir.
+        if (job.kind != JobKind.WORK || job.catalog != null) {
+            enabled.firstOrNull { it.id == job.accountId && it.id !in tried && it.isUsable(t) }?.let { return Pick.Use(it) }
+        }
         enabled.firstOrNull { it.id !in tried && it.isUsable(t) }?.let { return Pick.Use(it) }
 
         val earliest = enabled
@@ -256,5 +346,7 @@ class PromptDispatcher(
         const val RETRY_BASE_MS = 15_000L
         private const val MIN_DELAY_MS = 1_000L
         private val OPEN_STATES = setOf(JobState.PENDING, JobState.RUNNING, JobState.WAITING)
+        private const val MAX_MERGE_CHARS = 120_000
+        private const val MIN_PER_OUTPUT_CHARS = 4_000
     }
 }

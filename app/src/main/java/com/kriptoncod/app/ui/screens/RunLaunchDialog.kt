@@ -44,7 +44,7 @@ private sealed interface RepoState {
  */
 @Composable
 fun RunLaunchDialog(
-    setId: Long,
+    launch: suspend (repo: String?) -> Long,
     hasAccounts: Boolean,
     onDismiss: () -> Unit,
     onStarted: (Long) -> Unit,
@@ -156,7 +156,7 @@ fun RunLaunchDialog(
                     failed = false
                     scope.launch {
                         try {
-                            onStarted(container.runLauncher.launch(setId, selected))
+                            onStarted(launch(selected))
                         } catch (c: CancellationException) {
                             throw c
                         } catch (_: Exception) {

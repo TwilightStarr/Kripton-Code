@@ -42,6 +42,18 @@ class RunScheduler(
             WorkNames.ciLoop(runId), ExistingWorkPolicy.REPLACE, request)
     }
 
+    /** Duraklatır: devam eden iş yarım kalırsa devamda baştan yapılır; tamamlanan çıktılar korunur. */
+    suspend fun pause(runId: Long) {
+        runs.setRunStatus(runId, RunStatus.PAUSED)
+        workManager.cancelUniqueWork(WorkNames.dispatch(runId))
+    }
+
+    /** Duraklatılmış run'ı kaldığı yerden sürdürür. */
+    suspend fun unpause(runId: Long) {
+        runs.setRunStatus(runId, RunStatus.RUNNING)
+        start(runId)
+    }
+
     suspend fun cancel(runId: Long) {
         runs.setRunStatus(runId, RunStatus.CANCELLED)
         workManager.cancelUniqueWork(WorkNames.dispatch(runId))

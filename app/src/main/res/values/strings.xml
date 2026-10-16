@@ -202,4 +202,17 @@
     <!-- GitHub: CI -->
     <string name="github_ci_attempts_label">CI düzeltme denemesi</string>
     <string name="github_ci_attempts_hint">Actions başarısız olursa AI en fazla bu kadar kez düzeltmeyi dener.</string>
+    <string name="run_pause">Duraklat</string>
+    <string name="run_resume">Devam et</string>
+    <string name="run_waiting_info">Bazı hesapların kotası doldu; kota yenilenene kadar bekleniyor, uygulama kendiliğinden devam eder.</string>
+    <string name="run_graph_empty">Düğümler hazırlanıyor…</string>
+    <string name="run_node_hint">Çıktısını görmek için bir düğüme dokunun.</string>
+    <string name="run_node_no_account">Hesap atanmadı</string>
+    <string name="run_node_attempts">%1$d deneme</string>
+    <string name="run_node_no_output">Henüz çıktı yok.</string>
+    <string name="node_save">Bu çıktıyı kaydet</string>
+    <string name="node_save_done">Çıktı kaydedildi</string>
+    <string name="node_save_failed">Çıktı kaydedilemedi</string>
+    <string name="zip_run">Zip\'ten çalıştır</string>
+    <string name="zip_run_invalid">Zip içinde geçerli prompt bulunamadı.</string>
 </resources>

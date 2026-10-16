@@ -34,7 +34,7 @@ class RunPublisher(
         runs.setRunStatus(runId, RunStatus.PUSHING)
 
         val files = runs.readZipFiles(runId)
-            .filter { (path, _) -> path != VerifyWorkflow.PATH }
+            .filter { (path, _) -> path != VerifyWorkflow.PATH && !path.startsWith("_kripton/") }
             .map { (path, bytes) -> GitHubFile(path, bytes) }
         if (files.isEmpty()) return false
 
