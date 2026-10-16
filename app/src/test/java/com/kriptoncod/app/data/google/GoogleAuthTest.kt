@@ -30,7 +30,7 @@ class GoogleAuthTest {
 
     @Test
     fun `tokenStore returns valid token when not expired`() = runTest {
-        val expiresAt = System.currentTimeMillis() + 60_000
+        val expiresAt = System.currentTimeMillis() + 10 * 60 * 1_000
         tokenStore.save(accountId, "tok", expiresAt)
         val info = tokenStore.getValid(accountId)
         assertNotNull(info)
@@ -97,7 +97,7 @@ class GoogleAuthTest {
 
     @Test
     fun `silentRefreshIfNeeded delegates to client when no cached token`() = runTest {
-        fakeClient.silentResult = GoogleAuthResult.Success("fresh", System.currentTimeMillis() + 60_000)
+        fakeClient.silentResult = GoogleAuthResult.Success("fresh", System.currentTimeMillis() + 10 * 60 * 1_000)
         val auth = makeAuth()
         val result = auth.silentRefreshIfNeeded()
         assertTrue(result is GoogleAuthState.Valid)

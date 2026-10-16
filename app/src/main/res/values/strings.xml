@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">Kripton Cod</string>
     <string name="logo_description">Kripton Cod logosu</string>
 
@@ -45,8 +45,6 @@
     <string name="provider_get_key">Anahtar al</string>
     <string name="provider_google_auth">Google OAuth</string>
 
-    <string name="auth_api_key">API anahtarı</string>
-    <string name="auth_google">Google ile giriş</string>
 
     <!-- Yalnızca API anahtarı bilgi kartı (Groq, Mistral vb.) -->
     <string name="auth_api_key_only_title">Yalnızca API anahtarı</string>
@@ -97,7 +95,7 @@
     <string name="key_paste">Panodan yapıştır</string>
     <string name="key_edit_hint">Boş bırakırsan kayıtlı anahtar kullanılır.</string>
     <string name="key_stored_securely">Anahtar yalnızca cihazın güvenli deposunda şifreli saklanır.</string>
-    <string name="models_found">%1$d uygun model bulundu</string>
+    <string name="models_found" tools:ignore="PluralsCandidate">%1$d uygun model bulundu</string>
     <string name="models_show_more">Daha fazla göster (%1$d)</string>
     <string name="model_free">Ücretsiz</string>
     <string name="model_paid">Ücretli</string>
@@ -134,7 +132,7 @@
     <string name="prompts_add_prompt">+ Prompt</string>
     <string name="prompt_set_empty_title">Bu sette prompt yok</string>
     <string name="prompt_set_empty_message">İlk promptunu ekle; sıralama ve hesap ataması buradan yapılır.</string>
-    <string name="prompts_assigned_count">%1$d / %2$d prompta hesap atandı</string>
+    <string name="prompts_assigned_count" tools:ignore="PluralsCandidate">%1$d / %2$d prompta hesap atandı</string>
     <string name="prompts_assign">Hesap Ata</string>
     <string name="prompts_reassign">Atamayı Değiştir</string>
     <string name="prompts_unassign">Atamayı Kaldır</string>
@@ -174,7 +172,6 @@
 
     <!-- Run Ekranı -->
     <string name="run_title">Çalıştırma</string>
-    <string name="run_jobs_title">İşler</string>
     <string name="run_cancel">Çalıştırmayı iptal et</string>
     <string name="run_save_zip">Zip\'i kaydet</string>
     <string name="run_save_zip_done">Zip kaydedildi.</string>
@@ -208,7 +205,7 @@
     <string name="run_graph_empty">Düğümler hazırlanıyor…</string>
     <string name="run_node_hint">Çıktısını görmek için bir düğüme dokunun.</string>
     <string name="run_node_no_account">Hesap atanmadı</string>
-    <string name="run_node_attempts">%1$d deneme</string>
+    <string name="run_node_attempts" tools:ignore="PluralsCandidate">%1$d deneme</string>
     <string name="run_node_no_output">Henüz çıktı yok.</string>
     <string name="node_save">Bu çıktıyı kaydet</string>
     <string name="node_save_done">Çıktı kaydedildi</string>

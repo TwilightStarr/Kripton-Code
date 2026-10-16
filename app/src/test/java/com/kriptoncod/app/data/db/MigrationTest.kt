@@ -35,7 +35,7 @@ class MigrationTest {
     }
 
     /** Dosya tabanlı DB kapatılıp yeniden açılınca (Migrations.ALL ile) veri korunur. */
-    @Test fun dataSurvivesReopenWithMigrationsConfigured() = runBlocking {
+    @Test fun dataSurvivesReopenWithMigrationsConfigured(): Unit = runBlocking {
         val name = "reopen-test.db"
         context.deleteDatabase(name)
         fun open() = Room.databaseBuilder(context, KriptonDatabase::class.java, name)

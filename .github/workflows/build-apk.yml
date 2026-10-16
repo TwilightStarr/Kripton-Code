@@ -9,24 +9,26 @@ on:
 permissions:
   contents: read
 
+# Yalnız aynı PR'ın eski çalışmaları iptal edilir. main'e yapılan push'lar birbirini
+# iptal etmez ("Canceling since a higher priority waiting request..." hatası bundan çıkıyordu).
 concurrency:
-  group: build-${{ github.ref }}
-  cancel-in-progress: true
+  group: build-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
 
       # Gradle önbelleği (bağımlılıklar + wrapper) bu adımda yönetilir.
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: "8.9"
 
@@ -40,13 +42,13 @@ jobs:
       - name: Derle, lint, birim test
         run: ./gradlew --no-daemon --continue assembleDebug lintDebug testDebugUnitTest --stacktrace
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: kripton-cod-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: reports

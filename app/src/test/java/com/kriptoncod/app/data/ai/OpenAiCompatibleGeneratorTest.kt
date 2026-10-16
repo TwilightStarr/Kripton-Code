@@ -134,6 +134,8 @@ class OpenAiCompatibleGeneratorTest {
     @Test fun serverErrorsAreRetryable() {
         for (code in listOf(500, 502, 503, 408)) {
             server.enqueue(json("{}", code))
+            // OkHttp 408'de isteği bir kez otomatik tekrarlar; ikinci yanıt yoksa okuma zaman aşımı (NETWORK) olurdu.
+            if (code == 408) server.enqueue(json("{}", code))
             val e = failure { generate() }
             assertEquals(Kind.SERVER, e.kind)
             assertTrue(e.kind.retryable)
