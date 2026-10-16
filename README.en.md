@@ -7,7 +7,6 @@ A code-focused, multi-AI generation tool for Android. Split a large job into sma
 ## Features
 
 - **Multiple AI accounts:** Google Gemini, Groq, OpenRouter, Mistral, Cerebras, NVIDIA NIM, DeepSeek, Claude, OpenAI, Kimi, and custom OpenAI-compatible providers.
-- **Authentication:** API key (all providers) and Google OAuth for Gemini. Claude, OpenAI, and Kimi connect with an official API key only: these companies offer no API that lets a third-party app sign in to a web chat account (email/password), and automating their web interfaces violates their terms of use. To start for free, use a Gemini, Groq, OpenRouter, Cerebras, Mistral, or NVIDIA NIM key (see [docs/FREE-PROVIDERS.md](docs/FREE-PROVIDERS.md)).
 - **Model picker:** After the key is verified, suitable chat models are listed with free ones highlighted.
 - **Prompt sets:** Build ordered prompts, reorder them, and assign an account to each prompt automatically or manually.
 - **Background runs:** Generation continues through WorkManager; interrupted jobs are recovered.
