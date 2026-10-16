@@ -28,7 +28,7 @@ fun KriptonCodLogo(modifier: Modifier = Modifier, logoSize: Dp = 96.dp) {
         val c = Offset(s / 2f, s / 2f)
         val r = s * 0.44f
         fun pt(dx: Float, dy: Float) = Offset(c.x + dx * r, c.y + dy * r)
-        fun face(vararg p: Offset) = Path().apply {
+        fun face(p: List<Offset>) = Path().apply {
             moveTo(p[0].x, p[0].y)
             for (i in 1 until p.size) lineTo(p[i].x, p[i].y)
             close()
@@ -41,13 +41,13 @@ fun KriptonCodLogo(modifier: Modifier = Modifier, logoSize: Dp = 96.dp) {
         val ll = pt(-0.866f, 0.5f)
         val ul = pt(-0.866f, -0.5f)
 
-        drawPath(face(top, ur, c, ul), Color(0xFF3B6FE8))
-        drawPath(face(ul, c, bottom, ll), Color(0xFF1E3FA8))
-        drawPath(face(c, ur, lr, bottom), Color(0xFF2A55CC))
+        drawPath(face(listOf(top, ur, c, ul)), Color(0xFF3B6FE8))
+        drawPath(face(listOf(ul, c, bottom, ll)), Color(0xFF1E3FA8))
+        drawPath(face(listOf(c, ur, lr, bottom)), Color(0xFF2A55CC))
 
         val edge = Color(0xFF8FB4FF).copy(alpha = 0.7f)
         val edgeStyle = Stroke(width = s * 0.012f, join = StrokeJoin.Round)
-        drawPath(face(top, ur, lr, bottom, ll, ul), edge, style = edgeStyle)
+        drawPath(face(listOf(top, ur, lr, bottom, ll, ul)), edge, style = edgeStyle)
         drawPath(Path().apply {
             moveTo(ul.x, ul.y); lineTo(c.x, c.y); lineTo(ur.x, ur.y)
             moveTo(c.x, c.y); lineTo(bottom.x, bottom.y)

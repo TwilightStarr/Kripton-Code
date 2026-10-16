@@ -19,7 +19,7 @@ class RealGoogleAuthClient(private val clientId: suspend () -> String?) : Google
     private val scopes = listOf(Scope(GENAI_SCOPE))
 
     private fun buildRequest() = AuthorizationRequest.builder()
-        .requestedScopes(scopes)
+        .setRequestedScopes(scopes)
         .build()
 
     private fun client(activity: Activity): AuthorizationClient =
