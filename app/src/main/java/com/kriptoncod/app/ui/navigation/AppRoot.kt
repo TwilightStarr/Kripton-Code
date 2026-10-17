@@ -1,5 +1,7 @@
 package com.kriptoncod.app.ui.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -59,6 +61,10 @@ import com.kriptoncod.app.ui.adaptive.LocalWindowClass
 import com.kriptoncod.app.ui.adaptive.WindowClass
 import com.kriptoncod.app.ui.adaptive.rememberWindowClass
 import com.kriptoncod.app.ui.theme.KriptonTheme
+import com.kriptoncod.app.ui.theme.LocalAnimationsEnabled
+import com.kriptoncod.app.ui.theme.LocalAppBusy
+import com.kriptoncod.app.ui.theme.isInProgress
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -85,7 +91,12 @@ fun AppRoot(
     val showBottomBar = showNav && windowClass == WindowClass.Compact
     val showSideNav = showNav && windowClass != WindowClass.Compact
 
-    CompositionLocalProvider(LocalWindowClass provides windowClass) {
+    // Bir çalışma sürerken logo (yan menü ve ana ekran) "çalışıyor" animasyonunu oynatır.
+    val runs by container.runRepository.observeRuns().collectAsStateWithLifecycle(initialValue = emptyList())
+    val busy = runs.any { it.status.isInProgress() }
+    val animationsOn = LocalAnimationsEnabled.current
+
+    CompositionLocalProvider(LocalWindowClass provides windowClass, LocalAppBusy provides busy) {
     Scaffold(
         containerColor = scheme.background,
         bottomBar = {
@@ -128,8 +139,19 @@ fun AppRoot(
             navController = navController,
             startDestination = Route.Home.path,
             modifier = Modifier.fillMaxSize(),
+            // Animasyonlar kapalıyken ekran geçişleri anında olur.
+            enterTransition = { if (animationsOn) fadeInDefault() else EnterTransition.None },
+            exitTransition = { if (animationsOn) fadeOutDefault() else ExitTransition.None },
+            popEnterTransition = { if (animationsOn) fadeInDefault() else EnterTransition.None },
+            popExitTransition = { if (animationsOn) fadeOutDefault() else ExitTransition.None },
         ) {
-            composable(Route.Home.path) { HomeScreen(onAddAi = { navController.navigate(AisRoutes.ADD) }) }
+            composable(Route.Home.path) {
+                HomeScreen(
+                    onAddAi = { navController.navigate(AisRoutes.ADD) },
+                    onOpenRoute = { route -> navController.navigateTo(route) },
+                    onOpenRun = { id -> navController.navigate(ExtraRoutes.run(id)) },
+                )
+            }
             composable(Route.Ais.path) {
                 AisScreen(
                     onAdd = { navController.navigate(AisRoutes.ADD) },
@@ -256,6 +278,12 @@ fun AppRoot(
     }
     }
 }
+
+private fun fadeInDefault(): EnterTransition =
+    androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(300))
+
+private fun fadeOutDefault(): ExitTransition =
+    androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(300))
 
 private fun NavHostController.navigateTo(route: Route) {
     navigate(route.path) {

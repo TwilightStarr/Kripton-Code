@@ -93,6 +93,21 @@ fun SettingsScreen(
             }
         }
 
+        // Animasyonlar: logo animasyonu, yükleme göstergeleri ve ekran geçişleri tek anahtarla kapanır.
+        val animations by store.animationsFlow.collectAsStateWithLifecycle(initialValue = true)
+        NodeCard(modifier = Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(stringResource(R.string.settings_animations), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.settings_animations_hint), style = MaterialTheme.typography.bodySmall, color = k.muted)
+                }
+                Switch(
+                    checked = animations,
+                    onCheckedChange = { on -> scope.launch { store.setAnimations(on) } },
+                )
+            }
+        }
+
         // Bildirimler: çalışma kapalıyken de arka planda sürer; olaylar için bildirim istenirse gönderilir.
         NodeCard(modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {

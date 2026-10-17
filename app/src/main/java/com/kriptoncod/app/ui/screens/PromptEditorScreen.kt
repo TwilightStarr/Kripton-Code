@@ -10,7 +10,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kriptoncod.app.R
+import com.kriptoncod.app.ui.components.KriptonLoader
 import com.kriptoncod.app.ui.components.KButton
 import com.kriptoncod.app.ui.components.NodeCard
 import com.kriptoncod.app.ui.prompts.PromptEditorUiState
@@ -88,7 +88,7 @@ private fun PromptEditorContent(
         }
 
         if (state.loading) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            KriptonLoader()
             return@Column
         }
 

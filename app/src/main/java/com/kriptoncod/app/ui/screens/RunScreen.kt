@@ -29,7 +29,8 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -56,6 +57,8 @@ import com.kriptoncod.app.AppContainer
 import com.kriptoncod.app.R
 import com.kriptoncod.app.data.db.AiAccount
 import com.kriptoncod.app.data.db.Job
+import com.kriptoncod.app.data.run.SyntaxCheck
+import com.kriptoncod.app.domain.AccountStatus
 import com.kriptoncod.app.domain.GraphNodeUi
 import com.kriptoncod.app.domain.JobKind
 import com.kriptoncod.app.domain.JobState
@@ -63,7 +66,10 @@ import com.kriptoncod.app.domain.RunStatus
 import com.kriptoncod.app.ui.components.KBadge
 import com.kriptoncod.app.ui.components.KButton
 import com.kriptoncod.app.ui.components.KButtonStyle
+import com.kriptoncod.app.ui.components.KriptonLoader
 import com.kriptoncod.app.ui.components.NodeAccent
+import com.kriptoncod.app.ui.components.OutputMarkdown
+import com.kriptoncod.app.ui.components.OutputMarkdownView
 import com.kriptoncod.app.ui.components.RunGraph
 import com.kriptoncod.app.ui.theme.KriptonTheme
 import java.text.SimpleDateFormat
@@ -195,7 +201,7 @@ fun RunScreen(
             }
             currentRun?.let { RunStatusBadge(status = it.status) }
             if (status != null && status in CANCELLABLE && status != RunStatus.PAUSED) {
-                CircularProgressIndicator(modifier = Modifier.width(24.dp).height(24.dp))
+                KriptonLoader(size = 32.dp)
             }
         }
         if (anyWaiting && status == RunStatus.RUNNING) {
@@ -266,7 +272,7 @@ fun RunScreen(
                 GraphPane(
                     nodes = nodes, selected = selected, selectedId = selectedId, onToggle = onToggle,
                     accounts = accounts, container = container, onSave = saveSelected, onClose = { selectedId = null },
-                    overlayDetail = false, modifier = Modifier.weight(1.1f).fillMaxHeight(),
+                    overlayDetail = false, runStatus = status, modifier = Modifier.weight(1.1f).fillMaxHeight(),
                 )
                 val detailShape = RoundedCornerShape(16.dp)
                 Surface(
@@ -281,6 +287,8 @@ fun RunScreen(
                         NodeDetail(
                             job = selected,
                             accountName = accounts.firstOrNull { it.id == selected.accountId }?.displayName,
+                            accounts = accounts,
+                            runStatus = status,
                             container = container,
                             onSave = saveSelected,
                             onClose = { selectedId = null },
@@ -320,7 +328,7 @@ fun RunScreen(
                     0 -> GraphPane(
                         nodes = nodes, selected = selected, selectedId = selectedId, onToggle = onToggle,
                         accounts = accounts, container = container, onSave = saveSelected, onClose = { selectedId = null },
-                        overlayDetail = true, modifier = Modifier.fillMaxSize(),
+                        overlayDetail = true, runStatus = status, modifier = Modifier.fillMaxSize(),
                     )
                     1 -> RunFlowPanel(jobs, accounts, container, selectedId, onPick, Modifier.fillMaxSize())
                     else -> RunFilesPanel(runId, currentRun?.zipPath, container, Modifier.fillMaxSize())
@@ -348,6 +356,7 @@ private fun GraphPane(
     onSave: (String) -> Unit,
     onClose: () -> Unit,
     overlayDetail: Boolean,
+    runStatus: RunStatus?,
     modifier: Modifier = Modifier,
 ) {
     val k = KriptonTheme.colors
@@ -391,6 +400,8 @@ private fun GraphPane(
                     NodeDetail(
                         job = selected,
                         accountName = accounts.firstOrNull { it.id == selected.accountId }?.displayName,
+                        accounts = accounts,
+                        runStatus = runStatus,
                         container = container,
                         onSave = onSave,
                         onClose = onClose,
@@ -410,20 +421,41 @@ private fun GraphPane(
     }
 }
 
+/** Başarısız düğümün yeniden denenebildiği run durumları (dağıtım bitmiş olmalı). */
+private val RETRYABLE_RUN = setOf(RunStatus.FAILED, RunStatus.DONE)
+
 @Composable
 private fun NodeDetail(
     job: Job,
     accountName: String?,
+    accounts: List<AiAccount>,
+    runStatus: RunStatus?,
     container: AppContainer,
     onSave: (String) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val k = KriptonTheme.colors
+    val scope = rememberCoroutineScope()
     var output by remember(job.id) { mutableStateOf<String?>(null) }
     // Düğümün durumu/zamanı değişince çıktı yeniden okunur: iş biter bitmez burada görünür.
     LaunchedEffect(job.id, job.state, job.updatedAt) {
         output = container.runRepository.readOutput(job.id)
+    }
+    val text = output
+
+    // Markdown bölümleri ve sözdizimi uyarıları ana iş parçacığını kilitlemesin diye arka planda hesaplanır.
+    var formatted by rememberSaveable { mutableStateOf(true) }
+    var segments by remember(job.id) { mutableStateOf<List<String>?>(null) }
+    var issues by remember(job.id) { mutableStateOf<List<SyntaxCheck.Issue>>(emptyList()) }
+    LaunchedEffect(text) {
+        if (text == null) {
+            segments = null
+            issues = emptyList()
+        } else {
+            segments = withContext(Dispatchers.Default) { OutputMarkdown.segments(text) }
+            issues = withContext(Dispatchers.Default) { SyntaxCheck.checkOutput(text) }
+        }
     }
 
     Column(modifier.fillMaxSize()) {
@@ -447,19 +479,113 @@ private fun NodeDetail(
                 Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.run_node_close))
             }
         }
-        Spacer(Modifier.height(4.dp))
-        val text = output
-        // Çıktı sınırsız uzun olabilir: tek bir dev Text yerine satır gruplarıyla tembel çizilir (kesilmez).
-        val chunks = remember(text) { text?.let { chunkLines(it) }.orEmpty() }
-        Box(Modifier.weight(1f).fillMaxWidth()) {
-            if (text == null) {
+
+        // Yalnız başarısız düğümü (ve ona bağlı birleştirmeleri) yeniden çalıştır; isteğe bağlı başka hesapla.
+        if (job.state == JobState.FAILED && runStatus in RETRYABLE_RUN) {
+            Spacer(Modifier.height(4.dp))
+            Row(Modifier.fillMaxWidth().padding(end = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                KButton(
+                    text = stringResource(R.string.node_retry),
+                    onClick = { scope.launch { container.runScheduler.retryNode(job.id) } },
+                    modifier = Modifier.weight(1f),
+                )
+                val alternatives = accounts.filter { it.enabled && it.status != AccountStatus.ERROR && it.id != job.accountId }
+                if (alternatives.isNotEmpty()) {
+                    var menuOpen by remember { mutableStateOf(false) }
+                    Box(Modifier.weight(1f)) {
+                        KButton(
+                            text = stringResource(R.string.node_retry_other),
+                            onClick = { menuOpen = true },
+                            style = KButtonStyle.Outline,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            alternatives.forEach { acc ->
+                                DropdownMenuItem(
+                                    text = { Text(acc.displayName) },
+                                    onClick = {
+                                        menuOpen = false
+                                        scope.launch { container.runScheduler.retryNode(job.id, acc.id) }
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            Text(
+                stringResource(R.string.node_retry_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = k.muted,
+                modifier = Modifier.padding(top = 4.dp, end = 8.dp),
+            )
+        }
+
+        // Push/CI'dan önce bozuk kod blokları (kesik çıktı, dengesiz parantez, geçersiz JSON/XML).
+        if (issues.isNotEmpty()) {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                stringResource(R.string.node_syntax_title, issues.size),
+                style = MaterialTheme.typography.labelLarge,
+                color = k.danger,
+            )
+            issues.take(3).forEach {
                 Text(
+                    "${it.path}:${it.line} — ${it.message}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = k.danger,
+                )
+            }
+            if (issues.size > 3) {
+                Text(
+                    stringResource(R.string.node_syntax_more, issues.size - 3),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = k.muted,
+                )
+            }
+        }
+
+        if (text != null) {
+            Spacer(Modifier.height(4.dp))
+            Row(Modifier.fillMaxWidth().padding(end = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                KButton(
+                    text = stringResource(R.string.node_view_formatted),
+                    onClick = { formatted = true },
+                    style = if (formatted) KButtonStyle.Primary else KButtonStyle.Outline,
+                    modifier = Modifier.weight(1f),
+                )
+                KButton(
+                    text = stringResource(R.string.node_view_raw),
+                    onClick = { formatted = false },
+                    style = if (formatted) KButtonStyle.Outline else KButtonStyle.Primary,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+        Spacer(Modifier.height(4.dp))
+
+        // Ham görünüm: çıktı sınırsız uzun olabilir; tek dev Text yerine satır gruplarıyla tembel çizilir (kesilmez).
+        val chunks = remember(text, formatted) { if (formatted) emptyList() else text?.let { chunkLines(it) }.orEmpty() }
+        Box(Modifier.weight(1f).fillMaxWidth()) {
+            when {
+                text == null -> Text(
                     stringResource(R.string.run_node_no_output),
                     style = MaterialTheme.typography.bodySmall,
                     color = k.muted,
                 )
-            } else {
-                SelectionContainer {
+                formatted -> {
+                    val segs = segments
+                    if (segs == null) {
+                        Text(
+                            stringResource(R.string.node_view_loading),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = k.muted,
+                        )
+                    } else {
+                        OutputMarkdownView(segs)
+                    }
+                }
+                else -> SelectionContainer {
                     LazyColumn(Modifier.fillMaxSize()) {
                         items(chunks.size) { i ->
                             Text(

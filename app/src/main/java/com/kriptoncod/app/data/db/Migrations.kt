@@ -37,5 +37,24 @@ object Migrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+    /** 4 → 5: usage_events (hesap başına istek sonuçları; kullanım/kota panosu). */
+    val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `usage_events` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`accountId` INTEGER NOT NULL, " +
+                    "`jobId` INTEGER, " +
+                    "`at` INTEGER NOT NULL, " +
+                    "`outcome` TEXT NOT NULL, " +
+                    "`durationMs` INTEGER NOT NULL, " +
+                    "`waitMs` INTEGER, " +
+                    "FOREIGN KEY(`accountId`) REFERENCES `ai_accounts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_usage_events_accountId` ON `usage_events` (`accountId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_usage_events_at` ON `usage_events` (`at`)")
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
 }

@@ -22,3 +22,6 @@ enum class RunStatus {
  *  PLAN -> WORK (katalog başına çok sayıda) -> CATALOG_MERGE (katalog başına bir) -> FINAL_MERGE (tek).
  */
 enum class JobKind { PLAN, WORK, CATALOG_MERGE, FINAL_MERGE }
+
+/** Bir üretim isteğinin sonucu (kullanım panosu için). */
+enum class UsageOutcome { SUCCESS, RATE_LIMITED, UNAUTHORIZED, TRANSIENT, FAILED }

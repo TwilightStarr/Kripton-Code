@@ -11,6 +11,7 @@ import com.kriptoncod.app.data.files.HistoryJob
 import com.kriptoncod.app.data.files.HistoryStore
 import com.kriptoncod.app.data.files.OutputStore
 import com.kriptoncod.app.data.files.StoreRecovery
+import com.kriptoncod.app.data.run.RetryPlanner
 import com.kriptoncod.app.domain.JobKind
 import com.kriptoncod.app.domain.JobState
 import com.kriptoncod.app.domain.RunStatus
@@ -96,6 +97,30 @@ class RunRepository(
         val job = jobs.get(jobId) ?: return
         outputs.deleteOutput(job.runId, jobId)
         jobs.setResult(jobId, JobState.PENDING, null, now())
+    }
+
+    /**
+     * Başarısız bir düğümü (ve çıktısına dayanan bitmiş düğümleri, bkz. [RetryPlanner]) sıfırdan çalışacak
+     * şekilde hazırlar; run'ı RUNNING yapar. [accountId] verilirse düğüm o hesaba yönlendirilir.
+     * Yalnız FAILED/DONE run'larda ve FAILED düğümde geçerlidir; aksi halde null döner (hiçbir şey değişmez).
+     * @return run kimliği (çağıran dağıtımı yeniden başlatmalı: bkz. RunScheduler.retryNode).
+     */
+    suspend fun prepareRetry(jobId: Long, accountId: Long? = null): Long? {
+        val job = jobs.get(jobId) ?: return null
+        val run = runs.get(job.runId) ?: return null
+        if (run.status != RunStatus.FAILED && run.status != RunStatus.DONE) return null
+        val ids = RetryPlanner.plan(job, jobs.getByRun(job.runId))
+        if (ids.isEmpty()) return null
+        // Önce dosyalar: yarıda çökerse recover() "DONE ama dosyası yok" işleri zaten PENDING'e alır;
+        // tersi sırada eski .txt "tamamlanmış" sayılıp geri alınırdı.
+        for (id in ids) outputs.deleteOutput(job.runId, id)
+        db.withTransaction {
+            val t = now()
+            for (id in ids) jobs.resetForRetry(id, JobState.PENDING, t)
+            if (accountId != null) jobs.setAccount(jobId, accountId, t)
+            runs.setStatus(job.runId, RunStatus.RUNNING)
+        }
+        return job.runId
     }
 
     suspend fun assignAccount(jobId: Long, accountId: Long?) {

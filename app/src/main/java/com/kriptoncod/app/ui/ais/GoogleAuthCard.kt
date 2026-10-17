@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -25,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kriptoncod.app.R
+import com.kriptoncod.app.ui.components.KriptonLoader
 import com.kriptoncod.app.ui.components.KButton
 import com.kriptoncod.app.ui.components.KButtonStyle
 import com.kriptoncod.app.ui.components.NodeAccent
@@ -71,11 +71,7 @@ fun GoogleAuthCard(
                     is GoogleAuthCardState.NeedsReauth ->
                         Icon(Icons.Filled.Warning, contentDescription = null, tint = k.danger)
                     is GoogleAuthCardState.Loading ->
-                        CircularProgressIndicator(
-                            modifier = Modifier.padding(2.dp),
-                            color = MaterialTheme.colorScheme.primary,
-                            strokeWidth = 2.dp,
-                        )
+                        KriptonLoader(size = 28.dp)
                     else -> Unit
                 }
                 Column(Modifier.weight(1f)) {

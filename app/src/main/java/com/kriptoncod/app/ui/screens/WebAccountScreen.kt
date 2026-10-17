@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -55,6 +54,7 @@ import com.kriptoncod.app.ui.ais.WebAccountState
 import com.kriptoncod.app.ui.ais.WebAccountViewModel
 import com.kriptoncod.app.ui.ais.WebStep
 import com.kriptoncod.app.ui.ais.rememberWebAccountViewModelFactory
+import com.kriptoncod.app.ui.components.KriptonLoader
 import com.kriptoncod.app.ui.components.KButton
 import com.kriptoncod.app.ui.components.KButtonStyle
 import com.kriptoncod.app.ui.components.NodeAccent
@@ -97,7 +97,7 @@ fun WebAccountScreen(accountId: Long?, onClose: () -> Unit, onUseApiKey: () -> U
             WebStep.WARNING -> WarningStep(state, vm, onClose)
             WebStep.LOGIN, WebStep.KEY -> BrowserStep(state, vm, onClose)
             WebStep.SAVING -> Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                KriptonLoader()
                 Text(stringResource(R.string.web_saving), style = MaterialTheme.typography.bodyMedium)
             }
             WebStep.DONE -> Unit

@@ -109,7 +109,7 @@ private fun RunHistoryRow(run: RunRecord, onClick: () -> Unit) {
 }
 
 @Composable
-private fun HistoryStatusBadge(status: RunStatus) {
+internal fun HistoryStatusBadge(status: RunStatus) {
     val (label, accent) = when (status) {
         RunStatus.PREPARING -> "Hazırlanıyor" to NodeAccent.Blue
         RunStatus.RUNNING -> "Çalışıyor" to NodeAccent.Blue

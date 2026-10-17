@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -26,6 +25,7 @@ import com.kriptoncod.app.data.github.GitHubRepo
 import com.kriptoncod.app.data.providers.ApiResult
 import com.kriptoncod.app.data.vault.KeyVaultException
 import com.kriptoncod.app.ui.ais.rememberContainer
+import com.kriptoncod.app.ui.components.KriptonLoader
 import com.kriptoncod.app.ui.components.KChip
 import com.kriptoncod.app.ui.theme.KriptonTheme
 import kotlin.coroutines.cancellation.CancellationException
@@ -89,7 +89,7 @@ fun RunLaunchDialog(
                     Text(stringResource(R.string.run_launch_repo_label), style = MaterialTheme.typography.labelLarge)
                     when (val state = repoState) {
                         RepoState.Loading -> {
-                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                            KriptonLoader()
                             Text(
                                 stringResource(R.string.run_launch_repo_loading),
                                 style = MaterialTheme.typography.bodySmall,

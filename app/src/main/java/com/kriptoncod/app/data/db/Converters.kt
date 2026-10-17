@@ -7,6 +7,7 @@ import com.kriptoncod.app.domain.AuthType
 import com.kriptoncod.app.domain.JobKind
 import com.kriptoncod.app.domain.JobState
 import com.kriptoncod.app.domain.RunStatus
+import com.kriptoncod.app.domain.UsageOutcome
 
 /** Enum'lar ad olarak saklanır; bilinmeyen değer (ör. yeni sürümden) güvenli varsayılana düşer. */
 class Converters {
@@ -27,6 +28,9 @@ class Converters {
 
     @TypeConverter fun runStatusToString(v: RunStatus): String = v.name
     @TypeConverter fun stringToRunStatus(s: String): RunStatus = enumOr(s, RunStatus.FAILED)
+
+    @TypeConverter fun usageOutcomeToString(v: UsageOutcome): String = v.name
+    @TypeConverter fun stringToUsageOutcome(s: String): UsageOutcome = enumOr(s, UsageOutcome.FAILED)
 }
 
 private inline fun <reified E : Enum<E>> enumOr(name: String, fallback: E): E =

@@ -24,6 +24,7 @@ import com.kriptoncod.app.data.providers.ModelService
 import com.kriptoncod.app.data.repo.AiAccountRepository
 import com.kriptoncod.app.data.repo.PromptRepository
 import com.kriptoncod.app.data.repo.RunRepository
+import com.kriptoncod.app.data.repo.UsageRepository
 import com.kriptoncod.app.data.settings.ThemeStore
 import com.kriptoncod.app.data.web.WebChatDriver
 import com.kriptoncod.app.data.web.WebPacer
@@ -68,6 +69,7 @@ class AppContainer(context: Context) {
     val aiAccountRepository: AiAccountRepository by lazy { AiAccountRepository(database.aiAccountDao(), keyVault) }
     val promptRepository: PromptRepository by lazy { PromptRepository(database) }
     val runRepository: RunRepository by lazy { RunRepository(database, outputStore, historyStore) }
+    val usageRepository: UsageRepository by lazy { UsageRepository(database.usageEventDao()) }
 
     // --- AI üretimi ---
     /** Normalizer'lı üretici; eksik/bozuk çıktıda aynı hesapla otomatik yeniden dener. */
@@ -140,6 +142,7 @@ class AppContainer(context: Context) {
             kimiCodes = kimiCodeRepository,
             graph = runGraphBuilder,
             web = webSessionGenerator,
+            usage = usageRepository,
         )
     }
     val runScheduler: RunScheduler by lazy { RunScheduler(WorkManager.getInstance(appContext), runRepository) }

@@ -106,6 +106,9 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.webkit)
+    // Düğüm çıktısı: markdown + kod renklendirme
+    implementation(libs.markdown.renderer.m3)
+    implementation(libs.markdown.renderer.code)
     // Google Identity Services — Authorization API
     implementation(libs.google.identity.authorization)
 

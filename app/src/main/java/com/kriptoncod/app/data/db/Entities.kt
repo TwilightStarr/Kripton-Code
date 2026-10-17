@@ -11,6 +11,7 @@ import com.kriptoncod.app.domain.AuthType
 import com.kriptoncod.app.domain.JobKind
 import com.kriptoncod.app.domain.JobState
 import com.kriptoncod.app.domain.RunStatus
+import com.kriptoncod.app.domain.UsageOutcome
 
 /** AI hesabı. API anahtarı/token BU TABLODA YOKTUR; KeyVault'ta [vaultKeyId] ile saklanır. */
 @Entity(tableName = "ai_accounts")
@@ -144,4 +145,32 @@ data class Job(
     val title: String? = null,
     /** WORK/PLAN düğümlerinin kendi prompt metni; null ise `promptId` ile prompt tablosundan okunur. */
     val body: String? = null,
+)
+
+/**
+ * Hesap başına tek bir üretim isteğinin sonucu (kullanım/kota panosu). Gizli bilgi içermez.
+ * Hesap silinirse olaylar da gider; eski olaylar [UsageEventDao.prune] ile temizlenir.
+ */
+@Entity(
+    tableName = "usage_events",
+    foreignKeys = [
+        ForeignKey(
+            entity = AiAccount::class,
+            parentColumns = ["id"],
+            childColumns = ["accountId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("accountId"), Index("at")],
+)
+data class UsageEvent(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val accountId: Long,
+    val jobId: Long? = null,
+    /** İstek bitiş zamanı (epoch ms). */
+    val at: Long,
+    val outcome: UsageOutcome,
+    val durationMs: Long = 0,
+    /** RATE_LIMITED ise sağlayıcının istediği bekleme (ms). */
+    val waitMs: Long? = null,
 )

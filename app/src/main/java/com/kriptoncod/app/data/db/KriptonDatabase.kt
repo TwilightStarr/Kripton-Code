@@ -14,6 +14,7 @@ import androidx.room.TypeConverters
         Assignment::class,
         Job::class,
         RunRecord::class,
+        UsageEvent::class,
     ],
     version = KriptonDatabase.VERSION,
     exportSchema = true,
@@ -26,9 +27,10 @@ abstract class KriptonDatabase : RoomDatabase() {
     abstract fun assignmentDao(): AssignmentDao
     abstract fun runDao(): RunDao
     abstract fun jobDao(): JobDao
+    abstract fun usageEventDao(): UsageEventDao
 
     companion object {
-        const val VERSION = 4
+        const val VERSION = 5
         const val NAME = "kriptoncod.db"
 
         fun build(context: Context): KriptonDatabase =

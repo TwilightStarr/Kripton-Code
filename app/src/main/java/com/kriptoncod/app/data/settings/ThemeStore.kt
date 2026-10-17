@@ -49,7 +49,17 @@ class ThemeStore(private val context: Context) {
         context.settingsDataStore.edit { it[NOTIFY] = value }
     }
 
+    // ---- Animasyonlar (varsayılan açık) ----
+    val animationsFlow: Flow<Boolean> = context.settingsDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[ANIMATIONS] ?: true }
+
+    suspend fun setAnimations(value: Boolean) {
+        context.settingsDataStore.edit { it[ANIMATIONS] = value }
+    }
+
     private companion object {
+        val ANIMATIONS = booleanPreferencesKey("animations")
         val NOTIFY = booleanPreferencesKey("notify_events")
         const val SCHEMA_VERSION = 1
         const val DEFAULT_CI_ATTEMPTS = 3

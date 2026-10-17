@@ -5,6 +5,16 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
+### Düzeltildi (açılış ekranı)
+- Uygulama açılırken görünen koyu mavi ekran kaldırıldı: `values-night` kaynakları (`#0A1226`), Android 12+ için tanımlı siyah açılış temasını eziyordu. Gece moduna özel kaynaklar silindi; açılış artık her zaman düz siyah zemin + beyaz logodur.
+
+### Eklendi (logo animasyonu ve animasyon ayarı)
+- Çalışma sürerken logodaki düğüm noktası altıgenin çevresinde yumuşakça dolanır: geçtiği çizgiyi siler, çizgi noktanın arkasından geri gelir. Yan menü logosu, ana ekran logosu ve yükleme göstergeleri (dönen çemberlerin yerine) bunu kullanır; iş bitince nokta turunu tamamlayıp yerine oturur.
+- **Ayarlar → Animasyonlar** anahtarı: logo animasyonu, yükleme göstergeleri ve ekran geçişlerinin hepsini kapatır. Android'in "animasyonları kaldır" ayarı da dikkate alınır.
+
+### Değişti (ana ekran)
+- Ana ekran yeniden tasarlandı: özet sayaçlar (AI hesabı / prompt seti / çalıştırma), sıradaki adımı gösteren hızlı başlangıç, sürmekte olan çalışma bandı, son çalıştırmalar ve "Nasıl çalışır?" kartı. Tablette iki sütun, telefonda tek sütun.
+
 ### Eklendi (e-posta ile web oturumu)
 - Yeni hesap türü `WEB_SESSION`: **AI'lar → + E-posta ile**. Claude, ChatGPT, Kimi ve Gemini için sağlayıcının kendi giriş sayfası WebView'da açılır; oturum çerezleri KeyVault'ta (hesap başına) saklanır. Şifre saklanmaz.
 - Claude ve Gemini için zorunlu "hesabın kapatılabilir" uyarısı (onay kutusu olmadan giriş açılmaz).

@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.kriptoncod.app.R
 import com.kriptoncod.app.ui.components.KriptonCodLogo
 import com.kriptoncod.app.ui.theme.KriptonTheme
+import com.kriptoncod.app.ui.theme.LocalAppBusy
 
 /**
  * Tablet gezinmesi (alt çubuğun yerine): orta genişlikte dar ray, geniş ekranda etiketli kalıcı çekmece.
@@ -51,7 +52,7 @@ fun SideNavigation(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    KriptonCodLogo(logoSize = 40.dp)
+                    KriptonCodLogo(logoSize = 40.dp, busy = LocalAppBusy.current)
                     Text(
                         stringResource(R.string.app_name),
                         style = MaterialTheme.typography.titleLarge,
@@ -82,7 +83,7 @@ fun SideNavigation(
                 containerColor = scheme.surface,
                 header = {
                     Spacer(Modifier.height(8.dp))
-                    KriptonCodLogo(logoSize = 40.dp)
+                    KriptonCodLogo(logoSize = 40.dp, busy = LocalAppBusy.current)
                     Spacer(Modifier.height(8.dp))
                 },
             ) {

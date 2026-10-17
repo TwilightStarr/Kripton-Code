@@ -188,4 +188,39 @@ interface JobDao {
 
     @Query("UPDATE jobs SET accountId = :accountId, updatedAt = :now WHERE id = :id")
     suspend fun setAccount(id: Long, accountId: Long?, now: Long): Int
+
+    /** Yeniden deneme: işi sıfırdan başlatır (çıktı yolu temizlenir, deneme sayacı sıfırlanır). */
+    @Query("UPDATE jobs SET state = :state, outputPath = NULL, attempts = 0, updatedAt = :now WHERE id = :id")
+    suspend fun resetForRetry(id: Long, state: JobState, now: Long): Int
+}
+
+/** Hesap başına toplanmış kullanım (bir zaman penceresi için). */
+data class AccountUsage(
+    val accountId: Long,
+    val requests: Int,
+    val successes: Int,
+    val rateLimited: Int,
+    val errors: Int,
+    val totalWaitMs: Long,
+    val lastAt: Long,
+)
+
+@Dao
+interface UsageEventDao {
+    @Insert
+    suspend fun insert(event: UsageEvent): Long
+
+    @Query("DELETE FROM usage_events WHERE at < :cutoff")
+    suspend fun prune(cutoff: Long): Int
+
+    /** `outcome` sütunu enum adı olarak saklanır (bkz. Converters). */
+    @Query(
+        "SELECT accountId, COUNT(*) AS requests, " +
+            "SUM(CASE WHEN outcome = 'SUCCESS' THEN 1 ELSE 0 END) AS successes, " +
+            "SUM(CASE WHEN outcome = 'RATE_LIMITED' THEN 1 ELSE 0 END) AS rateLimited, " +
+            "SUM(CASE WHEN outcome != 'SUCCESS' AND outcome != 'RATE_LIMITED' THEN 1 ELSE 0 END) AS errors, " +
+            "COALESCE(SUM(waitMs), 0) AS totalWaitMs, MAX(at) AS lastAt " +
+            "FROM usage_events WHERE at >= :since GROUP BY accountId",
+    )
+    fun observeSummary(since: Long): Flow<List<AccountUsage>>
 }

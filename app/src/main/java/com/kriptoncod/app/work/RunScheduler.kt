@@ -42,6 +42,18 @@ class RunScheduler(
             WorkNames.ciLoop(runId), ExistingWorkPolicy.REPLACE, request)
     }
 
+    /**
+     * Başarısız tek bir düğümü yeniden dener (isteğe bağlı başka hesapla); yalnız o düğüm ve çıktısına dayanan
+     * birleştirmeler yeniden çalışır, tamamlanmış diğer düğümler korunur.
+     * @return false: düğüm/run bu işlem için uygun değil (hiçbir şey değişmedi).
+     */
+    suspend fun retryNode(jobId: Long, accountId: Long? = null): Boolean {
+        val runId = runs.prepareRetry(jobId, accountId) ?: return false
+        workManager.cancelUniqueWork(WorkNames.ciLoop(runId)) // eski CI izlemesi yeni pakete ait değildir
+        start(runId)
+        return true
+    }
+
     /** Duraklatır: devam eden iş yarım kalırsa devamda baştan yapılır; tamamlanan çıktılar korunur. */
     suspend fun pause(runId: Long) {
         runs.setRunStatus(runId, RunStatus.PAUSED)

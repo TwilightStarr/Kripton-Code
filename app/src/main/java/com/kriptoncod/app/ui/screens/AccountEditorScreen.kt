@@ -18,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -67,6 +66,7 @@ import com.kriptoncod.app.ui.ais.rememberEditorViewModelFactory
 import com.kriptoncod.app.ui.ais.rememberEmailAuthViewModelFactory
 import com.kriptoncod.app.ui.ais.rememberKimiAuthViewModelFactory
 import com.kriptoncod.app.ui.ais.rememberGoogleAuthViewModelFactory
+import com.kriptoncod.app.ui.components.KriptonLoader
 import com.kriptoncod.app.ui.components.KBadge
 import com.kriptoncod.app.ui.components.KButton
 import com.kriptoncod.app.ui.components.KButtonStyle
@@ -150,7 +150,7 @@ private fun AccountEditorContent(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (state.loading) {
-                item { Centered { CircularProgressIndicator(color = MaterialTheme.colorScheme.primary) } }
+                item { Centered { KriptonLoader() } }
             }
 
             if (state.isEdit) {
@@ -380,7 +380,7 @@ private fun KeySection(
         }
         if (state.verifying) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                CircularProgressIndicator(modifier = Modifier.padding(2.dp), color = MaterialTheme.colorScheme.primary, strokeWidth = 2.dp)
+                KriptonLoader(size = 28.dp)
                 Text(stringResource(R.string.action_verifying), style = MaterialTheme.typography.bodyMedium, color = k.muted)
             }
         }

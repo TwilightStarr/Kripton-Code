@@ -230,4 +230,53 @@
     <string name="flow_files_wait">Dosya listesi, çalışma bitip zip oluşunca görünür.</string>
     <string name="settings_notify">Bildirimler</string>
     <string name="settings_notify_hint">Çalışma tamamlandığında, hata verdiğinde veya kota/hesap beklerken bildirim gönder. Çalışma uygulama kapalıyken de arka planda sürer; sürerken ilerleme bildirimi her zaman görünür (Android bunu zorunlu kılar).</string>
+
+    <!-- Ana ekran -->
+    <string name="home_action_add_prompts">Prompt seti hazırla</string>
+    <string name="home_action_first_run">İlk çalıştırmayı başlat</string>
+    <string name="home_active_run">Bir çalışma sürüyor</string>
+    <string name="home_stat_ais">AI hesabı</string>
+    <string name="home_stat_sets">Prompt seti</string>
+    <string name="home_stat_runs">Çalıştırma</string>
+    <string name="home_quick_title">Hızlı başlangıç</string>
+    <string name="home_step1_title">AI hesabı ekle</string>
+    <string name="home_step1_hint">API anahtarı, Google/e-posta girişi veya web oturumu ile bağlan.</string>
+    <string name="home_step2_title">Prompt seti hazırla</string>
+    <string name="home_step2_hint">Promptlarını bir sete topla ve hesaplara dağıt.</string>
+    <string name="home_step3_title">Çalıştır</string>
+    <string name="home_step3_hint">Seti başlat; ilerlemeyi düğüm grafiğinden izle.</string>
+    <string name="home_recent_title">Son çalıştırmalar</string>
+    <string name="home_recent_all">Tümü</string>
+    <string name="home_how_title">Nasıl çalışır?</string>
+    <string name="home_how1_title">Katalog çıkarma</string>
+    <string name="home_how1_hint">Promptların kataloglara ayrılır.</string>
+    <string name="home_how2_title">Paralel üretim</string>
+    <string name="home_how2_hint">AI hesapların promptları aynı anda işler.</string>
+    <string name="home_how3_title">Birleştirme</string>
+    <string name="home_how3_hint">Önce katalog bazında, sonra nihai olarak birleştirilir.</string>
+    <string name="home_how4_title">Zip ve geçmiş</string>
+    <string name="home_how4_hint">Sonuç zip olarak Geçmiş\'e kaydedilir; istersen GitHub\'a gönderilir.</string>
+
+    <!-- Ayarlar: animasyonlar -->
+    <string name="settings_animations">Animasyonlar</string>
+    <string name="settings_animations_hint">Logo animasyonu, yükleme göstergeleri ve ekran geçişleri. Kapatırsan hiçbir şey hareket etmez. Android\'in \"animasyonları kaldır\" ayarı açıksa bu anahtardan bağımsız olarak kapalı sayılır.</string>
+
+    <!-- Düğüm çıktısı / yeniden deneme -->
+    <string name="node_view_formatted">Biçimli</string>
+    <string name="node_view_raw">Ham metin</string>
+    <string name="node_view_loading">Biçimlendiriliyor…</string>
+    <string name="node_retry">Yeniden dene</string>
+    <string name="node_retry_other">Başka hesapla dene</string>
+    <string name="node_retry_hint">Yalnız bu düğüm ve çıktısına dayanan birleştirmeler yeniden çalışır; biten diğer düğümler korunur.</string>
+    <string name="node_syntax_title">%1$d sözdizimi uyarısı</string>
+    <string name="node_syntax_more">+%1$d uyarı daha (rapor: _kripton/report.md)</string>
+
+    <!-- Kullanım / kota panosu -->
+    <string name="home_usage_title">Kullanım (son 24 saat)</string>
+    <string name="home_usage_subtitle">Hesap başına istek, hata oranı ve bekleme durumu</string>
+    <string name="home_usage_empty">Henüz istek yok.</string>
+    <string name="home_usage_line">%1$d istek · %%%2$d hata · %3$d kota sınırı</string>
+    <string name="home_usage_idle">İstek yok</string>
+    <string name="home_usage_waiting">Bekliyor: %1$d dk</string>
+    <string name="home_usage_error">Hata durumunda</string>
 </resources>

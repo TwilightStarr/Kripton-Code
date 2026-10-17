@@ -12,6 +12,7 @@ import com.kriptoncod.app.data.providers.ProviderEndpoint
 import com.kriptoncod.app.data.repo.AiAccountRepository
 import com.kriptoncod.app.data.repo.PromptRepository
 import com.kriptoncod.app.data.repo.RunRepository
+import com.kriptoncod.app.data.repo.UsageRepository
 import com.kriptoncod.app.data.web.WebAsset
 import com.kriptoncod.app.data.web.WebSessionGenerator
 import com.kriptoncod.app.domain.AccountStatus
@@ -23,6 +24,7 @@ import com.kriptoncod.app.domain.CatalogPrompt
 import com.kriptoncod.app.domain.JobKind
 import com.kriptoncod.app.domain.JobState
 import com.kriptoncod.app.domain.RunStatus
+import com.kriptoncod.app.domain.UsageOutcome
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.flow.first
 
@@ -45,7 +47,16 @@ class PromptDispatcher(
     private val graph: RunGraphBuilder? = null,
     /** WEB_SESSION hesapları için üretici; null ise bu tür hesaplar ERROR yapılıp atlanır. */
     private val web: WebSessionGenerator? = null,
+    /** Hesap başına istek sonuçlarını kaydeder (kullanım panosu); null ise kaydedilmez. */
+    private val usage: UsageRepository? = null,
 ) {
+
+    private suspend fun recordUsage(
+        account: AiAccount, job: Job, outcome: UsageOutcome, startedAt: Long, waitMs: Long? = null,
+    ) {
+        usage?.record(account.id, job.id, outcome, (now() - startedAt).coerceAtLeast(0), waitMs)
+    }
+
 
     /** İş başına akış yönergeleri (bkz. [FlowDirectivesParser]); iş kimlikleri benzersizdir. */
     private val directiveCache = ConcurrentHashMap<Long, FlowDirectives>()
@@ -270,6 +281,7 @@ class PromptDispatcher(
 
             if (job.accountId != account.id) runs.assignAccount(job.id, account.id)
             runs.startJob(job.id)
+            val startedAt = now()
 
             try {
                 val assets = mutableListOf<WebAsset>()
@@ -280,14 +292,27 @@ class PromptDispatcher(
                     generator.generate(endpoint!!, account.modelId, credential!!, item.body)
                 }
                 if (text.isBlank()) {
+                    recordUsage(account, job, UsageOutcome.FAILED, startedAt)
                     runs.failJob(job.id)
                     return JobResult.Failed
                 }
                 // Ham zip ve ikili dosyalar çıktıdan ÖNCE yazılır: çökme olursa iş DONE sayılmaz, yeniden üretilir.
                 if (assets.isNotEmpty()) runCatching { runs.saveAssets(job.id, assets.map { it.path to it.bytes }) }
                 runs.completeJob(job.id, text)
+                recordUsage(account, job, UsageOutcome.SUCCESS, startedAt)
                 return JobResult.Done
             } catch (e: AiGenerationException) {
+                recordUsage(
+                    account, job,
+                    when (e.kind) {
+                        Kind.UNAUTHORIZED -> UsageOutcome.UNAUTHORIZED
+                        Kind.RATE_LIMITED -> UsageOutcome.RATE_LIMITED
+                        Kind.SERVER, Kind.NETWORK -> UsageOutcome.TRANSIENT
+                        else -> UsageOutcome.FAILED
+                    },
+                    startedAt,
+                    waitMs = if (e.kind == Kind.RATE_LIMITED) (e.waitUntil(now()) - now()).coerceAtLeast(0) else null,
+                )
                 when (e.kind) {
                     Kind.UNAUTHORIZED -> {
                         // Hesap kapandı/oturum düştü: ERROR yap ve işi aynı turda havuzdaki diğer hesaba ver.
@@ -317,6 +342,7 @@ class PromptDispatcher(
                     }
                 }
             } catch (_: IllegalArgumentException) {
+                recordUsage(account, job, UsageOutcome.FAILED, startedAt)
                 runs.failJob(job.id)
                 return JobResult.Failed
             }
@@ -334,18 +360,32 @@ class PromptDispatcher(
 
         if (job.accountId != account.id) runs.assignAccount(job.id, account.id)
         runs.startJob(job.id)
+        val startedAt = now()
 
         return try {
             val text = generator.generate(endpoint, account.modelId, credential, item.body)
             if (text.isBlank()) {
+                recordUsage(account, job, UsageOutcome.FAILED, startedAt)
                 runs.failJob(job.id)
                 JobResult.Failed
             } else {
                 kimiCodes?.collect(job.runId, text)
                 runs.completeJob(job.id, text)
+                recordUsage(account, job, UsageOutcome.SUCCESS, startedAt)
                 JobResult.Done
             }
         } catch (e: AiGenerationException) {
+            recordUsage(
+                account, job,
+                when (e.kind) {
+                    Kind.UNAUTHORIZED -> UsageOutcome.UNAUTHORIZED
+                    Kind.RATE_LIMITED -> UsageOutcome.RATE_LIMITED
+                    Kind.SERVER, Kind.NETWORK -> UsageOutcome.TRANSIENT
+                    else -> UsageOutcome.FAILED
+                },
+                startedAt,
+                waitMs = if (e.kind == Kind.RATE_LIMITED) (e.waitUntil(now()) - now()).coerceAtLeast(0) else null,
+            )
             when (e.kind) {
                 Kind.RATE_LIMITED -> {
                     val until = e.waitUntil(now())
@@ -370,6 +410,7 @@ class PromptDispatcher(
                 }
             }
         } catch (_: IllegalArgumentException) {
+            recordUsage(account, job, UsageOutcome.FAILED, startedAt)
             runs.failJob(job.id)
             JobResult.Failed
         }

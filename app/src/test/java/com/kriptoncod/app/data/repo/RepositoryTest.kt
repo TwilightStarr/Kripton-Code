@@ -7,6 +7,7 @@ import com.kriptoncod.app.data.files.OutputStore
 import com.kriptoncod.app.domain.AccountStatus
 import com.kriptoncod.app.domain.AssignmentMode
 import com.kriptoncod.app.domain.AuthType
+import com.kriptoncod.app.domain.JobKind
 import com.kriptoncod.app.domain.JobState
 import com.kriptoncod.app.domain.RunStatus
 import com.kriptoncod.app.testutil.FakeKeyVault
@@ -266,5 +267,54 @@ class RepositoryTest {
         ids.map { id -> async(Dispatchers.IO) { runs.completeJob(id, "çıktı-$id") } }.awaitAll()
         ids.forEach { assertEquals("çıktı-$it", runs.readOutput(it)) }
         assertTrue(runs.getJobs(run).all { it.state == JobState.DONE })
+    }
+
+    // --- Tek düğümü yeniden deneme ---
+
+    @Test fun retryResetsFailedNodeAndDependentsOnly() = runBlocking {
+        val runId = runs.createRun()
+        runs.setRunStatus(runId, RunStatus.FAILED)
+        val ids = runs.enqueueJobs(
+            runId,
+            listOf(
+                JobSeed(0, null, JobKind.WORK, "K1", "A", "x"),
+                JobSeed(0, null, JobKind.WORK, "K1", "B", "x"),
+                JobSeed(0, null, JobKind.CATALOG_MERGE, "K1", "Birleştir: K1", null),
+                JobSeed(0, null, JobKind.FINAL_MERGE, null, "Nihai", null),
+            ),
+        )
+        val (a, b, merge, final) = ids
+        runs.completeJob(a, "çıktı A")
+        runs.failJob(b)
+        runs.completeJob(merge, "birleşik")
+        runs.completeJob(final, "nihai")
+        val backup = accounts.add(acc("Yedek"), "k")
+
+        assertEquals(runId, runs.prepareRetry(b, backup))
+
+        assertEquals(RunStatus.RUNNING, runs.getRun(runId)?.status)
+        assertEquals(JobState.DONE, runs.getJob(a)?.state)
+        assertEquals("çıktı A", runs.readOutput(a)) // dokunulmadı
+        for (id in listOf(b, merge, final)) {
+            assertEquals(JobState.PENDING, runs.getJob(id)?.state)
+            assertEquals(0, runs.getJob(id)?.attempts)
+            assertNull(runs.readOutput(id))
+        }
+        assertEquals(backup, runs.getJob(b)?.accountId)
+    }
+
+    @Test fun retryIsRejectedWhenNotApplicable() = runBlocking {
+        val runId = runs.createRun()
+        val (ok, failed) = runs.enqueueJobs(
+            runId,
+            listOf(JobSeed(0, null, JobKind.WORK, "K", "A", "x"), JobSeed(0, null, JobKind.WORK, "K", "B", "x")),
+        )
+        runs.completeJob(ok, "t")
+        runs.failJob(failed)
+        runs.setRunStatus(runId, RunStatus.RUNNING)       // dağıtım sürüyor: izin yok
+        assertNull(runs.prepareRetry(failed))
+        runs.setRunStatus(runId, RunStatus.FAILED)
+        assertNull(runs.prepareRetry(ok))                   // FAILED olmayan düğüm
+        assertEquals(runId, runs.prepareRetry(failed))
     }
 }

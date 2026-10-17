@@ -184,6 +184,8 @@ class RunFinalizer(private val runs: RunRepository) {
     ) {
         val scan = set.files.filter { (p, b) -> !p.startsWith("_kripton/") && b.none { it == 0.toByte() } }
             .map { (p, b) -> CodeBlockParser.Block(p, String(b, Charsets.UTF_8)) }
+        // Push/CI'dan önce bozuk (kesik, dengesiz parantezli, geçersiz JSON/XML) dosyaları rapora işle.
+        SyntaxCheck.checkBlocks(scan).forEach { set.notes += "Sözdizimi uyarısı: ${it.path}:${it.line} — ${it.message}" }
         val report = RunReport.build(runId, all, outputs, set.notes, PlaceholderDetector.find(scan))
 
         val finalFiles = LinkedHashMap<String, ByteArray>(set.files)
