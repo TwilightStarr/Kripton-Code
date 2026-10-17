@@ -39,9 +39,14 @@ class RealGoogleAuthClient(private val clientId: suspend () -> String?) : Google
                             val expiresAt = System.currentTimeMillis() + TOKEN_LIFETIME_MS
                             cont.resume(GoogleAuthResult.Success(token, expiresAt))
                         } else if (result.hasResolution()) {
-                            // Kullanıcı etkileşimi gerekiyor – Activity ile çözülmeli;
-                            // bu akış basitleştirilmiş: intent yüzeylemek için NeedsReauth döner
-                            cont.resume(GoogleAuthResult.NeedsReauth)
+                            // İzin ekranı bu akışta gösterilmiyor; sessizce "yeniden giriş" demek kullanıcıyı
+                            // döngüye sokar. Açık hata ver ve güvenilir yola (API anahtarı) yönlendir.
+                            cont.resume(
+                                GoogleAuthResult.Error(
+                                    "Google izin ekranı gerekiyor ve bu yöntemde desteklenmiyor. " +
+                                        "Gemini için Google AI Studio'dan API anahtarı alıp yapıştır.",
+                                ),
+                            )
                         } else {
                             cont.resume(GoogleAuthResult.Error("Erişim belirteci alınamadı"))
                         }

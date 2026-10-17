@@ -12,6 +12,7 @@ import com.kriptoncod.app.data.providers.ProviderEndpoint
 import com.kriptoncod.app.data.repo.AiAccountRepository
 import com.kriptoncod.app.data.repo.PromptRepository
 import com.kriptoncod.app.data.repo.RunRepository
+import com.kriptoncod.app.data.web.WebAsset
 import com.kriptoncod.app.data.web.WebSessionGenerator
 import com.kriptoncod.app.domain.AccountStatus
 import com.kriptoncod.app.domain.AssignmentMode
@@ -22,6 +23,7 @@ import com.kriptoncod.app.domain.CatalogPrompt
 import com.kriptoncod.app.domain.JobKind
 import com.kriptoncod.app.domain.JobState
 import com.kriptoncod.app.domain.RunStatus
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.flow.first
 
 sealed interface DispatchOutcome {
@@ -44,6 +46,26 @@ class PromptDispatcher(
     /** WEB_SESSION hesapları için üretici; null ise bu tür hesaplar ERROR yapılıp atlanır. */
     private val web: WebSessionGenerator? = null,
 ) {
+
+    /** İş başına akış yönergeleri (bkz. [FlowDirectivesParser]); iş kimlikleri benzersizdir. */
+    private val directiveCache = ConcurrentHashMap<Long, FlowDirectives>()
+
+    private suspend fun directivesOf(job: Job): FlowDirectives {
+        directiveCache[job.id]?.let { return it }
+        val raw = job.body ?: prompts.getItem(job.promptId)?.body.orEmpty()
+        val parsed = FlowDirectivesParser.parse(raw)
+        directiveCache[job.id] = parsed
+        return parsed
+    }
+
+    /** [job]'un `[[girdi: ...]]` ile istediği, ÖNCEKİ (daha küçük kimlikli) WORK düğümleri. */
+    private fun inputSources(job: Job, d: FlowDirectives, all: List<Job>): List<Job> {
+        if (d.inputs.isEmpty()) return emptyList()
+        val wanted = d.inputs.map { FlowDirectivesParser.normalize(it) }.toSet()
+        return all.filter {
+            it.kind == JobKind.WORK && it.id < job.id && FlowDirectivesParser.normalize(it.title) in wanted
+        }
+    }
 
     suspend fun process(runId: Long): DispatchOutcome {
         val run = runs.getRun(runId) ?: return DispatchOutcome.Cancelled
@@ -98,8 +120,10 @@ class PromptDispatcher(
     }
 
     /** WORK/PLAN hemen hazırdır; birleştirmeler bağımlı oldukları işler bitince (DONE/FAILED) hazır olur. */
-    private fun isReady(job: Job, all: List<Job>): Boolean = when (job.kind) {
-        JobKind.PLAN, JobKind.WORK -> true
+    private suspend fun isReady(job: Job, all: List<Job>): Boolean = when (job.kind) {
+        JobKind.PLAN -> true
+        // WORK: `[[girdi: ...]]` ile çıktısı istenen önceki promptlar bitene kadar bekler.
+        JobKind.WORK -> inputSources(job, directivesOf(job), all).all { it.isTerminal() }
         JobKind.CATALOG_MERGE ->
             all.filter { it.kind == JobKind.WORK && it.catalog == job.catalog }.all { it.isTerminal() }
         JobKind.FINAL_MERGE ->
@@ -123,12 +147,14 @@ class PromptDispatcher(
         val sources: List<Pair<String, Job>> = when (job.kind) {
             JobKind.CATALOG_MERGE ->
                 all.filter { it.kind == JobKind.WORK && it.catalog == job.catalog && it.state == JobState.DONE }
+                    .filter { directivesOf(it).share } // [[ilet: hayır]] düğümleri birleştirmeye gitmez
                     .map { (it.title ?: "Prompt #${it.id}") to it }
             JobKind.FINAL_MERGE -> all.filter { it.kind == JobKind.CATALOG_MERGE }.flatMap { m ->
                 if (m.state == JobState.DONE) {
                     listOf((m.catalog ?: "katalog") to m)
                 } else { // katalog birleştirmesi başarısızsa o katalogun ham çıktıları kullanılır
                     all.filter { it.kind == JobKind.WORK && it.catalog == m.catalog && it.state == JobState.DONE }
+                        .filter { directivesOf(it).share }
                         .map { "${m.catalog}/${it.title ?: it.id}" to it }
                 }
             }
@@ -154,6 +180,30 @@ class PromptDispatcher(
         }
     }
 
+    /** WORK/PLAN metni: yönergeler çıkarılır; istenen önceki çıktılar (eksiksiz) göreve eklenir. */
+    private suspend fun workText(job: Job, all: List<Job>): String? {
+        val raw = job.body ?: prompts.getItem(job.promptId)?.body ?: return null
+        if (job.kind != JobKind.WORK) return raw
+        val d = directivesOf(job)
+        if (d.inputs.isEmpty()) return d.body
+        val sources = inputSources(job, d, all).filter { it.state == JobState.DONE }
+        if (sources.isEmpty()) return d.body
+        return buildString {
+            appendLine(
+                "Aşağıda bu görev için daha önce üretilmiş çıktılar var. Bunlarla tutarlı çalış " +
+                    "(aynı adlar, aynı dosya yolları); görevin kendisi en altta.",
+            )
+            appendLine()
+            for (src in sources) {
+                appendLine("=== ${src.title ?: "Prompt #${src.id}"} ===")
+                appendLine(runs.readOutput(src.id).orEmpty())
+                appendLine()
+            }
+            appendLine("=== GÖREV ===")
+            append(d.body)
+        }
+    }
+
     private sealed interface JobResult {
         data object Done : JobResult
         data object Failed : JobResult
@@ -169,7 +219,7 @@ class PromptDispatcher(
     private suspend fun processJob(job: Job, all: List<Job>): JobResult {
         val text = when (job.kind) {
             JobKind.CATALOG_MERGE, JobKind.FINAL_MERGE -> mergeBody(job, all)
-            else -> job.body ?: prompts.getItem(job.promptId)?.body
+            else -> workText(job, all)
         }
         if (text.isNullOrBlank()) {
             runs.failJob(job.id)
@@ -217,9 +267,10 @@ class PromptDispatcher(
             runs.startJob(job.id)
 
             try {
+                val assets = mutableListOf<WebAsset>()
                 val text = if (isWeb) {
                     // Web sohbeti: PLAN düz metin ister; diğer düğümler dosya bloğu bekler.
-                    web!!.generate(account, item.body, expectFiles = job.kind != JobKind.PLAN)
+                    web!!.generate(account, item.body, expectFiles = job.kind != JobKind.PLAN, onAsset = { assets += it })
                 } else {
                     generator.generate(endpoint!!, account.modelId, credential!!, item.body)
                 }
@@ -227,6 +278,8 @@ class PromptDispatcher(
                     runs.failJob(job.id)
                     return JobResult.Failed
                 }
+                // Ham zip ve ikili dosyalar çıktıdan ÖNCE yazılır: çökme olursa iş DONE sayılmaz, yeniden üretilir.
+                if (assets.isNotEmpty()) runCatching { runs.saveAssets(job.id, assets.map { it.path to it.bytes }) }
                 runs.completeJob(job.id, text)
                 return JobResult.Done
             } catch (e: AiGenerationException) {

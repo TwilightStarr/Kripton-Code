@@ -113,3 +113,20 @@ Kotlin 2.0, Jetpack Compose (Material 3), Room, DataStore, WorkManager, OkHttp, 
 ## Katkı
 
 Hata bildirimleri için Issues sayfasını kullan. PR açarken değişikliğe uygun bir etiket ekle; sürüm notları buna göre gruplanır.
+
+## Çıktı hattı ve akış yönergeleri
+
+**Her AI için ayrı davranış:** Web sohbetinde Claude/ChatGPT önce zip üretir (indirilir, dosyalara açılır; ham zip `_kripton/raw/`, ikili dosyalar özgün yoluna saklanır); Kimi düz kod+metin verir (düşünme etiketleri temizlenir, yolsuz bloklar `unnamed/` altına kurtarılır). Tüm sağlayıcılarda kesilen yanıt "devam et" ile tamamlanır; `...`/"geri kalanı aynı" gibi yer tutucular aynı sohbette onarım turuyla düzeltilir (Kimi 3, ChatGPT 3, Claude 2 tur). API hesaplarında aynısı `RetryingAiGenerator` ile yapılır.
+
+**Zip:** `_kripton/report.md` düğüm tablosunu ve uyarıları (yer tutucu, kesik çıktı, çakışma, birleştirmede düşen dosyalar) içerir. Birleştirme AI'ı bir dosyayı düşürürse kaynak düğümden tamamlanır; çok kısaltırsa tam sürüm `_kripton/alternatives/` altına konur.
+
+**Akış yönergeleri** (prompt metninin başına, AI'a gönderilmeden önce çıkarılır):
+
+```
+[[girdi: Ana sayfa, Menü]]   bu prompt, başlığı verilen ÖNCEKİ promptların çıktısını da görür (onlar bitene kadar bekler)
+[[ilet: hayır]]              bu promptun çıktısı katalog/nihai birleştirmeye gitmez
+```
+
+**Arayüz:** telefonda sekmeler (Grafik | Akış | Dosyalar), tablet/yatayda (≥700dp) üç bölme: grafik | seçili düğümün çıktısı | akış günlüğü ve dosya listesi.
+
+**Giriş:** Google, gömülü WebView'da girişe izin vermez; "Google ile devam et" yerine sağlayıcının e-posta (kod/şifre) girişini kullanın. Kimi ve Gemini için API anahtarı en güvenilir yoldur.

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -32,10 +33,13 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -43,12 +47,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kriptoncod.app.AppContainer
 import com.kriptoncod.app.R
+import com.kriptoncod.app.data.db.AiAccount
 import com.kriptoncod.app.data.db.Job
 import com.kriptoncod.app.domain.GraphNodeUi
 import com.kriptoncod.app.domain.JobKind
@@ -237,8 +243,116 @@ fun RunScreen(
         }
         Spacer(Modifier.height(8.dp))
 
-        // Grafik kalan TÜM alanı kullanır; ayrıntı paneli grafiğin üzerine (alttan) açılır, grafiği küçültmez.
-        val graphShape = RoundedCornerShape(16.dp)
+        // Telefon: sekmeli tek bölme (Grafik | Akış | Dosyalar). Tablet/yatay: üç bölme yan yana
+        // (grafik | seçili düğümün çıktısı | akış günlüğü ve dosya listesi).
+        val wide = LocalConfiguration.current.screenWidthDp >= WIDE_DP
+        var tab by rememberSaveable { mutableIntStateOf(0) }
+        var sideTab by rememberSaveable { mutableIntStateOf(0) }
+        val onToggle: (Long) -> Unit = { selectedId = if (selectedId == it) null else it }
+        val onPick: (Long) -> Unit = {
+            selectedId = it
+            if (!wide) tab = 0 // akıştan bir satır seçilince çıktısı grafik sekmesinde açılır
+        }
+        val saveSelected: (String) -> Unit = { text ->
+            pendingNodeText = text
+            saveNode.launch("node-${selectedId ?: 0}.md")
+        }
+
+        if (wide) {
+            Row(
+                Modifier.weight(1f).fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                GraphPane(
+                    nodes = nodes, selected = selected, selectedId = selectedId, onToggle = onToggle,
+                    accounts = accounts, container = container, onSave = saveSelected, onClose = { selectedId = null },
+                    overlayDetail = false, modifier = Modifier.weight(1.1f).fillMaxHeight(),
+                )
+                val detailShape = RoundedCornerShape(16.dp)
+                Surface(
+                    modifier = Modifier.weight(1.2f).fillMaxHeight(),
+                    shape = detailShape,
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.5.dp, k.nodeBorder),
+                    tonalElevation = 0.dp,
+                    shadowElevation = 0.dp,
+                ) {
+                    if (selected != null) {
+                        NodeDetail(
+                            job = selected,
+                            accountName = accounts.firstOrNull { it.id == selected.accountId }?.displayName,
+                            container = container,
+                            onSave = saveSelected,
+                            onClose = { selectedId = null },
+                            modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 12.dp),
+                        )
+                    } else {
+                        Text(
+                            stringResource(R.string.run_node_hint_wide),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = k.muted,
+                            modifier = Modifier.padding(16.dp),
+                        )
+                    }
+                }
+                Column(Modifier.weight(0.9f).fillMaxHeight()) {
+                    TabRow(selectedTabIndex = sideTab) {
+                        Tab(selected = sideTab == 0, onClick = { sideTab = 0 }, text = { Text(stringResource(R.string.run_tab_flow)) })
+                        Tab(selected = sideTab == 1, onClick = { sideTab = 1 }, text = { Text(stringResource(R.string.run_tab_files)) })
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    if (sideTab == 0) {
+                        RunFlowPanel(jobs, accounts, container, selectedId, onPick, Modifier.fillMaxSize())
+                    } else {
+                        RunFilesPanel(runId, currentRun?.zipPath, container, Modifier.fillMaxSize())
+                    }
+                }
+            }
+        } else {
+            TabRow(selectedTabIndex = tab) {
+                Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text(stringResource(R.string.run_tab_graph)) })
+                Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text(stringResource(R.string.run_tab_flow)) })
+                Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text(stringResource(R.string.run_tab_files)) })
+            }
+            Spacer(Modifier.height(6.dp))
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                when (tab) {
+                    0 -> GraphPane(
+                        nodes = nodes, selected = selected, selectedId = selectedId, onToggle = onToggle,
+                        accounts = accounts, container = container, onSave = saveSelected, onClose = { selectedId = null },
+                        overlayDetail = true, modifier = Modifier.fillMaxSize(),
+                    )
+                    1 -> RunFlowPanel(jobs, accounts, container, selectedId, onPick, Modifier.fillMaxSize())
+                    else -> RunFilesPanel(runId, currentRun?.zipPath, container, Modifier.fillMaxSize())
+                }
+            }
+        }
+    }
+}
+
+/** Bu genişlik (dp) ve üstü tablet/yatay sayılır: üç bölmeli yerleşim kullanılır. */
+private const val WIDE_DP = 700
+
+/**
+ * Düğüm grafiği. [overlayDetail] true (telefon): seçili düğümün çıktısı grafiğin üzerine alttan açılır;
+ * false (tablet): çıktı ayrı bölmede gösterilir, grafik küçülmez.
+ */
+@Composable
+private fun GraphPane(
+    nodes: List<GraphNodeUi>,
+    selected: Job?,
+    selectedId: Long?,
+    onToggle: (Long) -> Unit,
+    accounts: List<AiAccount>,
+    container: AppContainer,
+    onSave: (String) -> Unit,
+    onClose: () -> Unit,
+    overlayDetail: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val k = KriptonTheme.colors
+    val graphShape = RoundedCornerShape(16.dp)
+    Column(modifier) {
         BoxWithConstraints(
             Modifier
                 .weight(1f)
@@ -248,6 +362,7 @@ fun RunScreen(
                 .border(1.5.dp, k.nodeBorder, graphShape),
         ) {
             val panelHeight = maxHeight * 0.5f
+            val showPanel = overlayDetail && selected != null
             if (nodes.isEmpty()) {
                 Text(
                     stringResource(R.string.run_graph_empty),
@@ -259,12 +374,12 @@ fun RunScreen(
                 RunGraph(
                     nodes = nodes,
                     selectedId = selectedId,
-                    onSelect = { selectedId = if (selectedId == it) null else it },
+                    onSelect = onToggle,
                     modifier = Modifier.fillMaxSize(),
-                    bottomInset = if (selected != null) panelHeight else 0.dp,
+                    bottomInset = if (showPanel) panelHeight else 0.dp,
                 )
             }
-            if (selected != null) {
+            if (showPanel && selected != null) {
                 Surface(
                     modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(panelHeight),
                     shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
@@ -277,11 +392,8 @@ fun RunScreen(
                         job = selected,
                         accountName = accounts.firstOrNull { it.id == selected.accountId }?.displayName,
                         container = container,
-                        onSave = { text ->
-                            pendingNodeText = text
-                            saveNode.launch("node-${selected.id}.md")
-                        },
-                        onClose = { selectedId = null },
+                        onSave = onSave,
+                        onClose = onClose,
                         modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 12.dp),
                     )
                 }
@@ -386,7 +498,7 @@ private fun chunkLines(text: String, linesPerChunk: Int = 120): List<String> {
     return out
 }
 
-private fun kindLabel(kind: JobKind): String = when (kind) {
+internal fun kindLabel(kind: JobKind): String = when (kind) {
     JobKind.PLAN -> "Katalog çıkarma"
     JobKind.WORK -> "Prompt"
     JobKind.CATALOG_MERGE -> "Katalog birleştirme"
@@ -410,7 +522,7 @@ private fun RunStatusBadge(status: RunStatus) {
 }
 
 @Composable
-private fun JobStateBadge(state: JobState) {
+internal fun JobStateBadge(state: JobState) {
     val (label, accent) = when (state) {
         JobState.PENDING -> "Bekliyor" to NodeAccent.Blue
         JobState.RUNNING -> "Çalışıyor" to NodeAccent.Blue

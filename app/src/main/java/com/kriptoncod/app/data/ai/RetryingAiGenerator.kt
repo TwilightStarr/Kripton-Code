@@ -40,11 +40,15 @@ class RetryingAiGenerator(
         var effectivePrompt = prompt
         var lastKind = Kind.BAD_RESPONSE
         var lastCause: AiGenerationException? = null
+        var lastText = ""
 
         for (attempt in 1..maxAttempts) {
             val problem: Problem = try {
                 val text = delegate.generate(endpoint, modelId, credential, effectivePrompt)
+                lastText = text
                 val bad = OutputValidator.check(text, expectCode) ?: return text
+                // Yer tutucular yapı bozmaz: denemeler tükenince en son çıktı döner (rapora uyarı olarak düşer).
+                if (bad == OutputValidator.Problem.PLACEHOLDERS && attempt == maxAttempts) return text
                 Problem.Validation(bad)
             } catch (e: AiGenerationException) {
                 if (e.kind != Kind.BAD_RESPONSE && e.kind != Kind.TRUNCATED) throw e
@@ -53,7 +57,7 @@ class RetryingAiGenerator(
 
             lastKind = problem.kind
             lastCause = (problem as? Problem.Failure)?.error
-            effectivePrompt = prompt + correction(problem)
+            effectivePrompt = prompt + correction(problem, lastText)
             if (attempt < maxAttempts) backoff(attempt)
         }
         throw AiGenerationException(lastKind, lastCause?.httpCode, lastCause?.retryAfterMs)
@@ -72,7 +76,11 @@ class RetryingAiGenerator(
         }
     }
 
-    private fun correction(problem: Problem): String = "\n\n" + when {
+    private fun correction(problem: Problem, lastText: String): String = "\n\n" + when {
+        problem is Problem.Validation && problem.reason == OutputValidator.Problem.PLACEHOLDERS ->
+            "[Not: Önceki yanıtta şu dosyalar yer tutucularla kısaltılmıştı: " +
+                OutputValidator.placeholderPaths(lastText).take(12).joinToString(", ") +
+                ". `...`, 'geri kalanı aynı' gibi ifadeler kullanma; her dosyayı baştan sona EKSİKSİZ yaz.]"
         problem.kind == Kind.TRUNCATED ->
             "[Not: Önceki yanıt uzunluk sınırında yarıda kesildi. Bu sefer gereksiz açıklamayı çıkar ve " +
                 "istenen tüm dosyaları EKSİKSİZ, her kod bloğu kapatılmış olarak ver.]"

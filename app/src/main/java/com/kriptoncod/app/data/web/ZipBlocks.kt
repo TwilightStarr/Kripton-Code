@@ -49,6 +49,25 @@ object ZipBlocks {
         return Converted(out.toString().trimEnd(), skipped)
     }
 
+    /** Zip içindeki metne çevrilemeyen (ikili) dosyalar: (güvenli yol, bayt). Boş ve güvensiz yollar atlanır. */
+    fun binaries(file: WebFile): List<Pair<String, ByteArray>> {
+        if (!isZip(file.bytes)) {
+            val safe = safePath(file.name) ?: return emptyList()
+            return if (decodeText(file.bytes) == null) listOf(safe to file.bytes) else emptyList()
+        }
+        val out = mutableListOf<Pair<String, ByteArray>>()
+        ZipInputStream(ByteArrayInputStream(file.bytes)).use { zis ->
+            while (true) {
+                val entry = zis.nextEntry ?: break
+                if (entry.isDirectory) continue
+                val data = zis.readBytes()
+                val safe = safePath(entry.name) ?: continue
+                if (data.isNotEmpty() && decodeText(data) == null) out += safe to data
+            }
+        }
+        return out
+    }
+
     private fun safePath(raw: String): String? {
         val p = raw.replace('\\', '/').trimStart('/')
         if (p.startsWith("__MACOSX/") || p.substringAfterLast('/') == ".DS_Store") return null

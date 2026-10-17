@@ -109,6 +109,17 @@ class RunRepository(
         jobs.setResult(jobId, JobState.DONE, path, now())
     }
 
+    /** Ham/ikili dosyaları işin yanına kaydeder (çıktı DONE yapılmadan ÖNCE çağrılır). */
+    suspend fun saveAssets(jobId: Long, assets: List<Pair<String, ByteArray>>) {
+        val job = jobs.get(jobId) ?: return
+        for ((path, bytes) in assets) outputs.writeAsset(job.runId, jobId, path, bytes)
+    }
+
+    suspend fun readAssets(jobId: Long): List<Pair<String, ByteArray>> {
+        val job = jobs.get(jobId) ?: return emptyList()
+        return outputs.readAssets(job.runId, jobId)
+    }
+
     suspend fun readOutput(jobId: Long): String? {
         val path = jobs.get(jobId)?.outputPath ?: return null
         return outputs.read(path)

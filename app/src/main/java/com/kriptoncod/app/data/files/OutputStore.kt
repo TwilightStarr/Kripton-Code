@@ -105,6 +105,35 @@ class OutputStore(
         lockFor("o$runId/$jobId").withLock { withContext(dispatcher) { partial(runId, jobId).delete() } }
     }
 
+    private fun assetsDir(runId: Long, jobId: Long) = File(outputsDir, "$runId/$jobId.assets")
+
+    /** Bir işin ham/ikili dosyasını `<jobId>.assets/<path>` altına yazar (yol dışarı taşamaz). */
+    suspend fun writeAsset(runId: Long, jobId: Long, path: String, bytes: ByteArray) {
+        lockFor("o$runId/$jobId").withLock {
+            withContext(dispatcher) {
+                val base = assetsDir(runId, jobId).apply { mkdirs() }.canonicalFile
+                val f = File(base, path).canonicalFile
+                require(f.path.startsWith(base.path + File.separator)) { "Geçersiz yol" }
+                f.parentFile!!.mkdirs()
+                FileOutputStream(f, false).use { out ->
+                    out.write(bytes)
+                    out.flush()
+                    out.fd.sync()
+                }
+            }
+        }
+    }
+
+    /** İşin ham/ikili dosyaları: (asset köküne göre yol, bayt). Yoksa boş liste. */
+    suspend fun readAssets(runId: Long, jobId: Long): List<Pair<String, ByteArray>> = withContext(dispatcher) {
+        val base = assetsDir(runId, jobId)
+        if (!base.isDirectory) return@withContext emptyList()
+        base.walkTopDown().filter { it.isFile }
+            .map { it.relativeTo(base).path.replace(File.separatorChar, '/') to it.readBytes() }
+            .sortedBy { it.first }
+            .toList()
+    }
+
     /** Dosya yoksa veya boşsa (bozuk sayılır) null. */
     suspend fun read(relativePath: String): String? = withContext(dispatcher) {
         val f = safeResolve(relativePath)
@@ -123,6 +152,7 @@ class OutputStore(
             withContext(dispatcher) {
                 txt(runId, jobId).delete()
                 partial(runId, jobId).delete()
+                assetsDir(runId, jobId).deleteRecursively()
             }
         }
     }

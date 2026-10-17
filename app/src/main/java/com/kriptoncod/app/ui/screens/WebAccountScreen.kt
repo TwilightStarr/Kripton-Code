@@ -154,6 +154,8 @@ private fun ColumnScope.BrowserStep(state: WebAccountState, vm: WebAccountViewMo
     val p = state.provider ?: return
     val keyStep = state.step == WebStep.KEY
     var holder by remember { mutableStateOf<WebView?>(null) }
+    // Google, gömülü WebView'da girişi engeller ("disallowed_useragent"); ölü sayfaya gitmek yerine uyarı gösterilir.
+    var googleBlocked by remember { mutableStateOf(false) }
 
     val uriHandler = LocalUriHandler.current
     if (keyStep) {
@@ -175,6 +177,13 @@ private fun ColumnScope.BrowserStep(state: WebAccountState, vm: WebAccountViewMo
         )
     } else {
         Text(stringResource(R.string.web_login_hint), style = MaterialTheme.typography.bodySmall, color = KriptonTheme.colors.muted)
+        if (googleBlocked) {
+            Text(
+                stringResource(R.string.web_google_blocked),
+                style = MaterialTheme.typography.bodyMedium,
+                color = KriptonTheme.colors.danger,
+            )
+        }
         AndroidView(
             modifier = Modifier.weight(1f).fillMaxWidth(),
             factory = { ctx ->
@@ -189,10 +198,17 @@ private fun ColumnScope.BrowserStep(state: WebAccountState, vm: WebAccountViewMo
                     webViewClient = object : WebViewClient() {
                         override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                             val scheme = request?.url?.scheme.orEmpty()
-                            return scheme != "https" && scheme != "about"
+                            if (scheme != "https" && scheme != "about") return true
+                            val host = request?.url?.host.orEmpty()
+                            if (p != WebProvider.GEMINI && (host == "accounts.google.com" || host.endsWith(".accounts.google.com"))) {
+                                googleBlocked = true
+                                return true // Google sayfasına gitme; kullanıcı e-posta ile girişe dönsün
+                            }
+                            return false
                         }
                     }
-                    loadUrl(p.loginUrl)
+                    // Dil: sağlayıcı sitesi cihaz/bölge diline göre (ör. Kimi'de Çince) açılabilir; İngilizce/Türkçe tercih edilir.
+                    loadUrl(p.loginUrl, mapOf("Accept-Language" to "en-US,en;q=0.9,tr;q=0.8"))
                     holder = this
                 }
             },

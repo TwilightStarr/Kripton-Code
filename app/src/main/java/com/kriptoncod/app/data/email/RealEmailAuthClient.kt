@@ -63,7 +63,10 @@ class RealEmailAuthClient(
             val raw = response.body?.string() ?: ""
 
             if (!response.isSuccessful) {
-                return@runCatching EmailAuthResult.Error("HTTP ${response.code}: $raw")
+                return@runCatching EmailAuthResult.Error(
+                    "Giriş reddedildi (HTTP ${response.code}). Bu sağlayıcı e-posta/şifre ile doğrudan girişe " +
+                        "izin vermeyebilir; \"E-posta ile\" (web) girişini veya API anahtarını kullan.",
+                )
             }
 
             parseToken(loginUrl, raw)

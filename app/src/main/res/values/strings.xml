@@ -218,4 +218,14 @@
     <string name="node_save_failed">Çıktı kaydedilemedi</string>
     <string name="zip_run">Zip\'ten çalıştır</string>
     <string name="zip_run_invalid">Zip içinde geçerli prompt bulunamadı.</string>
+    <string name="run_tab_graph">Grafik</string>
+    <string name="run_tab_flow">Akış</string>
+    <string name="run_tab_files">Dosyalar</string>
+    <string name="run_node_hint_wide">Çıktısını görmek için grafikten veya akıştan bir düğüm seçin.</string>
+    <string name="flow_empty">Henüz bir adım yok.</string>
+    <string name="flow_health" tools:ignore="PluralsCandidate">%1$d karakter · %2$d dosya</string>
+    <string name="flow_warn_placeholders" tools:ignore="PluralsCandidate">⚠ %1$d yer tutucu satırı (kısaltılmış kod olabilir)</string>
+    <string name="flow_warn_unclosed">⚠ Çıktı kapanmamış kod bloğuyla bitiyor (kesilmiş olabilir)</string>
+    <string name="flow_warn_pathless" tools:ignore="PluralsCandidate">⚠ %1$d yolsuz kod bloğu (unnamed/ altına alınır)</string>
+    <string name="flow_files_wait">Dosya listesi, çalışma bitip zip oluşunca görünür.</string>
 </resources>

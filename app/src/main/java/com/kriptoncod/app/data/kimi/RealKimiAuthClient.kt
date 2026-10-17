@@ -42,7 +42,10 @@ class RealKimiAuthClient(
                 if (response.code == 401 || response.code == 403) {
                     return@runCatching KimiAuthResult.Error("Kimlik bilgisi reddedildi (HTTP ${response.code})")
                 }
-                return@runCatching KimiAuthResult.Error("HTTP ${response.code}")
+                return@runCatching KimiAuthResult.Error(
+                    "Kimi girişi başarısız (HTTP ${response.code}). Kimi e-posta/şifre ile doğrudan girişi " +
+                        "desteklemeyebilir; \"E-posta ile\" (web) girişini veya API anahtarını kullan.",
+                )
             }
             parseToken(raw)
         }.getOrElse { e -> KimiAuthResult.Error(e.message ?: "Bilinmeyen hata", e) }
