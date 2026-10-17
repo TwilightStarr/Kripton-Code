@@ -16,7 +16,7 @@
     <string name="web_provider_gemini">Gemini</string>
     <string name="web_hint_claude">Çıktı: Claude\'un ürettiği zip indirilir ve açılır; zip gelmezse kod blokları kullanılır.</string>
     <string name="web_hint_chatgpt">Çıktı: ChatGPT\'nin ürettiği dosya/zip indirilir; olmazsa kod blokları kullanılır.</string>
-    <string name="web_hint_kimi">Çıktı: uzun kod bloğu; yanıt kesilirse otomatik "devam et" gönderilir. DİKKAT: Kimi\'nin giriş sayfası yalnız telefon numarası, Google veya SSO sunar; e-posta ile giriş yoktur ve Google uygulama içinde engellenir. Kimi\'yi API anahtarıyla eklemen önerilir (Hesap ekle).</string>
+    <string name="web_hint_kimi">Çıktı: uzun kod bloğu; yanıt kesilirse otomatik \"devam et\" gönderilir. Kimi\'nin giriş sayfası telefon, Google veya SSO sunar (e-posta yok). \"Google ile devam et\" denenebilir; Google uygulama içi girişi reddederse telefonla giriş ya da API anahtarı kullan.</string>
     <string name="web_hint_gemini">Çıktı: Gemini web arayüzü kullanılmaz. API anahtarını telefonunun tarayıcısında Google AI Studio\'dan alıp buraya yapıştırırsın; çıktılar resmi API ile üretilir.</string>
 
     <string name="web_warning_title">Hesabın kapatılabilir</string>
@@ -24,10 +24,10 @@
     <string name="web_warning_gemini">Google hesabınla otomatik işlem yapmak Google koşullarına aykırı sayılabilir ve hesabın kısıtlanabilir veya kapatılabilir. Ana Google hesabını değil, kaybetmeyi göze aldığın bir hesabı kullan.</string>
     <string name="web_warning_accept">Riski anladım, kendi sorumluluğumda ekliyorum</string>
 
-    <string name="web_login_hint">Sayfada e-postanla giriş yap (2 adımlı doğrulama dahil). "Google ile devam et" seçeneğini kullanma: Google uygulama içi girişi engeller. Sohbet ekranı görününce aşağıdaki düğmeye bas.</string>
-    <string name="web_google_blocked">Google bu pencerede girişe izin vermez. "Google ile devam et" yerine sayfadaki e-posta (kod veya şifre) ile giriş seçeneğini kullan. Hesabında şifre yoksa sağlayıcının "şifremi unuttum" akışıyla oluşturabilirsin.</string>
+    <string name="web_login_hint">Sayfada giriş yap. \"Google ile devam et\" doğrudan denenebilir; Google uygulama içi girişi reddederse uyarı çıkar. Sohbet ekranı görününce üstteki \"Girişi tamamladım\"a bas.</string>
+    <string name="web_google_blocked">Google bu pencerede girişi reddetti (Google, uygulama içi tarayıcıları engeller; bunu uygulama aşamaz). Telefon numarasıyla giriş yap ya da Kimi\'yi API anahtarıyla ekle.</string>
     <string name="web_help">Yardım</string>
-    <string name="web_kimi_note">Kimi yalnız telefon, Google veya SSO ile girişe izin verir; e-posta seçeneği yoktur. Telefon numaranla SMS kodu girebilirsin ya da Kimi\'yi API anahtarıyla ekleyebilirsin.</string>
+    <string name="web_kimi_note">Kimi telefon, Google veya SSO ile girişe izin verir; e-posta seçeneği yoktur.</string>
     <string name="web_login_done">Girişi tamamladım</string>
     <string name="web_key_title">API anahtarını al</string>
     <string name="web_key_hint">Google, uygulama içinden girişe izin vermez. "Tarayıcıda aç"a bas, Google hesabınla giriş yapıp "Create API key" ile anahtarı oluştur, kopyala ve aşağıya yapıştır.</string>
@@ -42,4 +42,10 @@
     <string name="web_err_save">Hesap kaydedilemedi.</string>
     <string name="web_saving">Kaydediliyor…</string>
     <string name="web_default_name">%1$s %2$d</string>
+    <string name="web_use_api_key">API anahtarıyla ekle (önerilen)</string>
+    <string name="web_use_token">Token ile ekle</string>
+    <string name="web_token_hint">Telefonunun tarayıcısında (Chrome) kimi.com\'a Google veya telefonla giriş yap. Sonra aşağıdaki betiği kopyala, adres çubuğuna yapıştır ve BAŞINA elle \"javascript:\" yaz (Chrome yapıştırırken bu kısmı siler). Çıkan kutudaki metnin tümünü kopyalayıp aşağıya yapıştır. Not: Kimi oturumu bu kayıtlarda tutmuyorsa bu yol çalışmaz; o zaman API anahtarı kullan.</string>
+    <string name="web_token_copy">Betiği kopyala</string>
+    <string name="web_token_label">Kopyalanan metin</string>
+    <string name="web_token_invalid">Metin çözülemedi. Betiğin gösterdiği {…} biçimli metnin tamamını yapıştır.</string>
 </resources>

@@ -1,6 +1,10 @@
 package com.kriptoncod.app.ui.navigation
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -11,6 +15,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +53,11 @@ import com.kriptoncod.app.ui.screens.SettingsScreen
 import com.kriptoncod.app.ui.screens.WebAccountEditScreen
 import com.kriptoncod.app.ui.screens.WebAccountScreen
 import com.kriptoncod.app.domain.AuthType
+import com.kriptoncod.app.ui.adaptive.AdaptiveFrame
+import com.kriptoncod.app.ui.adaptive.Adaptive
+import com.kriptoncod.app.ui.adaptive.LocalWindowClass
+import com.kriptoncod.app.ui.adaptive.WindowClass
+import com.kriptoncod.app.ui.adaptive.rememberWindowClass
 import com.kriptoncod.app.ui.theme.KriptonTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -70,8 +80,12 @@ fun AppRoot(
     val backStack by navController.currentBackStackEntryAsState()
     val scheme = MaterialTheme.colorScheme
     val currentRoute = backStack?.destination?.route
-    val showBottomBar = currentRoute == null || Route.entries.any { it.path == currentRoute }
+    val showNav = currentRoute == null || Route.entries.any { it.path == currentRoute }
+    val windowClass = rememberWindowClass()
+    val showBottomBar = showNav && windowClass == WindowClass.Compact
+    val showSideNav = showNav && windowClass != WindowClass.Compact
 
+    CompositionLocalProvider(LocalWindowClass provides windowClass) {
     Scaffold(
         containerColor = scheme.background,
         bottomBar = {
@@ -101,10 +115,19 @@ fun AppRoot(
             }
         },
     ) { inner ->
+        Row(Modifier.padding(inner).fillMaxSize()) {
+        if (showSideNav) {
+            SideNavigation(
+                expanded = windowClass == WindowClass.Expanded,
+                isSelected = { route -> backStack?.destination?.hierarchy?.any { it.route == route.path } == true },
+                onNavigate = { route -> navController.navigateTo(route) },
+            )
+        }
+        Box(Modifier.weight(1f).fillMaxHeight()) {
         NavHost(
             navController = navController,
             startDestination = Route.Home.path,
-            modifier = Modifier.padding(inner),
+            modifier = Modifier.fillMaxSize(),
         ) {
             composable(Route.Home.path) { HomeScreen(onAddAi = { navController.navigate(AisRoutes.ADD) }) }
             composable(Route.Ais.path) {
@@ -121,38 +144,45 @@ fun AppRoot(
                 )
             }
             composable(AisRoutes.WEB_ADD) {
-                WebAccountScreen(accountId = null, onClose = { navController.popBackStack() })
+                AdaptiveFrame(Adaptive.WideFormMaxWidth) { WebAccountScreen(
+                    accountId = null,
+                    onClose = { navController.popBackStack() },
+                    onUseApiKey = {
+                        navController.popBackStack()
+                        navController.navigate(AisRoutes.ADD)
+                    },
+                ) }
             }
             composable(
                 AisRoutes.WEB_RELOGIN,
                 arguments = listOf(navArgument(AisRoutes.ARG_ID) { type = NavType.LongType }),
             ) { entry ->
                 val id = entry.arguments?.getLong(AisRoutes.ARG_ID) ?: return@composable
-                WebAccountScreen(accountId = id, onClose = { navController.popBackStack() })
+                AdaptiveFrame(Adaptive.WideFormMaxWidth) { WebAccountScreen(accountId = id, onClose = { navController.popBackStack() }) }
             }
             composable(
                 AisRoutes.WEB_EDIT,
                 arguments = listOf(navArgument(AisRoutes.ARG_ID) { type = NavType.LongType }),
             ) { entry ->
                 val id = entry.arguments?.getLong(AisRoutes.ARG_ID) ?: return@composable
-                WebAccountEditScreen(
+                AdaptiveFrame(Adaptive.FormMaxWidth) { WebAccountEditScreen(
                     accountId = id,
                     onClose = { navController.popBackStack() },
                     onRelogin = {
                         navController.popBackStack()
                         navController.navigate(AisRoutes.webRelogin(id))
                     },
-                )
+                ) }
             }
             composable(AisRoutes.ADD) {
-                AccountEditorScreen(accountId = null, onClose = { navController.popBackStack() })
+                AdaptiveFrame(Adaptive.FormMaxWidth) { AccountEditorScreen(accountId = null, onClose = { navController.popBackStack() }) }
             }
             composable(
                 AisRoutes.EDIT,
                 arguments = listOf(navArgument(AisRoutes.ARG_ID) { type = NavType.LongType }),
             ) { entry ->
                 val id = entry.arguments?.getLong(AisRoutes.ARG_ID) ?: return@composable
-                AccountEditorScreen(accountId = id, onClose = { navController.popBackStack() })
+                AdaptiveFrame(Adaptive.FormMaxWidth) { AccountEditorScreen(accountId = id, onClose = { navController.popBackStack() }) }
             }
             composable(Route.Prompts.path) {
                 PromptsScreen(
@@ -178,7 +208,7 @@ fun AppRoot(
                 arguments = listOf(navArgument(PromptRoutes.ARG_SET_ID) { type = NavType.LongType }),
             ) { entry ->
                 val setId = entry.arguments?.getLong(PromptRoutes.ARG_SET_ID) ?: return@composable
-                PromptEditorScreen(setId = setId, promptId = null, onClose = { navController.popBackStack() })
+                AdaptiveFrame(Adaptive.WideFormMaxWidth) { PromptEditorScreen(setId = setId, promptId = null, onClose = { navController.popBackStack() }) }
             }
             composable(
                 PromptRoutes.EDIT_PROMPT,
@@ -189,7 +219,7 @@ fun AppRoot(
             ) { entry ->
                 val setId = entry.arguments?.getLong(PromptRoutes.ARG_SET_ID) ?: return@composable
                 val promptId = entry.arguments?.getLong(PromptRoutes.ARG_PROMPT_ID) ?: return@composable
-                PromptEditorScreen(setId = setId, promptId = promptId, onClose = { navController.popBackStack() })
+                AdaptiveFrame(Adaptive.WideFormMaxWidth) { PromptEditorScreen(setId = setId, promptId = promptId, onClose = { navController.popBackStack() }) }
             }
             composable(
                 ExtraRoutes.RUN,
@@ -199,16 +229,16 @@ fun AppRoot(
                 RunScreen(runId = runId, container = container, onBack = { navController.popBackStack() })
             }
             composable(ExtraRoutes.GITHUB) {
-                GitHubSettingsScreen(container = container, onBack = { navController.popBackStack() })
+                AdaptiveFrame(Adaptive.FormMaxWidth) { GitHubSettingsScreen(container = container, onBack = { navController.popBackStack() }) }
             }
             composable(ExtraRoutes.PERMISSIONS) {
-                PermissionScreen(onDone = { navController.popBackStack() })
+                AdaptiveFrame(Adaptive.FormMaxWidth) { PermissionScreen(onDone = { navController.popBackStack() }) }
             }
             composable(Route.History.path) {
                 HistoryScreen(onOpenRun = { runId -> navController.navigate(ExtraRoutes.run(runId)) })
             }
             composable(Route.Settings.path) {
-                SettingsScreen(
+                AdaptiveFrame(Adaptive.FormMaxWidth) { SettingsScreen(
                     themePreference = themePreference,
                     onThemeChange = onThemeChange,
                     googleClientId = googleClientId,
@@ -218,9 +248,12 @@ fun AppRoot(
                     },
                     onOpenGitHub = { navController.navigate(ExtraRoutes.GITHUB) },
                     onOpenPermissions = { navController.navigate(ExtraRoutes.PERMISSIONS) },
-                )
+                ) }
             }
         }
+        }
+        }
+    }
     }
 }
 

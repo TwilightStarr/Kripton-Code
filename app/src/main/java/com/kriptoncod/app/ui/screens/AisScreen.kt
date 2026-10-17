@@ -13,6 +13,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import com.kriptoncod.app.ui.adaptive.Adaptive
+import com.kriptoncod.app.ui.adaptive.LocalWindowClass
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -88,12 +94,14 @@ private fun AisContent(
     onRetry: () -> Unit,
     onDismissError: () -> Unit,
 ) {
-    LazyColumn(
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(Adaptive.CardMinWidth),
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(Adaptive.pagePadding(LocalWindowClass.current)),
         verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item {
+        item(span = { GridItemSpan(maxLineSpan) }) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -107,7 +115,7 @@ private fun AisContent(
                 KButton(text = stringResource(R.string.ais_add), onClick = onAdd)
             }
         }
-        item(key = "add-web") {
+        item(key = "add-web", span = { GridItemSpan(maxLineSpan) }) {
             KButton(
                 text = stringResource(R.string.ais_add_web),
                 onClick = onAddWeb,
@@ -116,15 +124,15 @@ private fun AisContent(
             )
         }
         state.error?.let { error ->
-            item(key = "error") { ErrorCard(error, onRetry, onDismissError) }
+            item(key = "error", span = { GridItemSpan(maxLineSpan) }) { ErrorCard(error, onRetry, onDismissError) }
         }
         when {
-            state.loading -> item(key = "loading") {
+            state.loading -> item(key = "loading", span = { GridItemSpan(maxLineSpan) }) {
                 Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             }
-            state.accounts.isEmpty() && state.error == null -> item(key = "empty") {
+            state.accounts.isEmpty() && state.error == null -> item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
                 EmptyState(
                     icon = Icons.Filled.Face,
                     title = stringResource(R.string.ais_empty_title),

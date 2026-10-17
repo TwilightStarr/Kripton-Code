@@ -6,8 +6,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import com.kriptoncod.app.ui.adaptive.Adaptive
+import com.kriptoncod.app.ui.adaptive.LocalWindowClass
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.MaterialTheme
@@ -42,7 +46,7 @@ fun HistoryScreen(onOpenRun: (Long) -> Unit) {
         .collectAsStateWithLifecycle(initialValue = emptyList())
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier.fillMaxSize().padding(Adaptive.pagePadding(LocalWindowClass.current)),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
@@ -57,7 +61,11 @@ fun HistoryScreen(onOpenRun: (Long) -> Unit) {
                 message = stringResource(R.string.history_empty_message),
             )
         } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(Adaptive.CardMinWidth),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 items(runs.sortedByDescending { it.createdAt }, key = { it.id }) { run ->
                     RunHistoryRow(run = run, onClick = { onOpenRun(run.id) })
                 }

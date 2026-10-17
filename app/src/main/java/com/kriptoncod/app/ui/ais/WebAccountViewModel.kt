@@ -10,6 +10,7 @@ import com.kriptoncod.app.data.providers.ApiResult
 import com.kriptoncod.app.data.providers.ModelService
 import com.kriptoncod.app.data.providers.ProviderCatalog
 import com.kriptoncod.app.data.repo.AiAccountRepository
+import com.kriptoncod.app.data.web.TokenImport
 import com.kriptoncod.app.data.web.WebCookies
 import com.kriptoncod.app.data.web.WebProvider
 import com.kriptoncod.app.data.web.WebScripts
@@ -24,7 +25,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class WebStep { PICK, WARNING, LOGIN, KEY, SAVING, DONE }
+enum class WebStep { PICK, WARNING, LOGIN, KEY, TOKEN, SAVING, DONE }
 
 data class WebAccountState(
     val step: WebStep = WebStep.PICK,
@@ -32,6 +33,7 @@ data class WebAccountState(
     val label: String = "",
     val warningChecked: Boolean = false,
     val geminiKey: String = "",
+    val tokenText: String = "",
     val relogin: Boolean = false,
     @StringRes val error: Int? = null,
 )
@@ -71,6 +73,27 @@ class WebAccountViewModel(
     fun onLabel(v: String) = _state.update { it.copy(label = v) }
     fun onWarningChecked(v: Boolean) = _state.update { it.copy(warningChecked = v) }
     fun onGeminiKey(v: String) = _state.update { it.copy(geminiKey = v.trim(), error = null) }
+    fun onTokenText(v: String) = _state.update { it.copy(tokenText = v, error = null) }
+
+    /** Kimi gibi sağlayıcılar: tarayıcıdan kopyalanan oturum kayıtlarını yapıştırma adımı. */
+    fun openTokenStep() = _state.update { it.copy(step = WebStep.TOKEN, error = null) }
+
+    fun backToPick() = _state.update { it.copy(step = WebStep.PICK, error = null) }
+
+    fun saveToken() {
+        val p = _state.value.provider ?: return
+        val map = TokenImport.parse(_state.value.tokenText)
+        if (map == null) {
+            _state.update { it.copy(error = R.string.web_token_invalid) }
+            return
+        }
+        viewModelScope.launch {
+            WebCookies.clearAll()
+            saveWebAccount(p, WebSession(localStorage = map), failStep = WebStep.TOKEN)
+            _state.update { it.copy(tokenText = "") }
+        }
+    }
+
     fun dismissError() = _state.update { it.copy(error = null) }
 
     fun selectProvider(p: WebProvider) = _state.update { it.copy(provider = p, error = null) }
@@ -125,7 +148,7 @@ class WebAccountViewModel(
         }
     }
 
-    private suspend fun saveWebAccount(p: WebProvider, session: WebSession) {
+    private suspend fun saveWebAccount(p: WebProvider, session: WebSession, failStep: WebStep = WebStep.LOGIN) {
         _state.update { it.copy(step = WebStep.SAVING) }
         try {
             if (accountId != null) {
@@ -145,7 +168,7 @@ class WebAccountViewModel(
         } catch (c: CancellationException) {
             throw c
         } catch (_: Throwable) {
-            _state.update { it.copy(step = WebStep.LOGIN, error = R.string.web_err_save) }
+            _state.update { it.copy(step = failStep, error = R.string.web_err_save) }
         }
     }
 

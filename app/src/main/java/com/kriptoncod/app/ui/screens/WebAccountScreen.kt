@@ -38,6 +38,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -45,6 +47,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kriptoncod.app.R
+import com.kriptoncod.app.data.web.TokenImport
 import com.kriptoncod.app.data.web.WebProvider
 import androidx.compose.ui.platform.LocalUriHandler
 import com.kriptoncod.app.data.web.WebUserAgent
@@ -60,7 +63,7 @@ import com.kriptoncod.app.ui.theme.KriptonTheme
 
 /** E-posta ile (web oturumu) hesap ekleme veya [accountId] verilirse yeniden giriş ekranı. */
 @Composable
-fun WebAccountScreen(accountId: Long?, onClose: () -> Unit) {
+fun WebAccountScreen(accountId: Long?, onClose: () -> Unit, onUseApiKey: () -> Unit = {}) {
     val vm: WebAccountViewModel = viewModel(
         key = "web-account-$accountId",
         factory = rememberWebAccountViewModelFactory(accountId),
@@ -89,7 +92,8 @@ fun WebAccountScreen(accountId: Long?, onClose: () -> Unit) {
             }
         }
         when (state.step) {
-            WebStep.PICK -> PickStep(state, vm, onClose)
+            WebStep.PICK -> PickStep(state, vm, onClose, onUseApiKey)
+            WebStep.TOKEN -> TokenStep(state, vm)
             WebStep.WARNING -> WarningStep(state, vm, onClose)
             WebStep.LOGIN, WebStep.KEY -> BrowserStep(state, vm, onClose)
             WebStep.SAVING -> Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -103,7 +107,7 @@ fun WebAccountScreen(accountId: Long?, onClose: () -> Unit) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun PickStep(state: WebAccountState, vm: WebAccountViewModel, onClose: () -> Unit) {
+private fun PickStep(state: WebAccountState, vm: WebAccountViewModel, onClose: () -> Unit, onUseApiKey: () -> Unit) {
     val k = KriptonTheme.colors
     Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(stringResource(R.string.web_pick_hint), style = MaterialTheme.typography.bodyMedium, color = k.muted)
@@ -118,6 +122,12 @@ private fun PickStep(state: WebAccountState, vm: WebAccountViewModel, onClose: (
         }
         state.provider?.let { p ->
             Text(stringResource(p.hintRes()), style = MaterialTheme.typography.bodySmall, color = k.muted)
+            if (p == WebProvider.KIMI) {
+                // Kimi'nin giriş sayfasında e-posta yok; en güvenilir yol API anahtarı, yedek yol token aktarma.
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    KButton(stringResource(R.string.web_use_api_key), onUseApiKey)
+                }
+            }
             OutlinedTextField(
                 value = state.label,
                 onValueChange = vm::onLabel,
@@ -129,6 +139,34 @@ private fun PickStep(state: WebAccountState, vm: WebAccountViewModel, onClose: (
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             KButton(stringResource(R.string.web_continue), vm::onContinue, enabled = state.provider != null)
             KButton(stringResource(R.string.action_cancel), onClose, style = KButtonStyle.Outline)
+        }
+    }
+}
+
+/** Token aktarma: tarayıcıda girişten sonra kopyalanan oturum kayıtları yapıştırılır. */
+@Composable
+private fun TokenStep(state: WebAccountState, vm: WebAccountViewModel) {
+    val k = KriptonTheme.colors
+    val clipboard = LocalClipboardManager.current
+    Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(stringResource(R.string.web_token_hint), style = MaterialTheme.typography.bodyMedium, color = k.muted)
+        KButton(
+            stringResource(R.string.web_token_copy),
+            { clipboard.setText(AnnotatedString(TokenImport.BOOKMARKLET)) },
+            style = KButtonStyle.Outline,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        OutlinedTextField(
+            value = state.tokenText,
+            onValueChange = vm::onTokenText,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.web_token_label)) },
+            minLines = 3,
+            maxLines = 6,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            KButton(stringResource(R.string.web_key_save), vm::saveToken, enabled = state.tokenText.isNotBlank())
+            KButton(stringResource(R.string.action_back), vm::backToPick, style = KButtonStyle.Outline)
         }
     }
 }
@@ -245,15 +283,22 @@ private fun ColumnScope.BrowserStep(state: WebAccountState, vm: WebAccountViewMo
                     webViewClient = object : WebViewClient() {
                         override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                             val scheme = request?.url?.scheme.orEmpty()
-                            if (scheme != "https" && scheme != "about") return true
-                            val host = request?.url?.host.orEmpty()
-                            if (p != WebProvider.GEMINI && (host == "accounts.google.com" || host.endsWith(".accounts.google.com"))) {
+                            return scheme != "https" && scheme != "about"
+                        }
+
+                        // "Google ile devam et" doğrudan denenir. Google gömülü tarayıcıyı reddederse (kendi güvenlik
+                        // kuralı) ölü sayfada bırakmak yerine açıklama gösterilir.
+                        override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
+                            val u = url.orEmpty()
+                            if (u.contains("accounts.google.com") &&
+                                (u.contains("disallowed_useragent") || u.contains("/rejected") || u.contains("oauth/error"))
+                            ) {
                                 googleBlocked = true
-                                return true // Google sayfasına gitme; kullanıcı başka giriş yöntemine dönsün
                             }
-                            return false
                         }
                     }
+                    // Google/OAuth açılır pencereleri aynı pencerede açılsın (çoklu pencere desteklenmiyor).
+                    settings.javaScriptCanOpenWindowsAutomatically = true
                     // Dil: sağlayıcı sitesi cihaz/bölge diline göre (ör. Kimi'de Çince) açılabilir; İngilizce/Türkçe tercih edilir.
                     loadUrl(p.loginUrl, mapOf("Accept-Language" to "en-US,en;q=0.9,tr;q=0.8"))
                     holder = this

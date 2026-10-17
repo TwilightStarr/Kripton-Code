@@ -60,7 +60,10 @@ class WebViewChatDriver(
         private val released = AtomicBoolean(false)
         private var pageLoaded: CompletableDeferred<Unit> = CompletableDeferred()
 
+        private var base: WebSession? = null
+
         suspend fun start(saved: WebSession) {
+            base = saved
             WebCookies.clearAll()
             WebCookies.restore(saved)
             withContext(Dispatchers.Main) { webView = createWebView() }
@@ -210,7 +213,9 @@ class WebViewChatDriver(
                 if (wv != null) {
                     val snap = WebCookies.capture(provider, wv)
                     // Oturum düştüyse (çerezler boşaldı) eski kaydı ezme; bir sonraki işte UNAUTHORIZED döner.
-                    if (!snap.isEmpty) sessions.save(account.id, snap)
+                    // Elle aktarılan ek localStorage kayıtları (ör. Kimi tokenları) ilk oturumdan sonra silinmesin.
+                    val merged = base?.let { b -> snap.copy(localStorage = b.localStorage + snap.localStorage) } ?: snap
+                    if (!snap.isEmpty) sessions.save(account.id, merged)
                     WebCookies.clearAll()
                 }
             } finally {

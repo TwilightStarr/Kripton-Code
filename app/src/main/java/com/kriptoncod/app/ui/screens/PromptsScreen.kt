@@ -12,6 +12,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import com.kriptoncod.app.ui.adaptive.Adaptive
+import com.kriptoncod.app.ui.adaptive.LocalWindowClass
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -128,12 +134,14 @@ private fun PromptsContent(
 ) {
     var showCreate by remember { mutableStateOf(false) }
 
-    LazyColumn(
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(Adaptive.CardMinWidth),
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(Adaptive.pagePadding(LocalWindowClass.current)),
         verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item {
+        item(span = { GridItemSpan(maxLineSpan) }) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -150,7 +158,7 @@ private fun PromptsContent(
                 )
             }
         }
-        item {
+        item(span = { GridItemSpan(maxLineSpan) }) {
             KButton(
                 text = stringResource(R.string.zip_run),
                 onClick = onRunFromZip,
@@ -160,12 +168,12 @@ private fun PromptsContent(
         }
 
         when {
-            state.loading -> item {
+            state.loading -> item(span = { GridItemSpan(maxLineSpan) }) {
                 Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             }
-            state.sets.isEmpty() -> item {
+            state.sets.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) {
                 EmptyState(
                     icon = Icons.Filled.Edit,
                     title = stringResource(R.string.prompts_empty_title),
