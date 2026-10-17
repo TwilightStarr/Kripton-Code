@@ -67,7 +67,11 @@ class PromptDispatcher(
         }
     }
 
-    suspend fun process(runId: Long): DispatchOutcome {
+    /** @param onProgress her adımdan sonra (biten düğüm, toplam düğüm) ile çağrılır; bildirimler için. */
+    suspend fun process(
+        runId: Long,
+        onProgress: suspend (done: Int, total: Int) -> Unit = { _, _ -> },
+    ): DispatchOutcome {
         val run = runs.getRun(runId) ?: return DispatchOutcome.Cancelled
         when (run.status) {
             RunStatus.CANCELLED, RunStatus.PAUSED -> return DispatchOutcome.Cancelled
@@ -94,6 +98,7 @@ class PromptDispatcher(
                 else -> Unit
             }
             val result = processJob(job, all)
+            runs.getJobs(runId).let { l -> onProgress(l.count { it.state == JobState.DONE }, l.size) }
             if (result is JobResult.Wait) {
                 wakeAtMs = minOf(wakeAtMs ?: result.untilMs, result.untilMs)
             } else if (result is JobResult.Done && job.kind == JobKind.PLAN) {

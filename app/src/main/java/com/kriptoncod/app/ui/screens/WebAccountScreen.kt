@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -25,6 +27,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -35,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -63,11 +68,18 @@ fun WebAccountScreen(accountId: Long?, onClose: () -> Unit) {
     val state by vm.state.collectAsStateWithLifecycle()
     LaunchedEffect(state.step) { if (state.step == WebStep.DONE) onClose() }
 
-    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            stringResource(if (state.relogin) R.string.web_relogin_title else R.string.web_title),
-            style = MaterialTheme.typography.headlineMedium,
-        )
+    // Tarayıcı adımlarında (giriş/anahtar) alanın neredeyse tamamı WebView'a kalsın: başlık ve düğmeler tek üst satırda.
+    val browser = state.step == WebStep.LOGIN || state.step == WebStep.KEY
+    Column(
+        Modifier.fillMaxSize().padding(if (browser) 8.dp else 16.dp),
+        verticalArrangement = Arrangement.spacedBy(if (browser) 4.dp else 12.dp),
+    ) {
+        if (!browser) {
+            Text(
+                stringResource(if (state.relogin) R.string.web_relogin_title else R.string.web_title),
+                style = MaterialTheme.typography.headlineMedium,
+            )
+        }
         state.error?.let { err ->
             NodeCard(modifier = Modifier.fillMaxWidth(), accent = NodeAccent.Red) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -147,21 +159,51 @@ private fun WarningStep(state: WebAccountState, vm: WebAccountViewModel, onClose
     }
 }
 
-/** LOGIN ve KEY adımlarında AYNI WebView yaşar (Gemini'de giriş sonrası AI Studio'ya geçilir). */
+/**
+ * LOGIN ve KEY adımlarında AYNI WebView yaşar (Gemini'de giriş sonrası AI Studio'ya geçilir).
+ * Yerleşim: tek üst satır (başlık · yardım · "Girişi tamamladım" · kapat); açıklama yalnız (?) ile açılır;
+ * kalan TÜM alan WebView'indir.
+ */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 private fun ColumnScope.BrowserStep(state: WebAccountState, vm: WebAccountViewModel, onClose: () -> Unit) {
     val p = state.provider ?: return
     val keyStep = state.step == WebStep.KEY
     var holder by remember { mutableStateOf<WebView?>(null) }
-    // Google, gömülü WebView'da girişi engeller ("disallowed_useragent"); ölü sayfaya gitmek yerine uyarı gösterilir.
+    var showHint by remember { mutableStateOf(false) }
+    // Google, gömülü WebView'da girişe izin vermez ("disallowed_useragent"); ölü sayfaya gitmek yerine uyarı gösterilir.
     var googleBlocked by remember { mutableStateOf(false) }
+    val k = KriptonTheme.colors
+
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            stringResource(
+                if (keyStep) R.string.web_key_title
+                else if (state.relogin) R.string.web_relogin_title else R.string.web_title,
+            ),
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(onClick = { showHint = !showHint }) {
+            Icon(Icons.Filled.Info, contentDescription = stringResource(R.string.web_help), tint = k.muted)
+        }
+        TextButton(
+            onClick = { if (keyStep) vm.saveGeminiKey() else vm.finishLogin(holder) },
+            enabled = !keyStep || state.geminiKey.isNotBlank(),
+        ) {
+            Text(stringResource(if (keyStep) R.string.web_key_save else R.string.web_login_done))
+        }
+        IconButton(onClick = onClose) {
+            Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.action_cancel))
+        }
+    }
 
     val uriHandler = LocalUriHandler.current
     if (keyStep) {
         // Google WebView'da girişi engeller: sayfa telefonun kendi tarayıcısında açılır, anahtar buraya yapıştırılır.
-        Text(stringResource(R.string.web_key_title), style = MaterialTheme.typography.titleMedium)
-        Text(stringResource(R.string.web_key_hint), style = MaterialTheme.typography.bodySmall, color = KriptonTheme.colors.muted)
+        Text(stringResource(R.string.web_key_hint), style = MaterialTheme.typography.bodySmall, color = k.muted)
         KButton(
             stringResource(R.string.web_key_open_browser),
             { runCatching { uriHandler.openUri(WebProvider.GEMINI.chatUrl) } },
@@ -176,12 +218,17 @@ private fun ColumnScope.BrowserStep(state: WebAccountState, vm: WebAccountViewMo
             singleLine = true,
         )
     } else {
-        Text(stringResource(R.string.web_login_hint), style = MaterialTheme.typography.bodySmall, color = KriptonTheme.colors.muted)
+        if (showHint) {
+            Text(stringResource(R.string.web_login_hint), style = MaterialTheme.typography.bodySmall, color = k.muted)
+            if (p == WebProvider.KIMI) {
+                Text(stringResource(R.string.web_kimi_note), style = MaterialTheme.typography.bodySmall, color = k.muted)
+            }
+        }
         if (googleBlocked) {
             Text(
                 stringResource(R.string.web_google_blocked),
-                style = MaterialTheme.typography.bodyMedium,
-                color = KriptonTheme.colors.danger,
+                style = MaterialTheme.typography.bodySmall,
+                color = k.danger,
             )
         }
         AndroidView(
@@ -202,7 +249,7 @@ private fun ColumnScope.BrowserStep(state: WebAccountState, vm: WebAccountViewMo
                             val host = request?.url?.host.orEmpty()
                             if (p != WebProvider.GEMINI && (host == "accounts.google.com" || host.endsWith(".accounts.google.com"))) {
                                 googleBlocked = true
-                                return true // Google sayfasına gitme; kullanıcı e-posta ile girişe dönsün
+                                return true // Google sayfasına gitme; kullanıcı başka giriş yöntemine dönsün
                             }
                             return false
                         }
@@ -216,14 +263,6 @@ private fun ColumnScope.BrowserStep(state: WebAccountState, vm: WebAccountViewMo
     }
     DisposableEffect(Unit) {
         onDispose { holder?.let { runCatching { it.stopLoading(); it.destroy() } } }
-    }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (keyStep) {
-            KButton(stringResource(R.string.web_key_save), vm::saveGeminiKey, enabled = state.geminiKey.isNotBlank())
-        } else {
-            KButton(stringResource(R.string.web_login_done), { vm.finishLogin(holder) })
-        }
-        KButton(stringResource(R.string.action_cancel), onClose, style = KButtonStyle.Outline)
     }
 }
 

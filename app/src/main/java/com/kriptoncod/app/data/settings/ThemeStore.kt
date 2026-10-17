@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.IOException
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -39,7 +40,17 @@ class ThemeStore(private val context: Context) {
         context.settingsDataStore.edit { it[CI_MAX_ATTEMPTS] = value.coerceIn(1, 10) }
     }
 
+    // ---- Bildirimler (varsayılan açık) ----
+    val notifyFlow: Flow<Boolean> = context.settingsDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[NOTIFY] ?: true }
+
+    suspend fun setNotify(value: Boolean) {
+        context.settingsDataStore.edit { it[NOTIFY] = value }
+    }
+
     private companion object {
+        val NOTIFY = booleanPreferencesKey("notify_events")
         const val SCHEMA_VERSION = 1
         const val DEFAULT_CI_ATTEMPTS = 3
         val SCHEMA_KEY = intPreferencesKey("schema")

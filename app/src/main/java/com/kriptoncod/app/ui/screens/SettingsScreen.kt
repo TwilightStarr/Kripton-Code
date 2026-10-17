@@ -1,5 +1,21 @@
 package com.kriptoncod.app.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.Switch
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kriptoncod.app.KriptonCodApp
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -40,6 +56,11 @@ fun SettingsScreen(
     onOpenPermissions: () -> Unit,
 ) {
     val k = KriptonTheme.colors
+    val context = LocalContext.current
+    val store = remember { (context.applicationContext as KriptonCodApp).container.themeStore }
+    val notify by store.notifyFlow.collectAsStateWithLifecycle(initialValue = true)
+    val scope = rememberCoroutineScope()
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -69,6 +90,27 @@ fun SettingsScreen(
                         onClick = { onThemeChange(option) },
                     )
                 }
+            }
+        }
+
+        // Bildirimler: çalışma kapalıyken de arka planda sürer; olaylar için bildirim istenirse gönderilir.
+        NodeCard(modifier = Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(stringResource(R.string.settings_notify), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.settings_notify_hint), style = MaterialTheme.typography.bodySmall, color = k.muted)
+                }
+                Switch(
+                    checked = notify,
+                    onCheckedChange = { on ->
+                        scope.launch { store.setNotify(on) }
+                        if (on && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                        ) {
+                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    },
+                )
             }
         }
 

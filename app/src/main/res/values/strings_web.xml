@@ -16,7 +16,7 @@
     <string name="web_provider_gemini">Gemini</string>
     <string name="web_hint_claude">Çıktı: Claude\'un ürettiği zip indirilir ve açılır; zip gelmezse kod blokları kullanılır.</string>
     <string name="web_hint_chatgpt">Çıktı: ChatGPT\'nin ürettiği dosya/zip indirilir; olmazsa kod blokları kullanılır.</string>
-    <string name="web_hint_kimi">Çıktı: uzun kod bloğu. Yanıt kesilirse otomatik "devam et" gönderilir ve parçalar birleştirilir. Kimi sitesi telefon numarası isteyebilir veya Çince açılabilir; bu sitenin kendi davranışıdır. Giriş olmazsa Kimi\'yi API anahtarıyla (Hesap ekle) kullan.</string>
+    <string name="web_hint_kimi">Çıktı: uzun kod bloğu; yanıt kesilirse otomatik "devam et" gönderilir. DİKKAT: Kimi\'nin giriş sayfası yalnız telefon numarası, Google veya SSO sunar; e-posta ile giriş yoktur ve Google uygulama içinde engellenir. Kimi\'yi API anahtarıyla eklemen önerilir (Hesap ekle).</string>
     <string name="web_hint_gemini">Çıktı: Gemini web arayüzü kullanılmaz. API anahtarını telefonunun tarayıcısında Google AI Studio\'dan alıp buraya yapıştırırsın; çıktılar resmi API ile üretilir.</string>
 
     <string name="web_warning_title">Hesabın kapatılabilir</string>
@@ -26,6 +26,8 @@
 
     <string name="web_login_hint">Sayfada e-postanla giriş yap (2 adımlı doğrulama dahil). "Google ile devam et" seçeneğini kullanma: Google uygulama içi girişi engeller. Sohbet ekranı görününce aşağıdaki düğmeye bas.</string>
     <string name="web_google_blocked">Google bu pencerede girişe izin vermez. "Google ile devam et" yerine sayfadaki e-posta (kod veya şifre) ile giriş seçeneğini kullan. Hesabında şifre yoksa sağlayıcının "şifremi unuttum" akışıyla oluşturabilirsin.</string>
+    <string name="web_help">Yardım</string>
+    <string name="web_kimi_note">Kimi yalnız telefon, Google veya SSO ile girişe izin verir; e-posta seçeneği yoktur. Telefon numaranla SMS kodu girebilirsin ya da Kimi\'yi API anahtarıyla ekleyebilirsin.</string>
     <string name="web_login_done">Girişi tamamladım</string>
     <string name="web_key_title">API anahtarını al</string>
     <string name="web_key_hint">Google, uygulama içinden girişe izin vermez. "Tarayıcıda aç"a bas, Google hesabınla giriş yapıp "Create API key" ile anahtarı oluştur, kopyala ve aşağıya yapıştır.</string>

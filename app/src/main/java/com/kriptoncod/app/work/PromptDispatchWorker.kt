@@ -1,13 +1,6 @@
 package com.kriptoncod.app.work
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Context
-import android.content.pm.ServiceInfo
-import android.os.Build
-import androidx.core.app.NotificationCompat
-import androidx.work.ForegroundInfo
-import com.kriptoncod.app.domain.AuthType
 import kotlinx.coroutines.flow.first
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -16,23 +9,52 @@ import com.kriptoncod.app.data.run.DispatchOutcome
 import com.kriptoncod.app.domain.RunStatus
 import kotlin.coroutines.cancellation.CancellationException
 
-/** Bir run'ın işlerini dağıtır. Ayrıntılı kurallar için [com.kriptoncod.app.data.run.PromptDispatcher]. */
+/**
+ * Bir run'ın işlerini dağıtır; uygulama kapalıyken de ön plan servisi olarak sürer ve ilerleme bildirimi gösterir.
+ * Ayrıntılı kurallar için [com.kriptoncod.app.data.run.PromptDispatcher].
+ */
 class PromptDispatchWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
         val runId = inputData.getLong(KEY_RUN_ID, -1L)
         if (runId < 0) return Result.failure()
         val container = (applicationContext as KriptonCodApp).container
+        val notify = runCatching { container.themeStore.notifyFlow.first() }.getOrDefault(true)
 
-        // Web oturumu (WebView) işleri arka planda kısılmasın: hesaplardan biri web oturumuysa ön plana al.
-        if (runCatching { container.aiAccountRepository.observeAll().first().any { it.enabled && it.authType == AuthType.WEB_SESSION } }.getOrDefault(false)) {
-            runCatching { setForeground(foregroundInfo()) }
-        }
+        // Arka planda kısılmamak için HER çalışma ön plana alınır (web oturumu WebView'ı da buna bağlıdır).
+        runCatching { setForeground(RunNotifier.foregroundInfo(applicationContext, "Üretim sürüyor…")) }
 
         return try {
-            when (val outcome = container.promptDispatcher.process(runId)) {
-                is DispatchOutcome.Wait -> container.runScheduler.resume(runId, outcome.delayMs)
-                is DispatchOutcome.Finished, is DispatchOutcome.Cancelled -> Unit
+            val outcome = container.promptDispatcher.process(runId) { done, total ->
+                runCatching {
+                    setForeground(RunNotifier.foregroundInfo(applicationContext, "$done / $total adım tamamlandı", done, total))
+                }
+            }
+            when (outcome) {
+                is DispatchOutcome.Wait -> {
+                    container.runScheduler.resume(runId, outcome.delayMs)
+                    if (notify && outcome.delayMs >= LONG_WAIT_MS) {
+                        RunNotifier.event(
+                            applicationContext, runId, RunNotifier.KIND_WAITING,
+                            "Krypton Code — bekleniyor",
+                            "Kota dolu ya da kullanılabilir hesap yok. Süre dolunca kendiliğinden devam eder.",
+                        )
+                    }
+                }
+                is DispatchOutcome.Finished -> if (notify) {
+                    if (outcome.status == RunStatus.DONE) {
+                        RunNotifier.event(
+                            applicationContext, runId, RunNotifier.KIND_DONE,
+                            "Krypton Code — tamamlandı", "Çalışma #$runId bitti. Zip hazır.",
+                        )
+                    } else if (outcome.status == RunStatus.FAILED) {
+                        RunNotifier.event(
+                            applicationContext, runId, RunNotifier.KIND_FAILED,
+                            "Krypton Code — hata", "Çalışma #$runId başarısız oldu. Ayrıntı için uygulamayı aç.",
+                        )
+                    }
+                }
+                is DispatchOutcome.Cancelled -> Unit
             }
             Result.success()
         } catch (e: CancellationException) {
@@ -45,36 +67,20 @@ class PromptDispatchWorker(context: Context, params: WorkerParameters) : Corouti
                     container.runRepository.setRunStatus(runId, RunStatus.FAILED)
                     container.runRepository.saveHistory(runId)
                 }
+                if (notify) {
+                    RunNotifier.event(
+                        applicationContext, runId, RunNotifier.KIND_FAILED,
+                        "Krypton Code — hata", "Çalışma #$runId beklenmedik bir hatayla durdu.",
+                    )
+                }
                 Result.failure()
             }
         }
     }
 
-    private fun foregroundInfo(): ForegroundInfo {
-        val nm = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            nm.createNotificationChannel(
-                NotificationChannel(CHANNEL_ID, "Üretim", NotificationManager.IMPORTANCE_LOW),
-            )
-        }
-        val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_notify_sync)
-            .setContentTitle("Krypton Code")
-            .setContentText("Web hesaplarıyla üretim sürüyor…")
-            .setOngoing(true)
-            .setOnlyAlertOnce(true)
-            .build()
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ForegroundInfo(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
-        } else {
-            ForegroundInfo(NOTIFICATION_ID, notification)
-        }
-    }
-
     companion object {
-        private const val CHANNEL_ID = "krypton_run"
-        private const val NOTIFICATION_ID = 4711
         const val KEY_RUN_ID = "run_id"
         private const val MAX_WORKER_ATTEMPTS = 3
+        private const val LONG_WAIT_MS = 5L * 60 * 1000
     }
 }

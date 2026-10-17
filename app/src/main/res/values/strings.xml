@@ -228,4 +228,6 @@
     <string name="flow_warn_unclosed">⚠ Çıktı kapanmamış kod bloğuyla bitiyor (kesilmiş olabilir)</string>
     <string name="flow_warn_pathless" tools:ignore="PluralsCandidate">⚠ %1$d yolsuz kod bloğu (unnamed/ altına alınır)</string>
     <string name="flow_files_wait">Dosya listesi, çalışma bitip zip oluşunca görünür.</string>
+    <string name="settings_notify">Bildirimler</string>
+    <string name="settings_notify_hint">Çalışma tamamlandığında, hata verdiğinde veya kota/hesap beklerken bildirim gönder. Çalışma uygulama kapalıyken de arka planda sürer; sürerken ilerleme bildirimi her zaman görünür (Android bunu zorunlu kılar).</string>
 </resources>
