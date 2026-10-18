@@ -76,7 +76,31 @@ jobs:
           echo "Sürüm: ${BASE_VERSION}.${COUNT} (versionCode ${COUNT})"
 
       - name: Derle, lint, birim test
-        run: ./gradlew --no-daemon --continue assembleDebug lintDebug testDebugUnitTest -PversionName=${{ steps.ver.outputs.name }} -PversionCode=${{ steps.ver.outputs.code }} --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon --continue assembleDebug lintDebug testDebugUnitTest -PversionName=${{ steps.ver.outputs.name }} -PversionCode=${{ steps.ver.outputs.code }} --stacktrace 2>&1 | tee build.log
+
+      # Hata özeti: 8500 satırlık günlük yerine yalnız hata satırlarını içeren küçük bir dosya.
+      - name: Hata özeti çıkar
+        if: always()
+        run: |
+          {
+            echo "=== FAILED / What went wrong ==="
+            grep -n -A12 -E "^\* What went wrong|FAILED$" build.log | head -300
+            echo
+            echo "=== Kotlin/Java derleme hataları (e: / error:) ==="
+            grep -n -E "^e: |error:" build.log | head -300
+          } > errors.txt || true
+          wc -l errors.txt
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: build-hatalari
+          path: |
+            errors.txt
+            build.log
+          if-no-files-found: ignore
 
       - uses: actions/upload-artifact@v7
         with:
