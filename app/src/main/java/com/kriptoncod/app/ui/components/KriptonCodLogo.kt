@@ -109,22 +109,27 @@ fun KriptonCodLogo(
                 loop.snapTo(0f)
                 lap++
             }
+
             LogoMood.Idle -> while (true) {
                 loop.animateTo(1f, tween(IDLE_MS, easing = LinearEasing))
                 loop.snapTo(0f)
             }
+
             LogoMood.Waiting -> while (true) {
                 loop.animateTo(1f, tween(WAITING_MS, easing = LinearEasing))
                 loop.snapTo(0f)
             }
+
             LogoMood.Success -> {
                 once.snapTo(0f)
                 once.animateTo(1f, tween(SUCCESS_MS, easing = LinearEasing))
             }
+
             LogoMood.Error -> {
                 once.snapTo(0f)
                 once.animateTo(1f, tween(ERROR_MS, easing = LinearEasing))
             }
+
             LogoMood.Intro -> {
                 once.snapTo(0f)
                 once.animateTo(1f, tween(INTRO_MS, easing = LinearEasing))
@@ -143,17 +148,24 @@ fun KriptonCodLogo(
                 val q = once.value
                 if (!animationsOn) {
                     drawRest(g, color, if (mood == LogoMood.Error) errorColor else color)
-                } else when (mood) {
-                    LogoMood.Idle -> drawIdle(g, color, p)
-                    LogoMood.Working -> when (variantFor(lap)) {
-                        LogoAnimation.Orbit -> drawOrbit(g, color, p)
-                        LogoAnimation.Ripple -> drawRipple(g, color, p)
-                        LogoAnimation.Trace -> drawTrace(g, color, p)
+                } else {
+                    when (mood) {
+                        LogoMood.Idle -> drawIdle(g, color, p)
+
+                        LogoMood.Working -> when (variantFor(lap)) {
+                            LogoAnimation.Orbit -> drawOrbit(g, color, p)
+                            LogoAnimation.Ripple -> drawRipple(g, color, p)
+                            LogoAnimation.Trace -> drawTrace(g, color, p)
+                        }
+
+                        LogoMood.Waiting -> drawWaiting(g, color, p)
+
+                        LogoMood.Success -> drawSuccess(g, color, q)
+
+                        LogoMood.Error -> drawError(g, color, errorColor, q)
+
+                        LogoMood.Intro -> drawIntro(g, color, q)
                     }
-                    LogoMood.Waiting -> drawWaiting(g, color, p)
-                    LogoMood.Success -> drawSuccess(g, color, q)
-                    LogoMood.Error -> drawError(g, color, errorColor, q)
-                    LogoMood.Intro -> drawIntro(g, color, q)
                 }
             }
         }
@@ -332,7 +344,9 @@ private fun DrawScope.drawIntro(g: LogoGeometry, color: Color, q: Float) {
     arc(g, g.cStart, end, color)
     when {
         q < 0.6f -> dot(g, g.position(end), color, halo = 0.25f)
+
         q < 0.8f -> dot(g, g.position(lerpF(g.cEnd, g.length, smooth((q - 0.6f) / 0.2f))), color, halo = 0.2f)
+
         else -> {
             val t = (q - 0.8f) / 0.2f
             ring(g, g.rest, color, radiusUnits = 5f + 18f * t, alpha = 0.6f * (1f - t), widthUnits = 2.2f)
