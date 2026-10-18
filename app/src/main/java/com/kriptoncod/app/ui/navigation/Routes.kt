@@ -11,7 +11,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.kriptoncod.app.R
 
 /** Tüm rotalar tek yerde; sıra alt gezinme sırasıdır. */
-enum class Route(val path: String, @StringRes val label: Int, val icon: ImageVector) {
+enum class Route(val path: String, @param:StringRes val label: Int, val icon: ImageVector) {
     Home("home", R.string.nav_home, Icons.Filled.Home),
     Ais("ais", R.string.nav_ais, Icons.Filled.Face),
     Prompts("prompts", R.string.nav_prompts, Icons.Filled.Edit),

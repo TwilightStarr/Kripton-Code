@@ -32,7 +32,7 @@ import kotlinx.coroutines.launch
 enum class RetryAction { VERIFY, SAVE }
 
 /** [retry] null ise "Yeniden Dene" gösterilmez (ör. geçersiz anahtar: önce anahtar düzeltilmeli). */
-data class EditorError(@StringRes val messageRes: Int, val retry: RetryAction?)
+data class EditorError(@param:StringRes val messageRes: Int, val retry: RetryAction?)
 
 enum class Pricing { FREE, PAID, FREE_TIER, UNKNOWN }
 

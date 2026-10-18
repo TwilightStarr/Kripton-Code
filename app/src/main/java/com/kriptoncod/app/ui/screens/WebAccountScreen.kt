@@ -34,11 +34,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -60,6 +61,8 @@ import com.kriptoncod.app.ui.components.KButtonStyle
 import com.kriptoncod.app.ui.components.NodeAccent
 import com.kriptoncod.app.ui.components.NodeCard
 import com.kriptoncod.app.ui.theme.KriptonTheme
+import android.content.ClipData
+import kotlinx.coroutines.launch
 
 /** E-posta ile (web oturumu) hesap ekleme veya [accountId] verilirse yeniden giriş ekranı. */
 @Composable
@@ -147,12 +150,17 @@ private fun PickStep(state: WebAccountState, vm: WebAccountViewModel, onClose: (
 @Composable
 private fun TokenStep(state: WebAccountState, vm: WebAccountViewModel) {
     val k = KriptonTheme.colors
-    val clipboard = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
     Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(stringResource(R.string.web_token_hint), style = MaterialTheme.typography.bodyMedium, color = k.muted)
         KButton(
             stringResource(R.string.web_token_copy),
-            { clipboard.setText(AnnotatedString(TokenImport.BOOKMARKLET)) },
+            {
+                scope.launch {
+                    clipboard.setClipEntry(ClipData.newPlainText("bookmarklet", TokenImport.BOOKMARKLET).toClipEntry())
+                }
+            },
             style = KButtonStyle.Outline,
             modifier = Modifier.fillMaxWidth(),
         )

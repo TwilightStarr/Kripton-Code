@@ -35,7 +35,7 @@ data class WebAccountState(
     val geminiKey: String = "",
     val tokenText: String = "",
     val relogin: Boolean = false,
-    @StringRes val error: Int? = null,
+    @param:StringRes val error: Int? = null,
 )
 
 /**

@@ -22,7 +22,7 @@ sealed interface ListAction {
 }
 
 /** [retry] her zaman doludur: hata kartındaki "Yeniden Dene" aynı eylemi tekrarlar. */
-data class ListError(@StringRes val messageRes: Int, val retry: ListAction)
+data class ListError(@param:StringRes val messageRes: Int, val retry: ListAction)
 
 data class AisUiState(
     val loading: Boolean = true,

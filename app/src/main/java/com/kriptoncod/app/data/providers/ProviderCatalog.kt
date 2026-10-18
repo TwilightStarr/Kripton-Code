@@ -22,7 +22,7 @@ data class ProviderEndpoint(
 
 data class Provider(
     val id: String,
-    @StringRes val nameRes: Int,
+    @param:StringRes val nameRes: Int,
     /** Sabit taban adres; özel sağlayıcıda null (adres kullanıcıdan alınır). */
     val baseUrl: String?,
     val hasFreeTier: Boolean,

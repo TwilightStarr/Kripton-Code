@@ -390,7 +390,7 @@ private fun GraphPane(
                     bottomInset = if (showPanel) panelHeight else 0.dp,
                 )
             }
-            if (showPanel && selected != null) {
+            if (showPanel) {
                 Surface(
                     modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(panelHeight),
                     shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),

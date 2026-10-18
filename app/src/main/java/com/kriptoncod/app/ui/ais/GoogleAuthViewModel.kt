@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 /** Hesap düzenleyicisinde Google OAuth kartının durumu. */
 sealed interface GoogleAuthCardState {
     /** OAuth istemci kimliği tanımlanmamış; kart pasif. */
-    data class Unavailable(@StringRes val reasonRes: Int) : GoogleAuthCardState
+    data class Unavailable(@param:StringRes val reasonRes: Int) : GoogleAuthCardState
 
     /** Bağlanılmamış; "Google ile bağlan" düğmesi aktif. */
     data object Disconnected : GoogleAuthCardState
@@ -38,7 +38,7 @@ sealed interface GoogleAuthCardState {
     data object NeedsReauth : GoogleAuthCardState
 
     /** Hata; [messageRes] gösterilir. */
-    data class Error(@StringRes val messageRes: Int) : GoogleAuthCardState
+    data class Error(@param:StringRes val messageRes: Int) : GoogleAuthCardState
 }
 
 /**

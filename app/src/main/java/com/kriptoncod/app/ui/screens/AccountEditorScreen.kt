@@ -31,11 +31,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -74,6 +75,7 @@ import com.kriptoncod.app.ui.components.KChip
 import com.kriptoncod.app.ui.components.NodeAccent
 import com.kriptoncod.app.ui.components.NodeCard
 import com.kriptoncod.app.ui.theme.KriptonTheme
+import kotlinx.coroutines.launch
 
 private const val INITIAL_MODEL_COUNT = 30
 
@@ -86,7 +88,8 @@ fun AccountEditorScreen(accountId: Long?, onClose: () -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(state.saved) { if (state.saved) onClose() }
 
-    val clipboard = LocalClipboardManager.current
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
     AccountEditorContent(
         state = state,
         accountId = accountId,
@@ -97,8 +100,11 @@ fun AccountEditorScreen(accountId: Long?, onClose: () -> Unit) {
         onBaseUrlChange = viewModel::onBaseUrlChanged,
         onSelectUpstream = viewModel::selectUpstream,
         onPaste = {
-            val text = clipboard.getText()?.text
-            if (text.isNullOrBlank()) viewModel.onPasteEmpty() else viewModel.onKeyChanged(text)
+            scope.launch {
+                val text = clipboard.getClipEntry()?.clipData?.takeIf { it.itemCount > 0 }
+                    ?.getItemAt(0)?.text?.toString()
+                if (text.isNullOrBlank()) viewModel.onPasteEmpty() else viewModel.onKeyChanged(text)
+            }
         },
         onVerify = viewModel::verify,
         onSelectModel = viewModel::selectModel,

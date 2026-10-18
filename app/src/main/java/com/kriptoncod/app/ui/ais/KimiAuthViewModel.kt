@@ -22,7 +22,7 @@ sealed interface KimiAuthCardState {
     data object Loading : KimiAuthCardState
     data object Connected : KimiAuthCardState
     data object NeedsReauth : KimiAuthCardState
-    data class Error(@StringRes val messageRes: Int) : KimiAuthCardState
+    data class Error(@param:StringRes val messageRes: Int) : KimiAuthCardState
 }
 
 class KimiAuthViewModel(

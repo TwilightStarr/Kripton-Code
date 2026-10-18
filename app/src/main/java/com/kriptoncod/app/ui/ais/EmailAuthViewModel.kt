@@ -32,7 +32,7 @@ sealed interface EmailAuthCardState {
     data object NeedsReauth : EmailAuthCardState
 
     /** Hata; [messageRes] gösterilir. */
-    data class Error(@StringRes val messageRes: Int) : EmailAuthCardState
+    data class Error(@param:StringRes val messageRes: Int) : EmailAuthCardState
 }
 
 /**

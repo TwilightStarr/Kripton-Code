@@ -19,7 +19,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 
-enum class ApiError(@StringRes val messageRes: Int) {
+enum class ApiError(@param:StringRes val messageRes: Int) {
     INVALID_KEY(R.string.err_invalid_key),
     RATE_LIMITED(R.string.err_rate_limited),
     NOT_FOUND(R.string.err_not_found),
