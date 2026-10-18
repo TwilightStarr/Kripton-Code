@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.kriptoncod.app.ui.theme.KriptonTheme
+import com.kriptoncod.app.ui.theme.appear
 
 @Composable
 fun EmptyState(
@@ -25,7 +26,7 @@ fun EmptyState(
     modifier: Modifier = Modifier,
     action: (@Composable () -> Unit)? = null,
 ) {
-    NodeCard(modifier = modifier.fillMaxWidth()) {
+    NodeCard(modifier = modifier.fillMaxWidth().appear()) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,

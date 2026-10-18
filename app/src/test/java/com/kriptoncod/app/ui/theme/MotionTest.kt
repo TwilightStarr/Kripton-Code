@@ -1,7 +1,10 @@
 package com.kriptoncod.app.ui.theme
 
 import com.kriptoncod.app.domain.RunStatus
-import com.kriptoncod.app.ui.components.lineVisibility
+import com.kriptoncod.app.ui.components.LogoAnimation
+import com.kriptoncod.app.ui.components.LogoMood
+import com.kriptoncod.app.ui.components.traceFrame
+import com.kriptoncod.app.ui.components.variantFor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -14,27 +17,37 @@ class MotionTest {
         assertFalse(RunStatus.PAUSED.isInProgress())
     }
 
-    @Test fun noGapMeansFullyVisible() {
-        listOf(0f, 90f, 180f, 359f).forEach { assertEquals(1f, lineVisibility(it, gap = 0f, fade = 0f), 0f) }
+    @Test fun moodFollowsStatus() {
+        assertEquals(LogoMood.Working, RunStatus.RUNNING.logoMood())
+        assertEquals(LogoMood.Waiting, RunStatus.PAUSED.logoMood())
+        assertEquals(LogoMood.Success, RunStatus.DONE.logoMood())
+        assertEquals(LogoMood.Error, RunStatus.FAILED.logoMood())
+        RunStatus.entries.filter { it.isInProgress() }.forEach { assertEquals(LogoMood.Working, it.logoMood()) }
     }
 
-    @Test fun lineIsErasedRightBehindTheDot() {
-        assertEquals(0f, lineVisibility(0f, gap = 80f, fade = 50f), 0f)
-        assertEquals(0f, lineVisibility(79f, gap = 80f, fade = 50f), 0f)
+    @Test fun variantsCycleThroughAll() {
+        val seen = (0 until 60).map { variantFor(it) }.toSet()
+        assertEquals(LogoAnimation.entries.toSet(), seen)
+        assertEquals(variantFor(0), variantFor(1))
+        assertEquals(variantFor(0), variantFor(LogoAnimation.entries.size * 2))
     }
 
-    @Test fun lineComesBackSoftlyBehindTheGap() {
-        val a = lineVisibility(90f, gap = 80f, fade = 50f)
-        val b = lineVisibility(110f, gap = 80f, fade = 50f)
-        assertTrue(a in 0f..1f && b in 0f..1f)
-        assertTrue("görünürlük arkaya doğru artmalı", b > a)
-        assertEquals(1f, lineVisibility(200f, gap = 80f, fade = 50f), 0f)
+    @Test fun traceStartsAndEndsWhole() {
+        val a = 10f
+        val b = 90f
+        val start = traceFrame(0f, a, b)
+        val end = traceFrame(1f, a, b)
+        assertEquals(a, start.from, 0.001f)
+        assertEquals(0f, start.dot, 0.001f)
+        assertEquals(a, end.from, 0.001f)
+        assertEquals(0f, end.dot, 0.001f)
     }
 
-    @Test fun lineFadesOutJustAheadOfTheDot() {
-        val near = lineVisibility(355f, gap = 80f, fade = 50f)
-        val far = lineVisibility(320f, gap = 80f, fade = 50f)
-        assertTrue(near < far)
-        assertEquals(1f, lineVisibility(250f, gap = 80f, fade = 50f), 0f)
+    @Test fun traceErasesThenRedraws() {
+        val a = 10f
+        val b = 90f
+        assertEquals(b, traceFrame(0.40f, a, b).from, 0.5f)
+        assertTrue(traceFrame(0.2f, a, b).from in a..b)
+        assertEquals(a, traceFrame(0.80f, a, b).from, 0.5f)
     }
 }

@@ -65,4 +65,16 @@
     <string name="settings_crash_share">Share latest report</string>
     <string name="settings_crash_share_title">Share crash report</string>
     <string name="settings_crash_clear">Clear</string>
+
+    <!-- Battery restriction -->
+    <string name="settings_battery_title">Battery &amp; background</string>
+    <string name="settings_battery_hint">Long generations keep running in the background. Some devices (especially Xiaomi) may stop the app to save battery; removing the restriction lets runs continue uninterrupted.</string>
+    <string name="settings_battery_status_ok">No battery restriction (recommended)</string>
+    <string name="settings_battery_status_restricted">Battery optimization is on — background runs may be stopped</string>
+    <string name="settings_battery_request">Remove restriction</string>
+    <string name="settings_battery_open_list">Open battery settings</string>
+    <string name="settings_battery_oem">Manufacturer-specific settings</string>
+    <string name="settings_battery_oem_failed">Couldn\'t open the settings screen. Set battery and autostart manually under Settings > Apps > Krypton Code.</string>
+    <string name="settings_battery_oem_xiaomi">Xiaomi / Redmi / POCO: turn on the \"Autostart\" permission; then under Settings > Apps > Krypton Code > Battery saver choose \"No restrictions\".</string>
+    <string name="settings_battery_oem_generic">In your device\'s own battery manager, turn on \"autostart\" and \"run in background\" for Krypton Code.</string>
 </resources>

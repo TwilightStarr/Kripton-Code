@@ -64,7 +64,11 @@ import com.kriptoncod.app.ui.ais.WebAccountState
 import com.kriptoncod.app.ui.ais.WebAccountViewModel
 import com.kriptoncod.app.ui.ais.WebStep
 import com.kriptoncod.app.ui.ais.rememberWebAccountViewModelFactory
+import com.kriptoncod.app.ui.components.KriptonCodLogo
 import com.kriptoncod.app.ui.components.KriptonLoader
+import com.kriptoncod.app.ui.components.LogoMood
+import com.kriptoncod.app.ui.theme.LocalAnimationsEnabled
+import kotlinx.coroutines.delay
 import com.kriptoncod.app.ui.components.KButton
 import com.kriptoncod.app.ui.components.KButtonStyle
 import com.kriptoncod.app.ui.components.NodeAccent
@@ -81,7 +85,14 @@ fun WebAccountScreen(accountId: Long?, onClose: () -> Unit, onUseApiKey: () -> U
         factory = rememberWebAccountViewModelFactory(accountId, initialProvider),
     )
     val state by vm.state.collectAsStateWithLifecycle()
-    LaunchedEffect(state.step) { if (state.step == WebStep.DONE) onClose() }
+    val animationsOn = LocalAnimationsEnabled.current
+    // Hesap kaydedilince logo kısa bir başarı hareketi yapar, sonra ekran kapanır (animasyonlar kapalıysa hemen).
+    LaunchedEffect(state.step) {
+        if (state.step == WebStep.DONE) {
+            if (animationsOn) delay(900)
+            onClose()
+        }
+    }
 
     // Tarayıcı adımlarında (giriş/anahtar) alanın neredeyse tamamı WebView'a kalsın: başlık ve düğmeler tek üst satırda.
     val browser = state.step == WebStep.LOGIN || state.step == WebStep.KEY
@@ -117,7 +128,9 @@ fun WebAccountScreen(accountId: Long?, onClose: () -> Unit, onUseApiKey: () -> U
                 Text(stringResource(R.string.web_saving), style = MaterialTheme.typography.bodyMedium)
             }
 
-            WebStep.DONE -> Unit
+            WebStep.DONE -> Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                KriptonCodLogo(logoSize = 48.dp, mood = LogoMood.Success)
+            }
         }
     }
 }

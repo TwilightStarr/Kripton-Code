@@ -1,6 +1,19 @@
 package com.kriptoncod.app.ui.navigation
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.background
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import com.kriptoncod.app.ui.components.KriptonCodLogo
+import com.kriptoncod.app.ui.components.LogoMood
+import kotlinx.coroutines.delay
 import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -96,218 +109,244 @@ fun AppRoot(
     val busy = runs.any { it.status.isInProgress() }
     val animationsOn = LocalAnimationsEnabled.current
 
+    // Açılış: logo bir kez çizilir, sonra uygulamaya kaybolarak geçilir (animasyonlar kapalıysa atlanır).
+    var showIntro by rememberSaveable { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        if (showIntro) {
+            if (animationsOn) delay(1700)
+            showIntro = false
+        }
+    }
+
     CompositionLocalProvider(LocalWindowClass provides windowClass, LocalAppBusy provides busy) {
-        Scaffold(
-            containerColor = scheme.background,
-            bottomBar = {
-                if (showBottomBar) {
-                    Column {
-                        HorizontalDivider(thickness = 1.5.dp, color = KriptonTheme.colors.nodeBorder)
-                        NavigationBar(containerColor = scheme.surface, tonalElevation = 0.dp) {
-                            Route.entries.forEach { route ->
-                                val selected = backStack?.destination?.hierarchy?.any { it.route == route.path } == true
-                                NavigationBarItem(
-                                    selected = selected,
-                                    onClick = { navController.navigateTo(route) },
-                                    icon = { Icon(route.icon, contentDescription = null) },
-                                    label = {
-                                        Text(stringResource(route.label), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    },
-                                    alwaysShowLabel = true,
-                                    colors = NavigationBarItemDefaults.colors(
-                                        indicatorColor = KriptonTheme.colors.nodeFill,
-                                        selectedIconColor = scheme.primary,
-                                        selectedTextColor = scheme.primary,
-                                        unselectedIconColor = KriptonTheme.colors.muted,
-                                        unselectedTextColor = KriptonTheme.colors.muted,
-                                    ),
+        Box(Modifier.fillMaxSize()) {
+            Scaffold(
+                containerColor = scheme.background,
+                bottomBar = {
+                    if (showBottomBar) {
+                        Column {
+                            HorizontalDivider(thickness = 1.5.dp, color = KriptonTheme.colors.nodeBorder)
+                            NavigationBar(containerColor = scheme.surface, tonalElevation = 0.dp) {
+                                Route.entries.forEach { route ->
+                                    val selected = backStack?.destination?.hierarchy?.any { it.route == route.path } == true
+                                    NavigationBarItem(
+                                        selected = selected,
+                                        onClick = { navController.navigateTo(route) },
+                                        icon = { Icon(route.icon, contentDescription = null) },
+                                        label = {
+                                            Text(stringResource(route.label), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        },
+                                        alwaysShowLabel = true,
+                                        colors = NavigationBarItemDefaults.colors(
+                                            indicatorColor = KriptonTheme.colors.nodeFill,
+                                            selectedIconColor = scheme.primary,
+                                            selectedTextColor = scheme.primary,
+                                            unselectedIconColor = KriptonTheme.colors.muted,
+                                            unselectedTextColor = KriptonTheme.colors.muted,
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+            ) { inner ->
+                Row(Modifier.padding(inner).fillMaxSize()) {
+                    if (showSideNav) {
+                        SideNavigation(
+                            expanded = windowClass == WindowClass.Expanded,
+                            isSelected = { route -> backStack?.destination?.hierarchy?.any { it.route == route.path } == true },
+                            onNavigate = { route -> navController.navigateTo(route) },
+                        )
+                    }
+                    Box(Modifier.weight(1f).fillMaxHeight()) {
+                        NavHost(
+                            navController = navController,
+                            startDestination = Route.Home.path,
+                            modifier = Modifier.fillMaxSize(),
+                            // Animasyonlar kapalıyken ekran geçişleri anında olur.
+                            enterTransition = { if (animationsOn) forwardIn() else EnterTransition.None },
+                            exitTransition = { if (animationsOn) forwardOut() else ExitTransition.None },
+                            popEnterTransition = { if (animationsOn) backIn() else EnterTransition.None },
+                            popExitTransition = { if (animationsOn) backOut() else ExitTransition.None },
+                        ) {
+                            composable(Route.Home.path) {
+                                HomeScreen(
+                                    onAddAi = { navController.navigate(AisRoutes.ADD) },
+                                    onOpenRoute = { route -> navController.navigateTo(route) },
+                                    onOpenRun = { id -> navController.navigate(ExtraRoutes.run(id)) },
                                 )
+                            }
+                            composable(Route.Ais.path) {
+                                AisScreen(
+                                    onAdd = { navController.navigate(AisRoutes.ADD) },
+                                    onAddWeb = { navController.navigate(AisRoutes.WEB_ADD) },
+                                    onQuickAdd = { providerId -> navController.navigate(AisRoutes.webQuick(providerId)) },
+                                    onEdit = { id ->
+                                        // Web oturumu hesabında "düzenle" = ad düzenleme (yeniden giriş oradan ayrıca açılır); diğerleri anahtar düzenleyicisini açar.
+                                        scope.launch {
+                                            val web = container.aiAccountRepository.get(id)?.authType == AuthType.WEB_SESSION
+                                            navController.navigate(if (web) AisRoutes.webEdit(id) else AisRoutes.edit(id))
+                                        }
+                                    },
+                                )
+                            }
+                            composable(AisRoutes.WEB_ADD) {
+                                AdaptiveFrame(Adaptive.WideFormMaxWidth) {
+                                    WebAccountScreen(
+                                        accountId = null,
+                                        onClose = { navController.popBackStack() },
+                                        onUseApiKey = {
+                                            navController.popBackStack()
+                                            navController.navigate(AisRoutes.ADD)
+                                        },
+                                    )
+                                }
+                            }
+                            composable(
+                                AisRoutes.WEB_QUICK,
+                                arguments = listOf(navArgument(AisRoutes.ARG_PROVIDER) { type = NavType.StringType }),
+                            ) { entry ->
+                                val providerId = entry.arguments?.getString(AisRoutes.ARG_PROVIDER)
+                                AdaptiveFrame(Adaptive.WideFormMaxWidth) {
+                                    WebAccountScreen(
+                                        accountId = null,
+                                        initialProvider = providerId,
+                                        onClose = { navController.popBackStack() },
+                                        onUseApiKey = {
+                                            navController.popBackStack()
+                                            navController.navigate(AisRoutes.ADD)
+                                        },
+                                    )
+                                }
+                            }
+                            composable(
+                                AisRoutes.WEB_RELOGIN,
+                                arguments = listOf(navArgument(AisRoutes.ARG_ID) { type = NavType.LongType }),
+                            ) { entry ->
+                                val id = entry.arguments?.getLong(AisRoutes.ARG_ID) ?: return@composable
+                                AdaptiveFrame(Adaptive.WideFormMaxWidth) { WebAccountScreen(accountId = id, onClose = { navController.popBackStack() }) }
+                            }
+                            composable(
+                                AisRoutes.WEB_EDIT,
+                                arguments = listOf(navArgument(AisRoutes.ARG_ID) { type = NavType.LongType }),
+                            ) { entry ->
+                                val id = entry.arguments?.getLong(AisRoutes.ARG_ID) ?: return@composable
+                                AdaptiveFrame(Adaptive.FormMaxWidth) {
+                                    WebAccountEditScreen(
+                                        accountId = id,
+                                        onClose = { navController.popBackStack() },
+                                        onRelogin = {
+                                            navController.popBackStack()
+                                            navController.navigate(AisRoutes.webRelogin(id))
+                                        },
+                                    )
+                                }
+                            }
+                            composable(AisRoutes.ADD) {
+                                AdaptiveFrame(Adaptive.FormMaxWidth) { AccountEditorScreen(accountId = null, onClose = { navController.popBackStack() }) }
+                            }
+                            composable(
+                                AisRoutes.EDIT,
+                                arguments = listOf(navArgument(AisRoutes.ARG_ID) { type = NavType.LongType }),
+                            ) { entry ->
+                                val id = entry.arguments?.getLong(AisRoutes.ARG_ID) ?: return@composable
+                                AdaptiveFrame(Adaptive.FormMaxWidth) { AccountEditorScreen(accountId = id, onClose = { navController.popBackStack() }) }
+                            }
+                            composable(Route.Prompts.path) {
+                                PromptsScreen(
+                                    onOpenSet = { id -> navController.navigate(PromptRoutes.set(id)) },
+                                    onRunStarted = { id -> navController.navigate(ExtraRoutes.run(id)) },
+                                )
+                            }
+                            composable(
+                                PromptRoutes.SET,
+                                arguments = listOf(navArgument(PromptRoutes.ARG_SET_ID) { type = NavType.LongType }),
+                            ) { entry ->
+                                val setId = entry.arguments?.getLong(PromptRoutes.ARG_SET_ID) ?: return@composable
+                                PromptSetScreen(
+                                    setId = setId,
+                                    onBack = { navController.popBackStack() },
+                                    onAddPrompt = { navController.navigate(PromptRoutes.addPrompt(setId)) },
+                                    onEditPrompt = { promptId -> navController.navigate(PromptRoutes.editPrompt(setId, promptId)) },
+                                    onRunStarted = { runId -> navController.navigate(ExtraRoutes.run(runId)) },
+                                )
+                            }
+                            composable(
+                                PromptRoutes.ADD_PROMPT,
+                                arguments = listOf(navArgument(PromptRoutes.ARG_SET_ID) { type = NavType.LongType }),
+                            ) { entry ->
+                                val setId = entry.arguments?.getLong(PromptRoutes.ARG_SET_ID) ?: return@composable
+                                AdaptiveFrame(Adaptive.WideFormMaxWidth) { PromptEditorScreen(setId = setId, promptId = null, onClose = { navController.popBackStack() }) }
+                            }
+                            composable(
+                                PromptRoutes.EDIT_PROMPT,
+                                arguments = listOf(
+                                    navArgument(PromptRoutes.ARG_SET_ID) { type = NavType.LongType },
+                                    navArgument(PromptRoutes.ARG_PROMPT_ID) { type = NavType.LongType },
+                                ),
+                            ) { entry ->
+                                val setId = entry.arguments?.getLong(PromptRoutes.ARG_SET_ID) ?: return@composable
+                                val promptId = entry.arguments?.getLong(PromptRoutes.ARG_PROMPT_ID) ?: return@composable
+                                AdaptiveFrame(Adaptive.WideFormMaxWidth) { PromptEditorScreen(setId = setId, promptId = promptId, onClose = { navController.popBackStack() }) }
+                            }
+                            composable(
+                                ExtraRoutes.RUN,
+                                arguments = listOf(navArgument(ExtraRoutes.ARG_RUN_ID) { type = NavType.LongType }),
+                            ) { entry ->
+                                val runId = entry.arguments?.getLong(ExtraRoutes.ARG_RUN_ID) ?: return@composable
+                                RunScreen(runId = runId, container = container, onBack = { navController.popBackStack() })
+                            }
+                            composable(ExtraRoutes.GITHUB) {
+                                AdaptiveFrame(Adaptive.FormMaxWidth) { GitHubSettingsScreen(container = container, onBack = { navController.popBackStack() }) }
+                            }
+                            composable(ExtraRoutes.PERMISSIONS) {
+                                AdaptiveFrame(Adaptive.FormMaxWidth) { PermissionScreen(onDone = { navController.popBackStack() }) }
+                            }
+                            composable(Route.History.path) {
+                                HistoryScreen(onOpenRun = { runId -> navController.navigate(ExtraRoutes.run(runId)) })
+                            }
+                            composable(Route.Settings.path) {
+                                AdaptiveFrame(Adaptive.FormMaxWidth) {
+                                    SettingsScreen(
+                                        themePreference = themePreference,
+                                        onThemeChange = onThemeChange,
+                                        googleClientId = googleClientId,
+                                        onGoogleClientIdChange = { value ->
+                                            googleClientId = value
+                                            scope.launch { googleSettings.setClientId(value) }
+                                        },
+                                        onOpenGitHub = { navController.navigate(ExtraRoutes.GITHUB) },
+                                        onOpenPermissions = { navController.navigate(ExtraRoutes.PERMISSIONS) },
+                                    )
+                                }
                             }
                         }
                     }
                 }
-            },
-        ) { inner ->
-            Row(Modifier.padding(inner).fillMaxSize()) {
-                if (showSideNav) {
-                    SideNavigation(
-                        expanded = windowClass == WindowClass.Expanded,
-                        isSelected = { route -> backStack?.destination?.hierarchy?.any { it.route == route.path } == true },
-                        onNavigate = { route -> navController.navigateTo(route) },
-                    )
-                }
-                Box(Modifier.weight(1f).fillMaxHeight()) {
-                    NavHost(
-                        navController = navController,
-                        startDestination = Route.Home.path,
-                        modifier = Modifier.fillMaxSize(),
-                        // Animasyonlar kapalıyken ekran geçişleri anında olur.
-                        enterTransition = { if (animationsOn) fadeInDefault() else EnterTransition.None },
-                        exitTransition = { if (animationsOn) fadeOutDefault() else ExitTransition.None },
-                        popEnterTransition = { if (animationsOn) fadeInDefault() else EnterTransition.None },
-                        popExitTransition = { if (animationsOn) fadeOutDefault() else ExitTransition.None },
-                    ) {
-                        composable(Route.Home.path) {
-                            HomeScreen(
-                                onAddAi = { navController.navigate(AisRoutes.ADD) },
-                                onOpenRoute = { route -> navController.navigateTo(route) },
-                                onOpenRun = { id -> navController.navigate(ExtraRoutes.run(id)) },
-                            )
-                        }
-                        composable(Route.Ais.path) {
-                            AisScreen(
-                                onAdd = { navController.navigate(AisRoutes.ADD) },
-                                onAddWeb = { navController.navigate(AisRoutes.WEB_ADD) },
-                                onQuickAdd = { providerId -> navController.navigate(AisRoutes.webQuick(providerId)) },
-                                onEdit = { id ->
-                                    // Web oturumu hesabında "düzenle" = ad düzenleme (yeniden giriş oradan ayrıca açılır); diğerleri anahtar düzenleyicisini açar.
-                                    scope.launch {
-                                        val web = container.aiAccountRepository.get(id)?.authType == AuthType.WEB_SESSION
-                                        navController.navigate(if (web) AisRoutes.webEdit(id) else AisRoutes.edit(id))
-                                    }
-                                },
-                            )
-                        }
-                        composable(AisRoutes.WEB_ADD) {
-                            AdaptiveFrame(Adaptive.WideFormMaxWidth) {
-                                WebAccountScreen(
-                                    accountId = null,
-                                    onClose = { navController.popBackStack() },
-                                    onUseApiKey = {
-                                        navController.popBackStack()
-                                        navController.navigate(AisRoutes.ADD)
-                                    },
-                                )
-                            }
-                        }
-                        composable(
-                            AisRoutes.WEB_QUICK,
-                            arguments = listOf(navArgument(AisRoutes.ARG_PROVIDER) { type = NavType.StringType }),
-                        ) { entry ->
-                            val providerId = entry.arguments?.getString(AisRoutes.ARG_PROVIDER)
-                            AdaptiveFrame(Adaptive.WideFormMaxWidth) {
-                                WebAccountScreen(
-                                    accountId = null,
-                                    initialProvider = providerId,
-                                    onClose = { navController.popBackStack() },
-                                    onUseApiKey = {
-                                        navController.popBackStack()
-                                        navController.navigate(AisRoutes.ADD)
-                                    },
-                                )
-                            }
-                        }
-                        composable(
-                            AisRoutes.WEB_RELOGIN,
-                            arguments = listOf(navArgument(AisRoutes.ARG_ID) { type = NavType.LongType }),
-                        ) { entry ->
-                            val id = entry.arguments?.getLong(AisRoutes.ARG_ID) ?: return@composable
-                            AdaptiveFrame(Adaptive.WideFormMaxWidth) { WebAccountScreen(accountId = id, onClose = { navController.popBackStack() }) }
-                        }
-                        composable(
-                            AisRoutes.WEB_EDIT,
-                            arguments = listOf(navArgument(AisRoutes.ARG_ID) { type = NavType.LongType }),
-                        ) { entry ->
-                            val id = entry.arguments?.getLong(AisRoutes.ARG_ID) ?: return@composable
-                            AdaptiveFrame(Adaptive.FormMaxWidth) {
-                                WebAccountEditScreen(
-                                    accountId = id,
-                                    onClose = { navController.popBackStack() },
-                                    onRelogin = {
-                                        navController.popBackStack()
-                                        navController.navigate(AisRoutes.webRelogin(id))
-                                    },
-                                )
-                            }
-                        }
-                        composable(AisRoutes.ADD) {
-                            AdaptiveFrame(Adaptive.FormMaxWidth) { AccountEditorScreen(accountId = null, onClose = { navController.popBackStack() }) }
-                        }
-                        composable(
-                            AisRoutes.EDIT,
-                            arguments = listOf(navArgument(AisRoutes.ARG_ID) { type = NavType.LongType }),
-                        ) { entry ->
-                            val id = entry.arguments?.getLong(AisRoutes.ARG_ID) ?: return@composable
-                            AdaptiveFrame(Adaptive.FormMaxWidth) { AccountEditorScreen(accountId = id, onClose = { navController.popBackStack() }) }
-                        }
-                        composable(Route.Prompts.path) {
-                            PromptsScreen(
-                                onOpenSet = { id -> navController.navigate(PromptRoutes.set(id)) },
-                                onRunStarted = { id -> navController.navigate(ExtraRoutes.run(id)) },
-                            )
-                        }
-                        composable(
-                            PromptRoutes.SET,
-                            arguments = listOf(navArgument(PromptRoutes.ARG_SET_ID) { type = NavType.LongType }),
-                        ) { entry ->
-                            val setId = entry.arguments?.getLong(PromptRoutes.ARG_SET_ID) ?: return@composable
-                            PromptSetScreen(
-                                setId = setId,
-                                onBack = { navController.popBackStack() },
-                                onAddPrompt = { navController.navigate(PromptRoutes.addPrompt(setId)) },
-                                onEditPrompt = { promptId -> navController.navigate(PromptRoutes.editPrompt(setId, promptId)) },
-                                onRunStarted = { runId -> navController.navigate(ExtraRoutes.run(runId)) },
-                            )
-                        }
-                        composable(
-                            PromptRoutes.ADD_PROMPT,
-                            arguments = listOf(navArgument(PromptRoutes.ARG_SET_ID) { type = NavType.LongType }),
-                        ) { entry ->
-                            val setId = entry.arguments?.getLong(PromptRoutes.ARG_SET_ID) ?: return@composable
-                            AdaptiveFrame(Adaptive.WideFormMaxWidth) { PromptEditorScreen(setId = setId, promptId = null, onClose = { navController.popBackStack() }) }
-                        }
-                        composable(
-                            PromptRoutes.EDIT_PROMPT,
-                            arguments = listOf(
-                                navArgument(PromptRoutes.ARG_SET_ID) { type = NavType.LongType },
-                                navArgument(PromptRoutes.ARG_PROMPT_ID) { type = NavType.LongType },
-                            ),
-                        ) { entry ->
-                            val setId = entry.arguments?.getLong(PromptRoutes.ARG_SET_ID) ?: return@composable
-                            val promptId = entry.arguments?.getLong(PromptRoutes.ARG_PROMPT_ID) ?: return@composable
-                            AdaptiveFrame(Adaptive.WideFormMaxWidth) { PromptEditorScreen(setId = setId, promptId = promptId, onClose = { navController.popBackStack() }) }
-                        }
-                        composable(
-                            ExtraRoutes.RUN,
-                            arguments = listOf(navArgument(ExtraRoutes.ARG_RUN_ID) { type = NavType.LongType }),
-                        ) { entry ->
-                            val runId = entry.arguments?.getLong(ExtraRoutes.ARG_RUN_ID) ?: return@composable
-                            RunScreen(runId = runId, container = container, onBack = { navController.popBackStack() })
-                        }
-                        composable(ExtraRoutes.GITHUB) {
-                            AdaptiveFrame(Adaptive.FormMaxWidth) { GitHubSettingsScreen(container = container, onBack = { navController.popBackStack() }) }
-                        }
-                        composable(ExtraRoutes.PERMISSIONS) {
-                            AdaptiveFrame(Adaptive.FormMaxWidth) { PermissionScreen(onDone = { navController.popBackStack() }) }
-                        }
-                        composable(Route.History.path) {
-                            HistoryScreen(onOpenRun = { runId -> navController.navigate(ExtraRoutes.run(runId)) })
-                        }
-                        composable(Route.Settings.path) {
-                            AdaptiveFrame(Adaptive.FormMaxWidth) {
-                                SettingsScreen(
-                                    themePreference = themePreference,
-                                    onThemeChange = onThemeChange,
-                                    googleClientId = googleClientId,
-                                    onGoogleClientIdChange = { value ->
-                                        googleClientId = value
-                                        scope.launch { googleSettings.setClientId(value) }
-                                    },
-                                    onOpenGitHub = { navController.navigate(ExtraRoutes.GITHUB) },
-                                    onOpenPermissions = { navController.navigate(ExtraRoutes.PERMISSIONS) },
-                                )
-                            }
-                        }
-                    }
+            }
+            AnimatedVisibility(visible = showIntro && animationsOn, enter = EnterTransition.None, exit = fadeOut(tween(350))) {
+                Box(Modifier.fillMaxSize().background(scheme.background), contentAlignment = Alignment.Center) {
+                    KriptonCodLogo(logoSize = 96.dp, mood = LogoMood.Intro)
                 }
             }
         }
     }
 }
 
-private fun fadeInDefault(): EnterTransition = androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(300))
+// Ekran geçişleri: ileri giderken içerik hafifçe sağdan kayarak belirir, geri dönerken tersi; eski ekran hızla solar.
+private const val SLIDE_FRACTION = 14
 
-private fun fadeOutDefault(): ExitTransition = androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(300))
+private fun forwardIn(): EnterTransition =
+    fadeIn(tween(320, delayMillis = 80)) + slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { it / SLIDE_FRACTION }
+
+private fun forwardOut(): ExitTransition = fadeOut(tween(140))
+
+private fun backIn(): EnterTransition =
+    fadeIn(tween(320, delayMillis = 80)) + slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { -it / SLIDE_FRACTION }
+
+private fun backOut(): ExitTransition =
+    fadeOut(tween(140)) + slideOutHorizontally(tween(260, easing = FastOutSlowInEasing)) { it / SLIDE_FRACTION }
 
 private fun NavHostController.navigateTo(route: Route) {
     navigate(route.path) {

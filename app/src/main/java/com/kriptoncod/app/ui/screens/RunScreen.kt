@@ -66,7 +66,7 @@ import com.kriptoncod.app.domain.RunStatus
 import com.kriptoncod.app.ui.components.KBadge
 import com.kriptoncod.app.ui.components.KButton
 import com.kriptoncod.app.ui.components.KButtonStyle
-import com.kriptoncod.app.ui.components.KriptonLoader
+import com.kriptoncod.app.ui.components.KriptonCodLogo
 import com.kriptoncod.app.ui.components.NodeAccent
 import com.kriptoncod.app.ui.labelRes
 import com.kriptoncod.app.work.RunControl
@@ -74,6 +74,7 @@ import com.kriptoncod.app.ui.components.OutputMarkdown
 import com.kriptoncod.app.ui.components.OutputMarkdownView
 import com.kriptoncod.app.ui.components.RunGraph
 import com.kriptoncod.app.ui.theme.KriptonTheme
+import com.kriptoncod.app.ui.theme.logoMood
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -202,8 +203,9 @@ fun RunScreen(
                 }
             }
             currentRun?.let { RunStatusBadge(status = it.status) }
-            if (status != null && status in CANCELLABLE && status != RunStatus.PAUSED) {
-                KriptonLoader(size = 32.dp)
+            // Logo durumu anlatır: çalışırken dönen çeşitler, duraklatınca sönük, bitince başarı/hata hareketi.
+            if (status != null && status != RunStatus.CANCELLED) {
+                KriptonCodLogo(logoSize = 32.dp, mood = status.logoMood())
             }
         }
         if (anyWaiting && status == RunStatus.RUNNING) {

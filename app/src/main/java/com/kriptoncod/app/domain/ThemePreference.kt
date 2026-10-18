@@ -1,13 +1,20 @@
 package com.kriptoncod.app.domain
 
-/** Sade, koyu temalar; varsayılan siyah-beyaz. Eski kayıtlar ("system", "light", "dark") Siyah-Beyaz'a düşer. */
+/**
+ * Tema seçimi: sistemi izle (varsayılan), koyu ya da açık.
+ * Eski kayıtlar: "black"/"graphite"/"sage" koyu temalardı, bu yüzden DARK'a; bilinmeyen/boş değer SYSTEM'e düşer.
+ */
 enum class ThemePreference(val key: String) {
-    BLACK("black"),
-    GRAPHITE("graphite"),
-    SAGE("sage"),
+    SYSTEM("system"),
+    DARK("dark"),
+    LIGHT("light"),
     ;
 
     companion object {
-        fun fromKey(key: String?): ThemePreference = entries.firstOrNull { it.key == key } ?: BLACK
+        fun fromKey(key: String?): ThemePreference = when (key) {
+            "dark", "black", "graphite", "sage" -> DARK
+            "light" -> LIGHT
+            else -> SYSTEM
+        }
     }
 }

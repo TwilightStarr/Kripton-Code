@@ -9,7 +9,7 @@ import androidx.compose.ui.unit.dp
 import com.kriptoncod.app.ui.theme.LocalAnimationsEnabled
 
 /**
- * Yükleme/işlem göstergesi: dönen çember yerine animasyonlu logo.
+ * Yükleme/işlem göstergesi: dönen çember yerine animasyonlu logo; çeşitler (yörünge, dalga, çizgi) sırayla döner.
  * Animasyonlar kapalıysa logo sönük ve hareketsiz görünür (hareket içeren hiçbir şey çizilmez).
  */
 @Composable
@@ -23,6 +23,6 @@ fun KriptonLoader(
         modifier = modifier,
         logoSize = size,
         color = if (animationsOn) color else color.copy(alpha = 0.6f),
-        busy = true,
+        mood = LogoMood.Working,
     )
 }

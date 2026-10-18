@@ -5,6 +5,17 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
+### Değişti (tema)
+- Tema seçenekleri yalnızca **Sistem / Koyu / Açık**. Eski kayıtlar (siyah, grafit, adaçayı) Koyu'ya, bilinmeyen değer Sistem'e düşer. Tema değişimi renk geçişiyle animasyonludur. Açılış ekranı koyu kalır (`values-night` yalnızca pencere zemini için, `values-night-v31` açılış temasını koyu tutar).
+
+### Eklendi (pil kısıtlaması)
+- **Ayarlar → Pil kısıtlaması**: durum gösterilir; Android'in "kısıtlama yok" izni (`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`) istenebilir; Xiaomi, Huawei, Oppo, Vivo, Samsung, OnePlus ve Asus cihazlarda üreticinin otomatik başlatma ekranı açılır.
+
+### Eklendi (animasyonlar)
+- Logo artık durumu anlatır: boşta, çalışıyor (yörünge / dalga / çizgi çeşitleri dönüşümlü), bekliyor, başarı, hata ve açılış. Çalıştırma başlığındaki logo run durumunu izler.
+- Ekran geçişleri (kayma + solma), ana ekranda kademeli belirme, düğme/kart basma efekti, çalışan düğümde nabız halkası, açılış animasyonu. Hepsi **Ayarlar → Animasyonlar**'a bağlıdır.
+- Hızlı e-posta ekleme: AI'lar ekranındaki "Tek dokunuşla ekle" düğmeleri sırayla belirir; hesap kaydedilince giriş ekranında logo başarı hareketi yapar ve ardından kapanır.
+
 ### Düzeltildi (açılış ekranı)
 - Uygulama açılırken görünen koyu mavi ekran kaldırıldı: `values-night` kaynakları (`#0A1226`), Android 12+ için tanımlı siyah açılış temasını eziyordu. Gece moduna özel kaynaklar silindi; açılış artık her zaman düz siyah zemin + beyaz logodur.
 

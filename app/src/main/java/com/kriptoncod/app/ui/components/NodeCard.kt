@@ -1,15 +1,18 @@
 package com.kriptoncod.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kriptoncod.app.ui.theme.KriptonTheme
+import com.kriptoncod.app.ui.theme.pressScale
 
 enum class NodeAccent { Blue, Green, Red }
 
@@ -31,9 +34,11 @@ fun NodeCard(
     val stroke = BorderStroke(1.5.dp, border)
     val inner: @Composable () -> Unit = { Column(Modifier.padding(16.dp), content = content) }
     if (onClick != null) {
+        val interaction = remember { MutableInteractionSource() }
         Surface(
             onClick = onClick,
-            modifier = modifier,
+            modifier = modifier.pressScale(interaction),
+            interactionSource = interaction,
             shape = shape,
             color = fill,
             border = stroke,

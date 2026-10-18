@@ -4,16 +4,20 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class ThemePreferenceTest {
+    @Test fun onlySystemDarkAndLightRemain() {
+        assertEquals(listOf("system", "dark", "light"), ThemePreference.entries.map { it.key })
+    }
+
     @Test fun knownKeysRoundTrip() {
         ThemePreference.entries.forEach { assertEquals(it, ThemePreference.fromKey(it.key)) }
     }
 
-    @Test fun unknownOrNullFallsBackToBlack() {
-        assertEquals(ThemePreference.BLACK, ThemePreference.fromKey(null))
-        assertEquals(ThemePreference.BLACK, ThemePreference.fromKey("neon"))
+    @Test fun unknownOrNullFollowsSystem() {
+        assertEquals(ThemePreference.SYSTEM, ThemePreference.fromKey(null))
+        assertEquals(ThemePreference.SYSTEM, ThemePreference.fromKey("neon"))
     }
 
-    @Test fun legacyKeysFallBackToBlack() {
-        listOf("system", "light", "dark").forEach { assertEquals(ThemePreference.BLACK, ThemePreference.fromKey(it)) }
+    @Test fun removedDarkThemesMigrateToDark() {
+        listOf("black", "graphite", "sage").forEach { assertEquals(it, ThemePreference.DARK, ThemePreference.fromKey(it)) }
     }
 }

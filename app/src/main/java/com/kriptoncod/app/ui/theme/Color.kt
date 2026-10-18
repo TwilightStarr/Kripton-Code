@@ -4,7 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import com.kriptoncod.app.domain.ThemePreference
 
-// Sade, koyu temalar: nötr gri zemin + tek bir yumuşak vurgu rengi. Mavi kullanılmaz.
+// Sade temalar: nötr zemin + tek bir zümrüt vurgu. Koyu ve açık sürüm aynı kimliği taşır.
 
 @Immutable
 class KriptonColors(
@@ -20,6 +20,7 @@ class KriptonColors(
 /** Bir temanın tüm renkleri; Material şeması ve [KriptonColors] buradan türetilir. */
 @Immutable
 internal class ThemeSpec(
+    val isDark: Boolean,
     val background: Color,
     val surface: Color,
     val raised: Color,
@@ -35,59 +36,46 @@ internal class ThemeSpec(
 )
 
 internal object Palette {
-    /** Grafit: nötr koyu gri + zümrüt vurgu. */
-    val Graphite = ThemeSpec(
-        background = Color(0xFF131416),
-        surface = Color(0xFF1A1B1E),
-        raised = Color(0xFF222428),
-        border = Color(0xFF33363B),
-        text = Color(0xFFEDEDEF),
-        muted = Color(0xFF9A9DA5),
+    /** Koyu: derin nötr zemin + zümrüt vurgu. */
+    val Dark = ThemeSpec(
+        isDark = true,
+        background = Color(0xFF0E0F11),
+        surface = Color(0xFF16171A),
+        raised = Color(0xFF1E2024),
+        border = Color(0xFF30333A),
+        text = Color(0xFFEDEEF0),
+        muted = Color(0xFF9A9FA8),
         accent = Color(0xFF4ADE9B),
-        onAccent = Color(0xFF07140D),
+        onAccent = Color(0xFF04130B),
         success = Color(0xFF4ADE9B),
-        successFill = Color(0xFF15261D),
+        successFill = Color(0xFF13251C),
         danger = Color(0xFFF2706B),
         dangerFill = Color(0xFF2E1A1A),
     )
 
-    /** Siyah-Beyaz: saf siyah (AMOLED) + beyaz vurgu (varsayılan). */
-    val Black = ThemeSpec(
-        background = Color(0xFF000000),
-        surface = Color(0xFF0C0C0C),
-        raised = Color(0xFF171717),
-        border = Color(0xFF2B2B2B),
-        text = Color(0xFFF2F2F2),
-        muted = Color(0xFF8E8E93),
-        accent = Color(0xFFF2F2F2),
-        onAccent = Color(0xFF000000),
-        success = Color(0xFF5BD69B),
-        successFill = Color(0xFF0F1F17),
-        danger = Color(0xFFF2706B),
-        dangerFill = Color(0xFF2A1515),
-    )
-
-    /** Adaçayı: yeşilimsi koyu gri + sönük adaçayı vurgu. */
-    val Sage = ThemeSpec(
-        background = Color(0xFF111412),
-        surface = Color(0xFF181C19),
-        raised = Color(0xFF1F2420),
-        border = Color(0xFF303832),
-        text = Color(0xFFE8ECE8),
-        muted = Color(0xFF97A199),
-        accent = Color(0xFFA9CBAE),
-        onAccent = Color(0xFF0E1710),
-        success = Color(0xFF7FD6A0),
-        successFill = Color(0xFF16251B),
-        danger = Color(0xFFF2706B),
-        dangerFill = Color(0xFF2B1A19),
+    /** Açık: kırık beyaz zemin + koyu zümrüt vurgu (beyaz üstünde okunur). */
+    val Light = ThemeSpec(
+        isDark = false,
+        background = Color(0xFFF7F8F9),
+        surface = Color(0xFFFFFFFF),
+        raised = Color(0xFFEEF0F2),
+        border = Color(0xFFD3D8DE),
+        text = Color(0xFF16181B),
+        muted = Color(0xFF626973),
+        accent = Color(0xFF0B8A57),
+        onAccent = Color(0xFFFFFFFF),
+        success = Color(0xFF0B8A57),
+        successFill = Color(0xFFE1F4EA),
+        danger = Color(0xFFD13B34),
+        dangerFill = Color(0xFFFCE8E7),
     )
 }
 
-internal fun ThemePreference.spec(): ThemeSpec = when (this) {
-    ThemePreference.GRAPHITE -> Palette.Graphite
-    ThemePreference.BLACK -> Palette.Black
-    ThemePreference.SAGE -> Palette.Sage
+/** [systemDark]: SYSTEM seçiliyken cihazın koyu modda olup olmadığı. */
+internal fun ThemePreference.spec(systemDark: Boolean): ThemeSpec = when (this) {
+    ThemePreference.SYSTEM -> if (systemDark) Palette.Dark else Palette.Light
+    ThemePreference.DARK -> Palette.Dark
+    ThemePreference.LIGHT -> Palette.Light
 }
 
 internal fun ThemeSpec.toKriptonColors() = KriptonColors(

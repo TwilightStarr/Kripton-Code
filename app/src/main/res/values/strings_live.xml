@@ -66,4 +66,16 @@
     <string name="settings_crash_share">Son kaydı paylaş</string>
     <string name="settings_crash_share_title">Çökme kaydını paylaş</string>
     <string name="settings_crash_clear">Temizle</string>
+
+    <!-- Pil kısıtlaması -->
+    <string name="settings_battery_title">Pil ve arka plan</string>
+    <string name="settings_battery_hint">Uzun süren üretimler arka planda sürer. Bazı cihazlar (özellikle Xiaomi) pil tasarrufu için uygulamayı durdurabilir; kısıtlamayı kaldırırsan çalışma kesintisiz sürer.</string>
+    <string name="settings_battery_status_ok">Pil kısıtlaması yok (önerilen)</string>
+    <string name="settings_battery_status_restricted">Pil optimizasyonu açık — arka plandaki çalışmalar durdurulabilir</string>
+    <string name="settings_battery_request">Kısıtlamayı kaldır</string>
+    <string name="settings_battery_open_list">Pil ayarlarını aç</string>
+    <string name="settings_battery_oem">Üreticiye özel ayarlar</string>
+    <string name="settings_battery_oem_failed">Ayar ekranı açılamadı. Ayarlar > Uygulamalar > Krypton Code bölümünden pil ve otomatik başlatmayı elle ayarla.</string>
+    <string name="settings_battery_oem_xiaomi">Xiaomi / Redmi / POCO: \"Otomatik başlat\" iznini aç; ardından Ayarlar > Uygulamalar > Krypton Code > Pil tasarrufu bölümünde \"Kısıtlama yok\" seç.</string>
+    <string name="settings_battery_oem_generic">Cihazın kendi pil yöneticisinde Krypton Code için \"otomatik başlat\" ve \"arka planda çalış\" izinlerini aç.</string>
 </resources>

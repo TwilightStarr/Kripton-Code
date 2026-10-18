@@ -34,7 +34,7 @@
     <string name="web_code_none">Panoda kod bulunamadı. Önce e-postadaki kodu kopyala, kod kutusuna dokun, sonra tekrar dene.</string>
     <string name="web_login_done">Girişi tamamladım</string>
     <string name="web_key_title">API anahtarını al</string>
-    <string name="web_key_hint">Google, uygulama içinden girişe izin vermez. "Tarayıcıda aç"a bas, Google hesabınla giriş yapıp "Create API key" ile anahtarı oluştur, kopyala ve aşağıya yapıştır.</string>
+    <string name="web_key_hint">Google, uygulama içinden girişe izin vermez. \"Tarayıcıda aç\"a bas, Google hesabınla giriş yapıp \"Create API key\" ile anahtarı oluştur, kopyala ve aşağıya yapıştır.</string>
     <string name="web_key_label">Gemini API anahtarı</string>
     <string name="web_key_read">Sayfadan oku</string>
     <string name="web_key_open_browser">Tarayıcıda aç (AI Studio)</string>

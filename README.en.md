@@ -22,6 +22,8 @@ A code-focused, multi-AI generation tool for Android. Split a large job into sma
 - **Local crash log (ACRA):** Crash details stay on the device and nothing is sent over the network; share or delete them from Settings.
 - **Quality tooling:** ktlint in CI (report-only for now), LeakCanary in debug builds, weekly dependency updates via Dependabot.
 - **Theme:** System / light / dark.
+- **Animations:** A state-aware logo (idle, working, waiting, success, error, intro; working cycles through orbit/ripple/trace variants), screen transitions, staggered reveals, press feedback and a pulse ring on running nodes. Can be turned off in Settings.
+- **Battery restriction:** Settings shows the status and opens Android's "unrestricted" prompt plus OEM auto-start screens (Xiaomi, Huawei, Oppo, Vivo, Samsung, ...).
 - **Security:** Keys and tokens are encrypted with AES-GCM via Android Keystore and kept on-device only; backups are disabled.
 
 ## Requirements

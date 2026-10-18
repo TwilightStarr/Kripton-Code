@@ -63,6 +63,7 @@ import com.kriptoncod.app.ui.components.KButtonStyle
 import com.kriptoncod.app.ui.components.NodeAccent
 import com.kriptoncod.app.ui.components.NodeCard
 import com.kriptoncod.app.ui.theme.KriptonTheme
+import com.kriptoncod.app.ui.theme.appear
 
 @Composable
 fun AisScreen(onAdd: () -> Unit, onAddWeb: () -> Unit, onEdit: (Long) -> Unit, onQuickAdd: (String) -> Unit = {}) {
@@ -135,8 +136,13 @@ private fun AisContent(
                     color = KriptonTheme.colors.muted,
                 )
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    WebProvider.entries.forEach { p ->
-                        KButton(text = "+ ${p.displayName}", onClick = { onQuickAdd(p.id) }, style = KButtonStyle.Outline)
+                    WebProvider.entries.forEachIndexed { i, p ->
+                        KButton(
+                            text = "+ ${p.displayName}",
+                            onClick = { onQuickAdd(p.id) },
+                            style = KButtonStyle.Outline,
+                            modifier = Modifier.appear(i),
+                        )
                     }
                 }
             }

@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
             // Sistemde "animasyonları kaldır" açıksa uygulama da animasyon oynatmaz.
             val animationsOn = animationsPref && ValueAnimator.areAnimatorsEnabled()
             val scope = rememberCoroutineScope()
-            KriptonCodTheme(preference = preference) {
+            KriptonCodTheme(preference = preference, animate = animationsOn) {
                 CompositionLocalProvider(LocalAnimationsEnabled provides animationsOn) {
                     AppRoot(
                         themePreference = preference,

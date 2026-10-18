@@ -27,6 +27,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import com.kriptoncod.app.ui.theme.LocalAnimationsEnabled
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
@@ -235,6 +245,7 @@ fun RunGraph(
                         modifier = Modifier
                             .offset((p.x - p.size / 2f).dp, (p.y - p.size / 2f).dp)
                             .size(p.size.dp)
+                            .pulseRing(state == JobState.RUNNING, scheme.primary)
                             .clip(CircleShape)
                             .background(fill)
                             .border(borderWidth, if (selected) scheme.primary else border, CircleShape)
@@ -301,3 +312,23 @@ internal const val GRAPH_MIN_SIZE = 48f
 internal const val GRAPH_MAX_SIZE = 84f
 internal const val GRAPH_GAP = 20f
 internal const val GRAPH_PADDING = 16f
+
+/** Çalışan düğümün çevresinden dışa doğru yayılıp sönen halka (animasyonlar kapalıysa çizilmez). */
+@Composable
+private fun Modifier.pulseRing(active: Boolean, color: Color): Modifier {
+    if (!active || !LocalAnimationsEnabled.current) return this
+    val phase = rememberInfiniteTransition(label = "nodePulse").animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1700, easing = LinearOutSlowInEasing), RepeatMode.Restart),
+        label = "nodePulsePhase",
+    )
+    return drawBehind {
+        val t = phase.value
+        drawCircle(
+            color = color.copy(alpha = 0.55f * (1f - t)),
+            radius = size.minDimension / 2f + 14.dp.toPx() * t,
+            style = Stroke(width = 2.dp.toPx()),
+        )
+    }
+}

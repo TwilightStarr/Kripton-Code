@@ -9,6 +9,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Switch
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import android.widget.Toast
+import com.kriptoncod.app.data.power.Oem
+import com.kriptoncod.app.data.power.PowerSettings
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
@@ -136,6 +142,69 @@ fun SettingsScreen(
             }
         }
 
+        // Pil kısıtlaması: Xiaomi gibi cihazlarda arka plan işi sonlandırılmasın. Ekrandan dönünce durum yenilenir.
+        var batteryOk by remember { mutableStateOf(PowerSettings.isIgnoringBatteryOptimizations(context)) }
+        LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { batteryOk = PowerSettings.isIgnoringBatteryOptimizations(context) }
+        val oem = remember { PowerSettings.detectOem(Build.MANUFACTURER, Build.BRAND) }
+        val oemFailed = stringResource(R.string.settings_battery_oem_failed)
+        NodeCard(modifier = Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.settings_battery_title), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(R.string.settings_battery_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = k.muted,
+                )
+                Text(
+                    stringResource(
+                        if (batteryOk) R.string.settings_battery_status_ok else R.string.settings_battery_status_restricted,
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (batteryOk) k.arrow else MaterialTheme.colorScheme.tertiary,
+                )
+                if (!batteryOk) {
+                    KButton(
+                        text = stringResource(R.string.settings_battery_request),
+                        onClick = {
+                            // Doğrudan iletişim kutusu; açılamazsa pil optimizasyonu listesine, o da olmazsa uygulama ayrıntılarına düş.
+                            PowerSettings.openFirst(
+                                context,
+                                listOf(PowerSettings.requestIntent(context), PowerSettings.listIntent(), PowerSettings.detailsIntent(context)),
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                KButton(
+                    text = stringResource(R.string.settings_battery_open_list),
+                    onClick = {
+                        PowerSettings.openFirst(context, listOf(PowerSettings.listIntent(), PowerSettings.detailsIntent(context)))
+                    },
+                    style = KButtonStyle.Outline,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (oem != Oem.OTHER) {
+                    Text(
+                        stringResource(
+                            if (oem == Oem.XIAOMI) R.string.settings_battery_oem_xiaomi else R.string.settings_battery_oem_generic,
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = k.muted,
+                    )
+                    KButton(
+                        text = stringResource(R.string.settings_battery_oem),
+                        onClick = {
+                            if (!PowerSettings.openOemSettings(context, oem)) {
+                                Toast.makeText(context, oemFailed, Toast.LENGTH_LONG).show()
+                            }
+                        },
+                        style = KButtonStyle.Outline,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
+
         // Yerel çökme günlüğü (ACRA): kayıtlar yalnız cihazda; paylaşmak kullanıcının elinde.
         val crashStore = remember { CrashLogStore.default(context) }
         var crashCount by remember { mutableIntStateOf(0) }
@@ -253,7 +322,7 @@ fun SettingsScreen(
 }
 
 private fun ThemePreference.labelRes(): Int = when (this) {
-    ThemePreference.GRAPHITE -> R.string.theme_graphite
-    ThemePreference.BLACK -> R.string.theme_black
-    ThemePreference.SAGE -> R.string.theme_sage
+    ThemePreference.SYSTEM -> R.string.theme_system
+    ThemePreference.DARK -> R.string.theme_dark
+    ThemePreference.LIGHT -> R.string.theme_light
 }

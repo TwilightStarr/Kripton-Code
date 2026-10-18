@@ -43,6 +43,8 @@ import com.kriptoncod.app.ui.adaptive.WindowClass
 import com.kriptoncod.app.ui.components.KButton
 import com.kriptoncod.app.ui.components.KButtonStyle
 import com.kriptoncod.app.ui.components.KriptonCodLogo
+import com.kriptoncod.app.ui.components.LogoMood
+import com.kriptoncod.app.ui.theme.appear
 import com.kriptoncod.app.ui.components.NodeAccent
 import com.kriptoncod.app.ui.components.NodeCard
 import com.kriptoncod.app.ui.navigation.Route
@@ -88,7 +90,10 @@ fun HomeScreen(
     val k = KriptonTheme.colors
 
     val hero: @Composable () -> Unit = {
-        KriptonCodLogo(logoSize = if (wide) 160.dp else 120.dp, busy = LocalAppBusy.current)
+        KriptonCodLogo(
+            logoSize = if (wide) 160.dp else 120.dp,
+            mood = if (LocalAppBusy.current) LogoMood.Working else LogoMood.Idle,
+        )
         Text(stringResource(R.string.home_title), style = MaterialTheme.typography.headlineMedium)
         Text(
             stringResource(R.string.home_subtitle),
@@ -99,7 +104,7 @@ fun HomeScreen(
     }
     val banner: @Composable () -> Unit = {
         activeRun?.let { r ->
-            NodeCard(modifier = Modifier.fillMaxWidth(), accent = NodeAccent.Green, onClick = { onOpenRun(r.id) }) {
+            NodeCard(modifier = Modifier.fillMaxWidth().appear(1), accent = NodeAccent.Green, onClick = { onOpenRun(r.id) }) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Column(Modifier.weight(1f)) {
                         Text(stringResource(R.string.home_active_run), style = MaterialTheme.typography.titleSmall)
@@ -115,7 +120,7 @@ fun HomeScreen(
         }
     }
     val stats: @Composable () -> Unit = {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(Modifier.fillMaxWidth().appear(2), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             StatCard(accounts.size, stringResource(R.string.home_stat_ais), { onOpenRoute(Route.Ais) }, Modifier.weight(1f))
             StatCard(sets.size, stringResource(R.string.home_stat_sets), { onOpenRoute(Route.Prompts) }, Modifier.weight(1f))
             StatCard(runs.size, stringResource(R.string.home_stat_runs), { onOpenRoute(Route.History) }, Modifier.weight(1f))
@@ -126,7 +131,7 @@ fun HomeScreen(
     }
     val guide: @Composable () -> Unit = {
         if (nextAction != null) {
-            NodeCard(modifier = Modifier.fillMaxWidth()) {
+            NodeCard(modifier = Modifier.fillMaxWidth().appear(3)) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(stringResource(R.string.home_quick_title), style = MaterialTheme.typography.titleMedium)
                     StepRow(1, stringResource(R.string.home_step1_title), stringResource(R.string.home_step1_hint), accounts.isNotEmpty())
@@ -154,8 +159,8 @@ fun HomeScreen(
                         style = KButtonStyle.Outline,
                     )
                 }
-                recent.forEach { r ->
-                    NodeCard(modifier = Modifier.fillMaxWidth(), onClick = { onOpenRun(r.id) }) {
+                recent.forEachIndexed { i, r ->
+                    NodeCard(modifier = Modifier.fillMaxWidth().appear(4 + i), onClick = { onOpenRun(r.id) }) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Column(Modifier.weight(1f)) {
                                 Text("${stringResource(R.string.run_title)} #${r.id}", style = MaterialTheme.typography.titleSmall)
