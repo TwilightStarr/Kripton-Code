@@ -38,7 +38,14 @@ jobs:
         run: |
           BASELINE=""
           [ -f ktlint-baseline.xml ] && BASELINE="--baseline=ktlint-baseline.xml"
-          ./ktlint --relative $BASELINE "app/src/**/*.kt" "*.kts"
+          set -o pipefail
+          ./ktlint --relative $BASELINE "app/src/**/*.kt" "*.kts" 2>&1 | tee ktlint.txt
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ktlint-hatalari
+          path: ktlint.txt
+          if-no-files-found: ignore
 
   build:
     runs-on: ubuntu-24.04
