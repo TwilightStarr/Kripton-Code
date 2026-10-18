@@ -5,6 +5,8 @@ import kotlinx.coroutines.flow.first
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.kriptoncod.app.KriptonCodApp
+import com.kriptoncod.app.R
+import com.kriptoncod.app.widget.RunWidgetUpdater
 import com.kriptoncod.app.data.run.DispatchOutcome
 import com.kriptoncod.app.domain.RunStatus
 import kotlin.coroutines.cancellation.CancellationException
@@ -22,40 +24,49 @@ class PromptDispatchWorker(context: Context, params: WorkerParameters) : Corouti
         val notify = runCatching { container.themeStore.notifyFlow.first() }.getOrDefault(true)
 
         // Arka planda kısılmamak için HER çalışma ön plana alınır (web oturumu WebView'ı da buna bağlıdır).
-        runCatching { setForeground(RunNotifier.foregroundInfo(applicationContext, "Üretim sürüyor…")) }
+        val ctx = applicationContext
+        runCatching {
+            setForeground(RunNotifier.foregroundInfo(ctx, ctx.getString(R.string.notif_running), runId = runId))
+        }
+        RunNotifier.clearPaused(ctx, runId)
+        RunWidgetUpdater.refresh(ctx)
 
         return try {
             val outcome = container.promptDispatcher.process(runId) { done, total ->
                 runCatching {
-                    setForeground(RunNotifier.foregroundInfo(applicationContext, "$done / $total adım tamamlandı", done, total))
+                    setForeground(
+                        RunNotifier.foregroundInfo(ctx, ctx.getString(R.string.notif_progress, done, total), done, total, runId),
+                    )
                 }
+                RunWidgetUpdater.refresh(ctx)
             }
             when (outcome) {
                 is DispatchOutcome.Wait -> {
                     container.runScheduler.resume(runId, outcome.delayMs)
                     if (notify && outcome.delayMs >= LONG_WAIT_MS) {
                         RunNotifier.event(
-                            applicationContext, runId, RunNotifier.KIND_WAITING,
-                            "Krypton Code — bekleniyor",
-                            "Kota dolu ya da kullanılabilir hesap yok. Süre dolunca kendiliğinden devam eder.",
+                            ctx, runId, RunNotifier.KIND_WAITING,
+                            ctx.getString(R.string.notif_waiting_title),
+                            ctx.getString(R.string.notif_waiting_text),
                         )
                     }
                 }
                 is DispatchOutcome.Finished -> if (notify) {
                     if (outcome.status == RunStatus.DONE) {
                         RunNotifier.event(
-                            applicationContext, runId, RunNotifier.KIND_DONE,
-                            "Krypton Code — tamamlandı", "Çalışma #$runId bitti. Zip hazır.",
+                            ctx, runId, RunNotifier.KIND_DONE,
+                            ctx.getString(R.string.notif_done_title), ctx.getString(R.string.notif_done_text, runId),
                         )
                     } else if (outcome.status == RunStatus.FAILED) {
                         RunNotifier.event(
-                            applicationContext, runId, RunNotifier.KIND_FAILED,
-                            "Krypton Code — hata", "Çalışma #$runId başarısız oldu. Ayrıntı için uygulamayı aç.",
+                            ctx, runId, RunNotifier.KIND_FAILED,
+                            ctx.getString(R.string.notif_failed_title), ctx.getString(R.string.notif_failed_text, runId),
                         )
                     }
                 }
                 is DispatchOutcome.Cancelled -> Unit
             }
+            RunWidgetUpdater.refresh(ctx)
             Result.success()
         } catch (e: CancellationException) {
             throw e // WorkManager durdurdu; zincir yeniden planlanır, RUNNING işler process() başında toparlanır
@@ -69,8 +80,8 @@ class PromptDispatchWorker(context: Context, params: WorkerParameters) : Corouti
                 }
                 if (notify) {
                     RunNotifier.event(
-                        applicationContext, runId, RunNotifier.KIND_FAILED,
-                        "Krypton Code — hata", "Çalışma #$runId beklenmedik bir hatayla durdu.",
+                        ctx, runId, RunNotifier.KIND_FAILED,
+                        ctx.getString(R.string.notif_failed_title), ctx.getString(R.string.notif_crashed_text, runId),
                     )
                 }
                 Result.failure()

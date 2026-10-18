@@ -68,6 +68,8 @@ import com.kriptoncod.app.ui.components.KButton
 import com.kriptoncod.app.ui.components.KButtonStyle
 import com.kriptoncod.app.ui.components.KriptonLoader
 import com.kriptoncod.app.ui.components.NodeAccent
+import com.kriptoncod.app.ui.labelRes
+import com.kriptoncod.app.work.RunControl
 import com.kriptoncod.app.ui.components.OutputMarkdown
 import com.kriptoncod.app.ui.components.OutputMarkdownView
 import com.kriptoncod.app.ui.components.RunGraph
@@ -81,10 +83,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** İptal edilebilir durumlar. */
-private val CANCELLABLE = setOf(
-    RunStatus.PREPARING, RunStatus.RUNNING, RunStatus.PUSHING, RunStatus.CI_WAITING, RunStatus.FIXING,
-    RunStatus.PAUSED,
-)
+private val CANCELLABLE = RunControl.CANCELLABLE
 
 /**
  * Bir run'ın düğüm grafiği: katalog çıkarma → paralel çalışan yapay zekalar → katalog birleştirme →
@@ -161,14 +160,17 @@ fun RunScreen(
     val power = accounts.associate { it.id to it.powerRank }
     val maxPower = (accounts.maxOfOrNull { it.powerRank } ?: 1).coerceAtLeast(1)
     val workNumbers = jobs.filter { it.kind == JobKind.WORK }.mapIndexed { i, j -> j.id to i + 1 }.toMap()
+    val labelPlan = stringResource(R.string.graph_label_plan)
+    val labelMerge = stringResource(R.string.graph_label_merge)
+    val labelFinal = stringResource(R.string.graph_label_final)
     val nodes = jobs.map { j ->
         val weight = j.accountId?.let { power[it] }?.let { it.toFloat() / maxPower }
             ?: if (j.kind == JobKind.PLAN || j.kind == JobKind.FINAL_MERGE) 1f else 0.3f
         val label = when (j.kind) {
-            JobKind.PLAN -> "K"
+            JobKind.PLAN -> labelPlan
             JobKind.WORK -> workNumbers[j.id].toString()
-            JobKind.CATALOG_MERGE -> "B"
-            JobKind.FINAL_MERGE -> "N"
+            JobKind.CATALOG_MERGE -> labelMerge
+            JobKind.FINAL_MERGE -> labelFinal
         }
         GraphNodeUi(j.id, j.kind, j.catalog, j.state, weight, label)
     }
@@ -443,6 +445,9 @@ private fun NodeDetail(
         output = container.runRepository.readOutput(job.id)
     }
     val text = output
+    // Üretim sürerken (kalıcı çıktı henüz yokken) akan metin; iş bitince kalıcı çıktı devralır.
+    val liveFlow = remember(job.id) { container.liveOutput.observe(job.id) }
+    val liveText by liveFlow.collectAsStateWithLifecycle(initialValue = container.liveOutput.current(job.id))
 
     // Markdown bölümleri ve sözdizimi uyarıları ana iş parçacığını kilitlemesin diye arka planda hesaplanır.
     var formatted by rememberSaveable { mutableStateOf(true) }
@@ -568,6 +573,8 @@ private fun NodeDetail(
         val chunks = remember(text, formatted) { if (formatted) emptyList() else text?.let { chunkLines(it) }.orEmpty() }
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when {
+                text == null && liveText != null && job.state == JobState.RUNNING ->
+                    LiveStreamView(liveText.orEmpty())
                 text == null -> Text(
                     stringResource(R.string.run_node_no_output),
                     style = MaterialTheme.typography.bodySmall,
@@ -610,6 +617,40 @@ private fun NodeDetail(
     }
 }
 
+/** Canlı akış: yalnız SON [LIVE_TAIL_CHARS] karakter gösterilir; yeni metin geldikçe en alta kayar. */
+@Composable
+private fun LiveStreamView(text: String) {
+    val k = KriptonTheme.colors
+    val shown = remember(text) { liveTail(text) }
+    val scroll = rememberScrollState()
+    LaunchedEffect(shown.length) { scroll.scrollTo(scroll.maxValue) }
+    Column(Modifier.fillMaxSize()) {
+        Text(
+            stringResource(R.string.node_live_title),
+            style = MaterialTheme.typography.labelLarge,
+            color = k.muted,
+        )
+        Spacer(Modifier.height(4.dp))
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(scroll)) {
+            Text(
+                shown.ifEmpty { stringResource(R.string.node_live_waiting) },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
+}
+
+private const val LIVE_TAIL_CHARS = 12_000
+
+/** Son [max] karakter; satır ortasından başlamasın diye ilk satır sonuna kadar atlanır (satır yoksa olduğu gibi). */
+internal fun liveTail(text: String, max: Int = LIVE_TAIL_CHARS): String {
+    if (text.length <= max) return text
+    val cut = text.substring(text.length - max)
+    val nl = cut.indexOf('\n')
+    return if (nl in 0 until cut.length - 1) cut.substring(nl + 1) else cut
+}
+
 /** Metni ~120 satırlık parçalara böler; hiçbir karakter atılmaz. */
 private fun chunkLines(text: String, linesPerChunk: Int = 120): List<String> {
     val out = ArrayList<String>()
@@ -624,37 +665,26 @@ private fun chunkLines(text: String, linesPerChunk: Int = 120): List<String> {
     return out
 }
 
-internal fun kindLabel(kind: JobKind): String = when (kind) {
-    JobKind.PLAN -> "Katalog çıkarma"
-    JobKind.WORK -> "Prompt"
-    JobKind.CATALOG_MERGE -> "Katalog birleştirme"
-    JobKind.FINAL_MERGE -> "Nihai birleştirme"
-}
+@Composable
+internal fun kindLabel(kind: JobKind): String = stringResource(kind.labelRes())
 
 @Composable
 private fun RunStatusBadge(status: RunStatus) {
-    val (label, accent) = when (status) {
-        RunStatus.PREPARING -> "Hazırlanıyor" to NodeAccent.Blue
-        RunStatus.RUNNING -> "Çalışıyor" to NodeAccent.Blue
-        RunStatus.PUSHING -> "Gönderiliyor" to NodeAccent.Blue
-        RunStatus.CI_WAITING -> "CI Bekleniyor" to NodeAccent.Blue
-        RunStatus.FIXING -> "Düzeltiliyor" to NodeAccent.Blue
-        RunStatus.PAUSED -> "Duraklatıldı" to NodeAccent.Blue
-        RunStatus.DONE -> "Tamamlandı" to NodeAccent.Green
-        RunStatus.FAILED -> "Başarısız" to NodeAccent.Red
-        RunStatus.CANCELLED -> "İptal Edildi" to NodeAccent.Red
-    }
-    KBadge(text = label, accent = accent)
+    KBadge(text = stringResource(status.labelRes()), accent = runStatusAccent(status))
+}
+
+internal fun runStatusAccent(status: RunStatus): NodeAccent = when (status) {
+    RunStatus.DONE -> NodeAccent.Green
+    RunStatus.FAILED, RunStatus.CANCELLED -> NodeAccent.Red
+    else -> NodeAccent.Blue
 }
 
 @Composable
 internal fun JobStateBadge(state: JobState) {
-    val (label, accent) = when (state) {
-        JobState.PENDING -> "Bekliyor" to NodeAccent.Blue
-        JobState.RUNNING -> "Çalışıyor" to NodeAccent.Blue
-        JobState.WAITING -> "Kota bekleniyor" to NodeAccent.Blue
-        JobState.DONE -> "Tamam" to NodeAccent.Green
-        JobState.FAILED -> "Hata" to NodeAccent.Red
+    val accent = when (state) {
+        JobState.DONE -> NodeAccent.Green
+        JobState.FAILED -> NodeAccent.Red
+        else -> NodeAccent.Blue
     }
-    KBadge(text = label, accent = accent)
+    KBadge(text = stringResource(state.labelRes()), accent = accent)
 }

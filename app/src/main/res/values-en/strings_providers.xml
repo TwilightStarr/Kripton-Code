@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="provider_gemini">Google Gemini</string>
+    <string name="provider_groq">Groq</string>
+    <string name="provider_openrouter">OpenRouter</string>
+    <string name="provider_mistral">Mistral</string>
+    <string name="provider_cerebras">Cerebras</string>
+    <string name="provider_deepseek">DeepSeek</string>
+    <string name="provider_nvidia">NVIDIA NIM</string>
+    <string name="provider_custom">OpenAI-compatible (custom)</string>
+    <string name="provider_kimi">Moonshot Kimi</string>
+    <string name="provider_kimi_auth">Kimi session</string>
+
+    <!-- Proxy (CLIProxyAPI compatible) -->
+    <string name="provider_proxy">Proxy (CLIProxyAPI compatible)</string>
+    <string name="provider_proxy_short">Proxy</string>
+    <string name="provider_proxy_badge">Your own proxy</string>
+    <string name="proxy_hint">Enter the address of your own (or a friend\'s) CLIProxyAPI server and that server\'s client key. You can add as many proxy accounts as you like for the same provider.</string>
+    <string name="proxy_name_label">Account name (optional)</string>
+    <string name="proxy_name_hint">E.g. My account, My friend</string>
+    <string name="proxy_url_label">Proxy address</string>
+    <string name="proxy_url_hint">E.g. http://192.168.1.20:8317 — plain http is accepted only for local network addresses (localhost, LAN, Tailscale); internet addresses require https.</string>
+    <string name="proxy_key_label">Proxy client key</string>
+    <string name="step_proxy_connection">2. Proxy connection</string>
+    <string name="step_upstream">3. Choose a provider</string>
+    <string name="step_model_proxy">4. Choose a model</string>
+    <string name="upstream_all">All</string>
+    <string name="upstream_claude">Claude</string>
+    <string name="upstream_gemini">Gemini</string>
+    <string name="upstream_openai">OpenAI</string>
+    <string name="upstream_deepseek">DeepSeek</string>
+    <string name="upstream_kimi">Kimi</string>
+    <string name="upstream_other">Other</string>
+    <string name="account_proxy_line">Proxy · %1$s</string>
+    <string name="err_proxy_url_empty">Enter the proxy address.</string>
+    <string name="err_proxy_url_malformed">The address is invalid. Example: http://192.168.1.20:8317</string>
+    <string name="err_proxy_url_credentials">Don\'t put a username/password in the address; enter the key in its own field.</string>
+    <string name="err_proxy_url_query">The address can\'t contain a question mark (?) or #.</string>
+    <string name="err_proxy_url_insecure">Internet addresses require https. Plain http can only be used for localhost and local network addresses.</string>
+
+    <string name="kimi_auth_title">Connect with Kimi</string>
+    <string name="kimi_auth_hint">Sign in with your Kimi (kimi.com) email and password. Credentials are stored encrypted on your device only.</string>
+    <string name="kimi_auth_email_label">Email</string>
+    <string name="kimi_auth_password_label">Password</string>
+    <string name="kimi_auth_connect">Connect</string>
+    <string name="kimi_auth_disconnect">Disconnect</string>
+    <string name="kimi_auth_connected">Kimi account connected — signed in</string>
+    <string name="kimi_auth_needs_reauth">Session expired — sign in again</string>
+    <string name="kimi_auth_loading">Checking session…</string>
+    <string name="kimi_auth_sign_in_failed">Sign-in failed. Check your email and password.</string>
+    <string name="kimi_auth_refresh_failed">Session refresh failed.</string>
+    <string name="kimi_auth_sign_out_failed">Sign-out failed.</string>
+</resources>

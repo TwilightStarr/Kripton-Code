@@ -1,13 +1,17 @@
 package com.kriptoncod.app.ui.screens
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Switch
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -15,7 +19,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kriptoncod.app.KriptonCodApp
+import com.kriptoncod.app.data.crash.CrashLogStore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -126,6 +133,56 @@ fun SettingsScreen(
                         }
                     },
                 )
+            }
+        }
+
+        // Yerel çökme günlüğü (ACRA): kayıtlar yalnız cihazda; paylaşmak kullanıcının elinde.
+        val crashStore = remember { CrashLogStore.default(context) }
+        var crashCount by remember { mutableIntStateOf(0) }
+        LaunchedEffect(Unit) { crashCount = withContext(Dispatchers.IO) { crashStore.list().size } }
+        val crashShareTitle = stringResource(R.string.settings_crash_share_title)
+        NodeCard(modifier = Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.settings_crash_title), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(R.string.settings_crash_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = k.muted,
+                )
+                Text(
+                    if (crashCount == 0) stringResource(R.string.settings_crash_none)
+                    else stringResource(R.string.settings_crash_count, crashCount),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                if (crashCount > 0) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        KButton(
+                            text = stringResource(R.string.settings_crash_share),
+                            onClick = {
+                                scope.launch {
+                                    val text = withContext(Dispatchers.IO) { crashStore.latestText() } ?: return@launch
+                                    val send = Intent(Intent.ACTION_SEND)
+                                        .setType("text/plain")
+                                        .putExtra(Intent.EXTRA_TEXT, text)
+                                    runCatching { context.startActivity(Intent.createChooser(send, crashShareTitle)) }
+                                }
+                            },
+                            style = KButtonStyle.Outline,
+                            modifier = Modifier.weight(1f),
+                        )
+                        KButton(
+                            text = stringResource(R.string.settings_crash_clear),
+                            onClick = {
+                                scope.launch {
+                                    withContext(Dispatchers.IO) { crashStore.clear() }
+                                    crashCount = 0
+                                }
+                            },
+                            style = KButtonStyle.Danger,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
             }
         }
 

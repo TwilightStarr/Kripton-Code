@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Web session (email sign-in, no API key) screen strings -->
+<resources>
+    <string name="ais_add_web">+ With email</string>
+    <string name="web_title">Add account with email</string>
+    <string name="web_relogin_title">Sign in again</string>
+    <string name="web_edit_title">Edit account</string>
+    <string name="web_edit_relogin">Sign in again</string>
+    <string name="web_edit_relogin_hint">You don\'t need to sign in to change the name. If the session has dropped, you can sign in again below.</string>
+    <string name="web_pick_hint">Choose a provider, then sign in with your email on that provider\'s own sign-in page. The app never sees your password; only session cookies are stored encrypted on your device.</string>
+    <string name="web_label">Account name (e.g. your email)</string>
+    <string name="web_continue">Continue</string>
+    <string name="web_provider_claude">Claude</string>
+    <string name="web_provider_chatgpt">ChatGPT</string>
+    <string name="web_provider_kimi">Kimi</string>
+    <string name="web_provider_gemini">Gemini</string>
+    <string name="web_hint_claude">Output: the zip produced by Claude is downloaded and unpacked; if no zip arrives, code blocks are used.</string>
+    <string name="web_hint_chatgpt">Output: the file/zip produced by ChatGPT is downloaded; if none arrives, code blocks are used.</string>
+    <string name="web_hint_kimi">Output: a long code block; if the reply is cut off, \"continue\" is sent automatically. Kimi\'s sign-in page offers phone, Google, or SSO (no email). You can try \"Continue with Google\"; if Google rejects in-app sign-in, use phone sign-in or an API key.</string>
+    <string name="web_hint_gemini">Output: the Gemini web interface is not used. You get an API key from Google AI Studio in your phone\'s browser and paste it here; outputs are produced with the official API.</string>
+
+    <string name="web_warning_title">Your account may be closed</string>
+    <string name="web_warning_claude">Using a Claude web account automatically with this app violates Anthropic\'s terms of use. Your account may be restricted or closed without notice. Only add accounts you can afford to lose.</string>
+    <string name="web_warning_gemini">Automating actions with your Google account may be considered a violation of Google\'s terms, and your account may be restricted or closed. Don\'t use your main Google account; use one you can afford to lose.</string>
+    <string name="web_warning_accept">I understand the risk and add it at my own responsibility</string>
+
+    <string name="web_login_hint">Sign in on the page. You can try \"Continue with Google\" directly; if Google rejects in-app sign-in, a warning appears. When the chat screen shows up, tap \"I\'ve finished signing in\" at the top.</string>
+    <string name="web_google_blocked">Google rejected sign-in in this window (Google blocks in-app browsers; the app can\'t get around this). Sign in with a phone number, or add Kimi with an API key.</string>
+    <string name="web_help">Help</string>
+    <string name="web_kimi_note">Kimi allows sign-in with phone, Google, or SSO; there is no email option.</string>
+    <string name="web_login_done">I\'ve finished signing in</string>
+    <string name="web_key_title">Get the API key</string>
+    <string name="web_key_hint">Google doesn\'t allow sign-in from within an app. Tap \"Open in browser\", sign in with your Google account, create a key with \"Create API key\", copy it, and paste it below.</string>
+    <string name="web_key_label">Gemini API key</string>
+    <string name="web_key_read">Read from page</string>
+    <string name="web_key_open_browser">Open in browser (AI Studio)</string>
+    <string name="web_key_save">Verify and save</string>
+    <string name="web_key_not_found">No key found on the page. Create the key first or paste it manually.</string>
+    <string name="web_key_invalid">The key format is invalid.</string>
+    <string name="web_key_rejected">The key was not accepted by Gemini.</string>
+    <string name="web_err_no_session">No session found. Finish signing in and try again.</string>
+    <string name="web_err_save">Couldn\'t save the account.</string>
+    <string name="web_saving">Saving…</string>
+    <string name="web_default_name">%1$s %2$d</string>
+    <string name="web_use_api_key">Add with an API key (recommended)</string>
+    <string name="web_use_token">Add with a token</string>
+    <string name="web_token_hint">In your phone\'s browser (Chrome), sign in to kimi.com with Google or phone. Then copy the script below, paste it into the address bar and type \"javascript:\" at the START by hand (Chrome strips that part when pasting). Copy all of the text in the box that appears and paste it below. Note: if Kimi doesn\'t keep the session in these records, this route won\'t work; use an API key then.</string>
+    <string name="web_token_copy">Copy script</string>
+    <string name="web_token_label">Copied text</string>
+    <string name="web_token_invalid">The text couldn\'t be parsed. Paste the entire {…} text shown by the script.</string>
+</resources>

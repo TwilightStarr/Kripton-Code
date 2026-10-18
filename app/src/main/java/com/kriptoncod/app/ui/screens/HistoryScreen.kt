@@ -31,7 +31,7 @@ import com.kriptoncod.app.data.db.RunRecord
 import com.kriptoncod.app.domain.RunStatus
 import com.kriptoncod.app.ui.components.EmptyState
 import com.kriptoncod.app.ui.components.KBadge
-import com.kriptoncod.app.ui.components.NodeAccent
+import com.kriptoncod.app.ui.labelRes
 import com.kriptoncod.app.ui.components.NodeCard
 import com.kriptoncod.app.ui.theme.KriptonTheme
 import java.text.SimpleDateFormat
@@ -110,16 +110,5 @@ private fun RunHistoryRow(run: RunRecord, onClick: () -> Unit) {
 
 @Composable
 internal fun HistoryStatusBadge(status: RunStatus) {
-    val (label, accent) = when (status) {
-        RunStatus.PREPARING -> "Hazırlanıyor" to NodeAccent.Blue
-        RunStatus.RUNNING -> "Çalışıyor" to NodeAccent.Blue
-        RunStatus.PUSHING -> "Gönderiliyor" to NodeAccent.Blue
-        RunStatus.PAUSED -> "Duraklatıldı" to NodeAccent.Blue
-        RunStatus.CI_WAITING -> "CI Bekleniyor" to NodeAccent.Blue
-        RunStatus.FIXING -> "Düzeltiliyor" to NodeAccent.Blue
-        RunStatus.DONE -> "Tamamlandı" to NodeAccent.Green
-        RunStatus.FAILED -> "Başarısız" to NodeAccent.Red
-        RunStatus.CANCELLED -> "İptal Edildi" to NodeAccent.Red
-    }
-    KBadge(text = label, accent = accent)
+    KBadge(text = stringResource(status.labelRes()), accent = runStatusAccent(status))
 }

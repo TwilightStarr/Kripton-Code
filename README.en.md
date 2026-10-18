@@ -16,6 +16,11 @@ A code-focused, multi-AI generation tool for Android. Split a large job into sma
 - **Background runs:** Generation continues through WorkManager; interrupted jobs are recovered.
 - **History:** Generated outputs and prepared zip files are stored on the device.
 - **GitHub + CI loop:** Pushes output to a new branch as a single commit, waits for the Actions result, and on failure feeds a log summary back to the AI to attempt a fix.
+- **Live streaming:** For API accounts, a node's output streams in as it is generated (SSE via `okhttp-sse`); the stored output takes over when the job finishes. Providers that don't support streaming fall back to a single response automatically. Web-session accounts are not streamed.
+- **Notification controls and home-screen widget:** The ongoing-run notification has **Pause / Cancel** buttons (**Resume / Cancel** when paused). A Jetpack Glance widget shows the running run's status, progress and current node without opening the app.
+- **Bilingual UI:** Turkish (default) and English (`values-en`); Android 13+ supports a per-app language.
+- **Local crash log (ACRA):** Crash details stay on the device and nothing is sent over the network; share or delete them from Settings.
+- **Quality tooling:** ktlint in CI (report-only for now), LeakCanary in debug builds, weekly dependency updates via Dependabot.
 - **Theme:** System / light / dark.
 - **Security:** Keys and tokens are encrypted with AES-GCM via Android Keystore and kept on-device only; backups are disabled.
 

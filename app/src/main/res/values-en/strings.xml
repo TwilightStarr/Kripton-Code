@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name">Krypton Code</string>
+    <string name="logo_description">Krypton Code logo</string>
+
+    <string name="nav_home">Home</string>
+    <string name="nav_ais">AIs</string>
+    <string name="nav_prompts">Prompts</string>
+    <string name="nav_history">History</string>
+    <string name="nav_settings">Settings</string>
+
+    <string name="home_title">Krypton Code</string>
+    <string name="home_subtitle">A code-focused, multi-AI generation tool</string>
+    <string name="home_empty_title">No AI account yet</string>
+    <string name="home_empty_message">Add an AI account to get started, then prepare your prompts.</string>
+    <string name="home_action_add_ai">Add AI account</string>
+
+    <string name="ais_title">AIs</string>
+    <string name="ais_empty_title">No AI added</string>
+    <string name="ais_empty_message">Pick a provider, verify your key, and add your first account.</string>
+
+    <string name="prompts_title">Prompts</string>
+    <string name="prompts_empty_title">No prompt sets yet</string>
+    <string name="prompts_empty_message">Create a set, add your detailed prompts, and distribute them across AIs.</string>
+
+    <string name="history_title">History</string>
+    <string name="history_empty_title">History is empty</string>
+    <string name="history_empty_message">Generated zip files will be stored here.</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_theme">Theme</string>
+    <string name="theme_graphite">Graphite</string>
+    <string name="theme_black">Black &amp; White</string>
+    <string name="theme_sage">Sage</string>
+
+    <!-- Google Auth settings (SettingsScreen) -->
+    <string name="settings_google_auth">Google OAuth (Gemini)</string>
+    <string name="settings_google_auth_hint">To connect Gemini with a Google account, enter your OAuth client ID here. It must be an ID created for an Android app in Google Cloud Console.</string>
+    <string name="settings_google_client_id_label">OAuth client ID</string>
+    <string name="settings_google_client_id_placeholder">com.example.app or *.apps.googleusercontent.com</string>
+
+    <string name="provider_free_tier">Free tier available</string>
+    <string name="provider_paid_only">Paid</string>
+    <string name="provider_get_key">Get a key</string>
+    <string name="provider_google_auth">Google OAuth</string>
+
+
+    <!-- API-key-only info card (Groq, Mistral, etc.) -->
+    <string name="auth_api_key_only_title">API key only</string>
+    <string name="auth_api_key_only_message">This provider doesn\'t support signing in with an account. Go to the provider\'s console to create an API key.</string>
+
+    <!-- Google Auth card (AccountEditorScreen – Gemini) -->
+    <string name="google_auth_title">Connect with Google</string>
+    <string name="google_auth_hint">Connect to use Gemini with your Google account. No API key required.</string>
+    <string name="google_auth_connect">Connect with Google</string>
+    <string name="google_auth_disconnect">Disconnect</string>
+    <string name="google_auth_reconnect">Reconnect</string>
+    <string name="google_auth_retry">Try again</string>
+    <string name="google_auth_connected">Google account connected</string>
+    <string name="google_auth_needs_reauth">Session expired — sign in again</string>
+    <string name="google_auth_no_client_id">No OAuth client ID set. Add one in Settings.</string>
+    <string name="google_auth_sign_in_failed">Google sign-in failed.</string>
+    <string name="google_auth_refresh_failed">Token refresh failed.</string>
+    <string name="google_auth_sign_out_failed">Sign-out failed.</string>
+    <string name="google_auth_loading">Checking connection…</string>
+
+    <string name="model_recommended">Recommended</string>
+
+    <string name="err_invalid_key">The API key is invalid or unauthorized.</string>
+    <string name="err_rate_limited">Quota or rate limit exceeded; wait a moment and try again.</string>
+    <string name="err_not_found">Provider address not found.</string>
+    <string name="err_server">The provider can\'t respond right now.</string>
+    <string name="err_network">Couldn\'t connect. Check your internet connection.</string>
+    <string name="err_bad_response">Received an unexpected response from the provider.</string>
+    <string name="ais_add">+ Add AI</string>
+    <string name="ais_add_title">Add AI</string>
+    <string name="ais_edit_title">Edit AI</string>
+    <string name="action_back">Back</string>
+    <string name="action_verify">Verify</string>
+    <string name="action_verifying">Verifying…</string>
+    <string name="action_save">Save</string>
+    <string name="action_saving">Saving…</string>
+    <string name="action_retry">Try Again</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_edit">Edit</string>
+
+    <string name="step_provider">1. Choose a provider</string>
+    <string name="step_auth">2. Authentication</string>
+    <string name="step_key">2. API key</string>
+    <string name="step_key_alternative">or connect with an API key</string>
+    <string name="step_model">3. Choose a model</string>
+    <string name="key_label">API key</string>
+    <string name="key_paste">Paste from clipboard</string>
+    <string name="key_edit_hint">If left empty, the saved key is used.</string>
+    <string name="key_stored_securely">The key is stored encrypted in the device\'s secure storage only.</string>
+    <string name="models_found" tools:ignore="PluralsCandidate">%1$d suitable models found</string>
+    <string name="models_show_more">Show more (%1$d)</string>
+    <string name="model_free">Free</string>
+    <string name="model_paid">Paid</string>
+    <string name="model_free_tier">Free tier</string>
+
+    <string name="status_ready">Ready</string>
+    <string name="status_waiting">Waiting</string>
+    <string name="status_error">Error</string>
+    <string name="status_disabled">Disabled</string>
+    <string name="account_toggle_description">Turn the %1$s account on or off</string>
+    <string name="account_edit_description">Edit the %1$s account</string>
+    <string name="account_delete_description">Delete the %1$s account</string>
+    <string name="delete_dialog_title">Delete account?</string>
+    <string name="delete_dialog_message">%1$s and its saved key will be deleted. This cannot be undone.</string>
+
+    <string name="err_save_failed">Couldn\'t save the account. Try again.</string>
+    <string name="err_key_unreadable">The saved key couldn\'t be read. Paste a new key and verify it.</string>
+    <string name="err_no_models">No usable chat model was found for this key.</string>
+    <string name="err_account_missing">Account not found.</string>
+    <string name="err_action_failed">The action couldn\'t be completed. Try again.</string>
+    <string name="err_load_failed">Couldn\'t load accounts.</string>
+    <string name="err_clipboard_empty">There is no text on the clipboard to paste.</string>
+
+    <!-- Prompt sets -->
+    <string name="prompts_add_set">+ Create Set</string>
+    <string name="prompts_create_set_title">New prompt set</string>
+    <string name="prompts_set_name_hint">Set name (e.g. Landing page)</string>
+    <string name="action_create">Create</string>
+    <string name="prompts_delete_set_title">Delete set?</string>
+    <string name="prompts_delete_set_message">The set \"%1$s\" and all its prompts will be deleted. This cannot be undone.</string>
+    <string name="prompts_delete_set_description">Delete the %1$s set</string>
+
+    <!-- Set details -->
+    <string name="prompts_add_prompt">+ Prompt</string>
+    <string name="prompt_set_empty_title">This set has no prompts</string>
+    <string name="prompt_set_empty_message">Add your first prompt; ordering and account assignment are done here.</string>
+    <string name="prompts_assigned_count" tools:ignore="PluralsCandidate">%1$d of %2$d prompts have an account assigned</string>
+    <string name="prompts_assign">Assign Account</string>
+    <string name="prompts_reassign">Change Assignment</string>
+    <string name="prompts_unassign">Remove Assignment</string>
+    <string name="prompts_assign_title">Assign an account to \"%1$s\"</string>
+    <string name="prompts_assign_account_label">Account</string>
+    <string name="prompts_assign_mode_label">Mode</string>
+    <string name="prompts_no_accounts">There are no active AI accounts to assign. Add an account in the AIs tab first.</string>
+    <string name="assignment_auto">Automatic</string>
+    <string name="assignment_manual">Manual</string>
+    <string name="prompts_move_up">Move up</string>
+    <string name="prompts_move_down">Move down</string>
+    <string name="prompts_delete_prompt_title">Delete prompt?</string>
+    <string name="prompts_delete_prompt_message">\"%1$s\" will be deleted. This cannot be undone.</string>
+
+    <!-- Prompt editor -->
+    <string name="prompts_new_prompt_title">New Prompt</string>
+    <string name="prompts_edit_prompt_title">Edit Prompt</string>
+    <string name="prompts_prompt_title_label">Title</string>
+    <string name="prompts_prompt_title_hint">E.g. Hero section code</string>
+    <string name="prompts_prompt_body_label">Prompt text</string>
+    <string name="prompts_prompt_body_hint">Detailed instructions to send to the AI…</string>
+
+    <!-- GitHub settings -->
+    <string name="github_settings_title">GitHub Settings</string>
+    <string name="github_token_label">Personal Access Token</string>
+    <string name="github_token_hint">Generate one under GitHub → Settings → Developer Settings → Personal Access Tokens. The `repo` and `workflow` scopes are required.</string>
+    <string name="github_token_clear">Delete Token</string>
+    <string name="github_settings_info_title">Security</string>
+    <string name="github_settings_info_body">The token is encrypted on the device with Android Keystore only. It is never written to any log, history, or generated file.</string>
+
+    <!-- Permissions screen -->
+    <string name="permissions_title">Permissions</string>
+    <string name="permissions_internet_title">Internet Access</string>
+    <string name="permissions_internet_body">Krypton Code uses the internet permission to send requests to AI providers and to communicate with GitHub. No other permission is required.</string>
+    <string name="permissions_note_title">Data Privacy</string>
+    <string name="permissions_note_body">All keys and tokens are stored encrypted on the device only. They are never sent outside the app.</string>
+
+    <!-- Run screen -->
+    <string name="run_title">Run</string>
+    <string name="run_cancel">Cancel run</string>
+    <string name="run_save_zip">Save zip</string>
+    <string name="run_save_zip_done">Zip saved.</string>
+    <string name="run_save_zip_failed">Couldn\'t save the zip.</string>
+
+    <!-- Start a run (prompt set) -->
+    <string name="run_launch">Run</string>
+    <string name="run_launch_title">Run the set</string>
+    <string name="run_launch_repo_label">GitHub repository (optional)</string>
+    <string name="run_launch_repo_none">Zip only</string>
+    <string name="run_launch_repo_loading">Loading repositories…</string>
+    <string name="run_launch_repo_error">Couldn\'t fetch repositories. Check your token and internet connection.</string>
+    <string name="run_launch_no_token">To push the result to GitHub, add a token in Settings. For now only a zip is produced.</string>
+    <string name="run_launch_no_accounts">To run, add an account in the AIs tab first.</string>
+    <string name="run_launch_failed">Couldn\'t start the run.</string>
+    <string name="run_launch_branch_note">The result is pushed to a new branch in the selected repository as a single commit and verified with Actions.</string>
+
+    <!-- Settings: links -->
+    <string name="settings_github">GitHub</string>
+    <string name="settings_github_hint">Set a token and manage CI fix settings.</string>
+    <string name="settings_permissions">Permissions</string>
+    <string name="settings_permissions_hint">See which permissions the app uses.</string>
+    <string name="action_open">Open</string>
+
+    <!-- GitHub: CI -->
+    <string name="github_ci_attempts_label">CI fix attempts</string>
+    <string name="github_ci_attempts_hint">If Actions fails, the AI tries to fix it at most this many times.</string>
+    <string name="run_pause">Pause</string>
+    <string name="run_resume">Resume</string>
+    <string name="run_waiting_info">Some accounts have hit their quota; waiting until the quota resets. The app will continue on its own.</string>
+    <string name="run_graph_empty">Preparing nodes…</string>
+    <string name="run_node_hint">Tap a node to see its output. Drag to pan, pinch to zoom.</string>
+    <string name="run_graph_legend">C catalog · number prompt · M merge · F final</string>
+    <string name="run_graph_zoom_in">Zoom in</string>
+    <string name="run_graph_zoom_out">Zoom out</string>
+    <string name="run_graph_fit">Fit</string>
+    <string name="run_graph_fit_desc">Fit the whole graph to the screen</string>
+    <string name="run_node_close">Close details</string>
+    <string name="run_node_no_account">No account assigned</string>
+    <string name="run_node_attempts" tools:ignore="PluralsCandidate">%1$d attempts</string>
+    <string name="run_node_no_output">No output yet.</string>
+    <string name="node_save">Save this output</string>
+    <string name="node_save_done">Output saved</string>
+    <string name="node_save_failed">Couldn\'t save the output</string>
+    <string name="zip_run">Run from zip</string>
+    <string name="zip_run_invalid">No valid prompts found in the zip.</string>
+    <string name="run_tab_graph">Graph</string>
+    <string name="run_tab_flow">Flow</string>
+    <string name="run_tab_files">Files</string>
+    <string name="run_node_hint_wide">Select a node from the graph or the flow to see its output.</string>
+    <string name="flow_empty">No steps yet.</string>
+    <string name="flow_health" tools:ignore="PluralsCandidate">%1$d characters · %2$d files</string>
+    <string name="flow_warn_placeholders" tools:ignore="PluralsCandidate">⚠ %1$d placeholder lines (code may be abbreviated)</string>
+    <string name="flow_warn_unclosed">⚠ The output ends with an unclosed code block (it may be cut off)</string>
+    <string name="flow_warn_pathless" tools:ignore="PluralsCandidate">⚠ %1$d code blocks without a path (placed under unnamed/)</string>
+    <string name="flow_files_wait">The file list appears once the run finishes and the zip is created.</string>
+    <string name="settings_notify">Notifications</string>
+    <string name="settings_notify_hint">Send a notification when a run completes, fails, or is waiting for quota/an account. Runs continue in the background even when the app is closed; the progress notification is always shown while running (Android requires this).</string>
+
+    <!-- Home -->
+    <string name="home_action_add_prompts">Prepare a prompt set</string>
+    <string name="home_action_first_run">Start your first run</string>
+    <string name="home_active_run">A run is in progress</string>
+    <string name="home_stat_ais">AI accounts</string>
+    <string name="home_stat_sets">Prompt sets</string>
+    <string name="home_stat_runs">Runs</string>
+    <string name="home_quick_title">Quick start</string>
+    <string name="home_step1_title">Add an AI account</string>
+    <string name="home_step1_hint">Connect with an API key, Google/email sign-in, or a web session.</string>
+    <string name="home_step2_title">Prepare a prompt set</string>
+    <string name="home_step2_hint">Gather your prompts into a set and distribute them across accounts.</string>
+    <string name="home_step3_title">Run</string>
+    <string name="home_step3_hint">Start the set; follow progress on the node graph.</string>
+    <string name="home_recent_title">Recent runs</string>
+    <string name="home_recent_all">All</string>
+    <string name="home_how_title">How does it work?</string>
+    <string name="home_how1_title">Catalog extraction</string>
+    <string name="home_how1_hint">Your prompts are split into catalogs.</string>
+    <string name="home_how2_title">Parallel generation</string>
+    <string name="home_how2_hint">Your AI accounts process the prompts at the same time.</string>
+    <string name="home_how3_title">Merging</string>
+    <string name="home_how3_hint">Merged per catalog first, then into a final result.</string>
+    <string name="home_how4_title">Zip and history</string>
+    <string name="home_how4_hint">The result is saved to History as a zip; optionally pushed to GitHub.</string>
+
+    <!-- Settings: animations -->
+    <string name="settings_animations">Animations</string>
+    <string name="settings_animations_hint">Logo animation, loading indicators, and screen transitions. If turned off, nothing moves. If Android\'s \"remove animations\" setting is on, animations are treated as off regardless of this switch.</string>
+
+    <!-- Node output / retry -->
+    <string name="node_view_formatted">Formatted</string>
+    <string name="node_view_raw">Raw text</string>
+    <string name="node_view_loading">Formatting…</string>
+    <string name="node_retry">Try again</string>
+    <string name="node_retry_other">Try with another account</string>
+    <string name="node_retry_hint">Only this node and the merges that depend on its output run again; other finished nodes are kept.</string>
+    <string name="node_syntax_title">%1$d syntax warnings</string>
+    <string name="node_syntax_more">+%1$d more warnings (report: _kripton/report.md)</string>
+
+    <!-- Usage / quota dashboard -->
+    <string name="home_usage_title">Usage (last 24 hours)</string>
+    <string name="home_usage_subtitle">Requests, error rate, and waiting status per account</string>
+    <string name="home_usage_empty">No requests yet.</string>
+    <string name="home_usage_line">%1$d requests · %%%2$d errors · %3$d rate limits</string>
+    <string name="home_usage_idle">No requests</string>
+    <string name="home_usage_waiting">Waiting: %1$d min</string>
+    <string name="home_usage_error">In error state</string>
+</resources>

@@ -19,6 +19,27 @@ env:
   BASE_VERSION: "0.1"   # major.minor; patch = toplam commit sayısı (otomatik artar)
 
 jobs:
+  # Kod biçimi: ktlint CLI (Gradle/Kotlin sürümünden bağımsız). Şimdilik yalnız RAPORLAR, derlemeyi durdurmaz:
+  # ilk koşudan sonra `ktlint --baseline=ktlint-baseline.xml --relative "app/src/**/*.kt"` ile taban çizgisi
+  # üretip `continue-on-error` satırını kaldırın.
+  ktlint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+      - name: ktlint kur
+        env:
+          KTLINT_VERSION: "1.8.0"
+        run: |
+          curl -sSLO "https://github.com/pinterest/ktlint/releases/download/${KTLINT_VERSION}/ktlint"
+          chmod +x ktlint
+      - name: ktlint çalıştır
+        run: |
+          BASELINE=""
+          [ -f ktlint-baseline.xml ] && BASELINE="--baseline=ktlint-baseline.xml"
+          ./ktlint --relative $BASELINE "app/src/**/*.kt" "*.kts"
+
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 30

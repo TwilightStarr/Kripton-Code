@@ -20,6 +20,9 @@ androidxTestExt = "1.2.1"
 googleIdentity = "21.2.0"
 # 0.35.0: kotlin-stdlib 2.1.21 ile derlenmiş (projenin Kotlin 2.2.x derleyicisiyle uyumlu). 0.4x+ Kotlin 2.4 ister.
 markdownRenderer = "0.35.0"
+glance = "1.1.1"
+acra = "5.14.2"
+leakcanary = "2.14"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -38,6 +41,7 @@ androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+okhttp-sse = { module = "com.squareup.okhttp3:okhttp-sse", version.ref = "okhttp" }
 okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okhttp" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 androidx-webkit = { module = "androidx.webkit:webkit", version = "1.12.1" }
@@ -52,6 +56,12 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 # Markdown + sözdizimi renklendirme (Highlights, -code modülüyle birlikte gelir)
 markdown-renderer-m3 = { module = "com.mikepenz:multiplatform-markdown-renderer-m3", version.ref = "markdownRenderer" }
 markdown-renderer-code = { module = "com.mikepenz:multiplatform-markdown-renderer-code", version.ref = "markdownRenderer" }
+# Ana ekran widget'ı (Jetpack Glance)
+androidx-glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = "glance" }
+# Yerel çökme günlüğü (ağ göndericisi YOK; bkz. data/crash)
+acra-core = { module = "ch.acra:acra-core", version.ref = "acra" }
+# Yalnız debug: bellek sızıntısı tespiti
+leakcanary-android = { module = "com.squareup.leakcanary:leakcanary-android", version.ref = "leakcanary" }
 # Google Identity Services — Authorization API (GIS)
 google-identity-authorization = { module = "com.google.android.gms:play-services-auth", version.ref = "googleIdentity" }
 

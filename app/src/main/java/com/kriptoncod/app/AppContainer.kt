@@ -35,6 +35,7 @@ import com.kriptoncod.app.data.vault.AndroidKeystoreKeyVault
 import com.kriptoncod.app.data.vault.KeyVault
 import com.kriptoncod.app.data.run.CredentialProvider
 import com.kriptoncod.app.data.run.FinalAiAssembler
+import com.kriptoncod.app.data.run.LiveOutput
 import com.kriptoncod.app.data.run.PromptDispatcher
 import com.kriptoncod.app.data.run.RunFinalizer
 import com.kriptoncod.app.data.run.RunGraphBuilder
@@ -70,6 +71,9 @@ class AppContainer(context: Context) {
     val promptRepository: PromptRepository by lazy { PromptRepository(database) }
     val runRepository: RunRepository by lazy { RunRepository(database, outputStore, historyStore) }
     val usageRepository: UsageRepository by lazy { UsageRepository(database.usageEventDao()) }
+
+    /** Üretimi süren düğümlerin canlı metni (bellekte); düğüm detay ekranı buradan akar. */
+    val liveOutput: LiveOutput by lazy { LiveOutput() }
 
     // --- AI üretimi ---
     /** Normalizer'lı üretici; eksik/bozuk çıktıda aynı hesapla otomatik yeniden dener. */
@@ -143,6 +147,7 @@ class AppContainer(context: Context) {
             graph = runGraphBuilder,
             web = webSessionGenerator,
             usage = usageRepository,
+            live = liveOutput,
         )
     }
     val runScheduler: RunScheduler by lazy { RunScheduler(WorkManager.getInstance(appContext), runRepository) }

@@ -1,0 +1,32 @@
+version: 2
+updates:
+  # Gradle bağımlılıkları (gradle/libs.versions.toml sürüm kataloğu dahil)
+  - package-ecosystem: gradle
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: [dependencies]
+    groups:
+      # Kotlin, KSP ve Compose eklentisi birlikte güncellenmeli (sürümleri birbirine bağlı).
+      kotlin-toolchain:
+        patterns: ["org.jetbrains.kotlin*", "com.google.devtools.ksp*"]
+      androidx:
+        patterns: ["androidx.*"]
+      okhttp:
+        patterns: ["com.squareup.okhttp3*"]
+      testing:
+        patterns: ["junit*", "org.robolectric*", "org.jetbrains.kotlinx:kotlinx-coroutines-test*"]
+    ignore:
+      # markdown-renderer 0.4x+ Kotlin 2.4 ister (bkz. gradle/libs.versions.toml); Kotlin yükseltilince kaldır.
+      - dependency-name: "com.mikepenz:multiplatform-markdown-renderer*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+
+  # GitHub Actions sürümleri
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    labels: [ci, dependencies]

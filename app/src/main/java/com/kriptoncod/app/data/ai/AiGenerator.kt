@@ -14,6 +14,18 @@ interface AiGenerator {
         credential: String,
         prompt: String,
     ): String
+
+    /**
+     * Canlı akışlı üretim: metin geldikçe [sink]'e iletilir, dönüş değeri yine nihai metindir.
+     * Akışı desteklemeyen üreticiler (ve test sahteleri) varsayılan davranışla akışsız çalışır.
+     */
+    suspend fun generate(
+        endpoint: ProviderEndpoint,
+        modelId: String,
+        credential: String,
+        prompt: String,
+        sink: StreamSink,
+    ): String = generate(endpoint, modelId, credential, prompt)
 }
 
 /**

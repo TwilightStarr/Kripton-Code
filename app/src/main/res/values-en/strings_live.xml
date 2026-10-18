@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Status / kind labels (badges, widget) -->
+    <string name="job_kind_plan">Catalog extraction</string>
+    <string name="job_kind_work">Prompt</string>
+    <string name="job_kind_catalog_merge">Catalog merge</string>
+    <string name="job_kind_final_merge">Final merge</string>
+
+    <string name="run_status_preparing">Preparing</string>
+    <string name="run_status_running">Running</string>
+    <string name="run_status_pushing">Pushing</string>
+    <string name="run_status_ci_waiting">Waiting for CI</string>
+    <string name="run_status_fixing">Fixing</string>
+    <string name="run_status_paused">Paused</string>
+    <string name="run_status_done">Completed</string>
+    <string name="run_status_failed">Failed</string>
+    <string name="run_status_cancelled">Cancelled</string>
+
+    <string name="job_state_pending">Pending</string>
+    <string name="job_state_running">Running</string>
+    <string name="job_state_waiting">Waiting for quota</string>
+    <string name="job_state_done">Done</string>
+    <string name="job_state_failed">Error</string>
+
+    <!-- Graph node letters (must match run_graph_legend) -->
+    <string name="graph_label_plan">C</string>
+    <string name="graph_label_merge">M</string>
+    <string name="graph_label_final">F</string>
+
+    <!-- Live streaming -->
+    <string name="node_live_title">Live stream — generating…</string>
+    <string name="node_live_waiting">Waiting for the model to start replying…</string>
+
+    <!-- Notifications -->
+    <string name="notif_channel_run">Run progress</string>
+    <string name="notif_channel_events">Notifications</string>
+    <string name="notif_running">Generating…</string>
+    <string name="notif_progress">%1$d / %2$d steps completed</string>
+    <string name="notif_action_pause">Pause</string>
+    <string name="notif_action_resume">Resume</string>
+    <string name="notif_action_cancel">Cancel</string>
+    <string name="notif_paused_title">Krypton Code — paused</string>
+    <string name="notif_paused_text">Run #%1$d is paused. You can resume where it left off.</string>
+    <string name="notif_waiting_title">Krypton Code — waiting</string>
+    <string name="notif_waiting_text">Quota is full or no account is available. It will continue on its own when the time is up.</string>
+    <string name="notif_done_title">Krypton Code — completed</string>
+    <string name="notif_done_text">Run #%1$d finished. The zip is ready.</string>
+    <string name="notif_failed_title">Krypton Code — error</string>
+    <string name="notif_failed_text">Run #%1$d failed. Open the app for details.</string>
+    <string name="notif_crashed_text">Run #%1$d stopped because of an unexpected error.</string>
+
+    <!-- Home screen widget -->
+    <string name="widget_name">Krypton Code run</string>
+    <string name="widget_description">Watch the running job without opening the app; pause or cancel it.</string>
+    <string name="widget_empty">No active run</string>
+    <string name="widget_run_title">Run #%1$d · %2$s</string>
+    <string name="widget_progress">%1$d / %2$d steps</string>
+    <string name="widget_node">Now: %1$s</string>
+
+    <!-- Local crash log -->
+    <string name="settings_crash_title">Crash log</string>
+    <string name="settings_crash_hint">If the app crashes, the error details (stack trace, app version, device model) are saved on this device only; nothing is sent anywhere. Prompts, keys, and outputs are not included. If you want to report a bug, you can share the latest report from here.</string>
+    <string name="settings_crash_count" tools:ignore="PluralsCandidate">%1$d reports</string>
+    <string name="settings_crash_none">No crashes recorded.</string>
+    <string name="settings_crash_share">Share latest report</string>
+    <string name="settings_crash_share_title">Share crash report</string>
+    <string name="settings_crash_clear">Clear</string>
+</resources>

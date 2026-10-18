@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Email sign-in card strings (not currently used in the catalog; the code is kept for a separate cleanup) -->
+<resources>
+    <!-- Provider names -->
+    <string name="provider_claude">Anthropic Claude</string>
+    <string name="provider_openai">OpenAI ChatGPT</string>
+    <string name="provider_email_auth">Email sign-in</string>
+
+    <!-- Email / password sign-in card (AccountEditorScreen) -->
+    <string name="email_auth_title">Connect with email</string>
+    <string name="email_auth_hint">Connect by entering your account email and password. Credentials are stored encrypted on your device only.</string>
+    <string name="email_auth_email_label">Email</string>
+    <string name="email_auth_password_label">Password</string>
+    <string name="email_auth_connect">Connect</string>
+    <string name="email_auth_disconnect">Disconnect</string>
+    <string name="email_auth_connected">Account connected — signed in</string>
+    <string name="email_auth_needs_reauth">Session expired — sign in again</string>
+    <string name="email_auth_loading">Checking session…</string>
+    <string name="email_auth_sign_in_failed">Sign-in failed. Check your email and password.</string>
+    <string name="email_auth_refresh_failed">Session refresh failed.</string>
+    <string name="email_auth_sign_out_failed">Sign-out failed.</string>
+</resources>

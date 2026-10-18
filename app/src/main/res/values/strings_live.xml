@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Durum / tür etiketleri (rozetler, widget) -->
+    <string name="job_kind_plan">Katalog çıkarma</string>
+    <string name="job_kind_work">Prompt</string>
+    <string name="job_kind_catalog_merge">Katalog birleştirme</string>
+    <string name="job_kind_final_merge">Nihai birleştirme</string>
+
+    <string name="run_status_preparing">Hazırlanıyor</string>
+    <string name="run_status_running">Çalışıyor</string>
+    <string name="run_status_pushing">Gönderiliyor</string>
+    <string name="run_status_ci_waiting">CI Bekleniyor</string>
+    <string name="run_status_fixing">Düzeltiliyor</string>
+    <string name="run_status_paused">Duraklatıldı</string>
+    <string name="run_status_done">Tamamlandı</string>
+    <string name="run_status_failed">Başarısız</string>
+    <string name="run_status_cancelled">İptal Edildi</string>
+
+    <string name="job_state_pending">Bekliyor</string>
+    <string name="job_state_running">Çalışıyor</string>
+    <string name="job_state_waiting">Kota bekleniyor</string>
+    <string name="job_state_done">Tamam</string>
+    <string name="job_state_failed">Hata</string>
+
+    <!-- Grafik düğüm harfleri (run_graph_legend ile tutarlı olmalı) -->
+    <string name="graph_label_plan">K</string>
+    <string name="graph_label_merge">B</string>
+    <string name="graph_label_final">N</string>
+
+    <!-- Canlı akış -->
+    <string name="node_live_title">Canlı akış — üretim sürüyor…</string>
+    <string name="node_live_waiting">Modelin yanıt vermeye başlaması bekleniyor…</string>
+
+    <!-- Bildirimler -->
+    <string name="notif_channel_run">Çalışma ilerlemesi</string>
+    <string name="notif_channel_events">Bildirimler</string>
+    <string name="notif_running">Üretim sürüyor…</string>
+    <string name="notif_progress">%1$d / %2$d adım tamamlandı</string>
+    <string name="notif_action_pause">Duraklat</string>
+    <string name="notif_action_resume">Devam et</string>
+    <string name="notif_action_cancel">İptal</string>
+    <string name="notif_paused_title">Krypton Code — duraklatıldı</string>
+    <string name="notif_paused_text">Çalışma #%1$d duraklatıldı. Kaldığı yerden sürdürebilirsin.</string>
+    <string name="notif_waiting_title">Krypton Code — bekleniyor</string>
+    <string name="notif_waiting_text">Kota dolu ya da kullanılabilir hesap yok. Süre dolunca kendiliğinden devam eder.</string>
+    <string name="notif_done_title">Krypton Code — tamamlandı</string>
+    <string name="notif_done_text">Çalışma #%1$d bitti. Zip hazır.</string>
+    <string name="notif_failed_title">Krypton Code — hata</string>
+    <string name="notif_failed_text">Çalışma #%1$d başarısız oldu. Ayrıntı için uygulamayı aç.</string>
+    <string name="notif_crashed_text">Çalışma #%1$d beklenmedik bir hatayla durdu.</string>
+
+    <!-- Ana ekran widget'ı -->
+    <string name="widget_name">Krypton Code çalışması</string>
+    <string name="widget_description">Çalışan run\'ı uygulamayı açmadan izle; duraklat veya iptal et.</string>
+    <string name="widget_empty">Etkin çalışma yok</string>
+    <string name="widget_run_title">Çalışma #%1$d · %2$s</string>
+    <string name="widget_progress">%1$d / %2$d adım</string>
+    <string name="widget_node">Şu an: %1$s</string>
+
+
+    <!-- Yerel çökme günlüğü -->
+    <string name="settings_crash_title">Çökme günlüğü</string>
+    <string name="settings_crash_hint">Uygulama çökerse hata ayrıntısı (yığın izi, uygulama sürümü, cihaz modeli) yalnızca bu cihaza kaydedilir; hiçbir yere gönderilmez. Prompt, anahtar ve çıktılar kayda girmez. Hata bildirmek istersen son kaydı buradan paylaşabilirsin.</string>
+    <string name="settings_crash_count" tools:ignore="PluralsCandidate">%1$d kayıt</string>
+    <string name="settings_crash_none">Kayıtlı çökme yok.</string>
+    <string name="settings_crash_share">Son kaydı paylaş</string>
+    <string name="settings_crash_share_title">Çökme kaydını paylaş</string>
+    <string name="settings_crash_clear">Temizle</string>
+</resources>

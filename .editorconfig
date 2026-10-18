@@ -1,0 +1,23 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{kt,kts}]
+ktlint_code_style = android_studio
+max_line_length = off
+# Composable fonksiyonlar PascalCase olur.
+ktlint_function_naming_ignore_when_annotated_with = Composable
+# Mevcut kod tabanıyla uyum: bu kurallar ilk aşamada kapalı (taban çizgisi sonrası tek tek açılabilir).
+ktlint_standard_no-wildcard-imports = disabled
+ktlint_standard_import-ordering = disabled
+ktlint_standard_filename = disabled
+ktlint_standard_property-naming = disabled
+
+[*.{yml,yaml,xml}]
+indent_size = 2

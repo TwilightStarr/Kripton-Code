@@ -35,6 +35,14 @@ class RetryingAiGenerator(
         modelId: String,
         credential: String,
         prompt: String,
+    ): String = generate(endpoint, modelId, credential, prompt, StreamSink.NONE)
+
+    override suspend fun generate(
+        endpoint: ProviderEndpoint,
+        modelId: String,
+        credential: String,
+        prompt: String,
+        sink: StreamSink,
     ): String {
         val expectCode = OutputValidator.expectsCodeBlocks(prompt)
         var effectivePrompt = prompt
@@ -43,8 +51,9 @@ class RetryingAiGenerator(
         var lastText = ""
 
         for (attempt in 1..maxAttempts) {
+            if (attempt > 1) sink.reset() // yeni deneme: canlı görünüm baştan başlar
             val problem: Problem = try {
-                val text = delegate.generate(endpoint, modelId, credential, effectivePrompt)
+                val text = delegate.generate(endpoint, modelId, credential, effectivePrompt, sink)
                 lastText = text
                 val bad = OutputValidator.check(text, expectCode) ?: return text
                 // Yer tutucular yapı bozmaz: denemeler tükenince en son çıktı döner (rapora uyarı olarak düşer).

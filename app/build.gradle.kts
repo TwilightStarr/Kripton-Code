@@ -103,14 +103,23 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     implementation(libs.okhttp)
+    // Canlı akış: OpenAI uyumlu SSE (stream: true)
+    implementation(libs.okhttp.sse)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.webkit)
+    // Ana ekran widget'ı
+    implementation(libs.androidx.glance.appwidget)
+    // Yerel çökme günlüğü; kullanıcı verisi cihazdan çıkmaz (bkz. data/crash/CrashReporting)
+    implementation(libs.acra.core)
     // Düğüm çıktısı: markdown + kod renklendirme
     implementation(libs.markdown.renderer.m3)
     implementation(libs.markdown.renderer.code)
     // Google Identity Services — Authorization API
     implementation(libs.google.identity.authorization)
+
+    // Yalnız debug derlemesinde: bellek sızıntısı tespiti (release'e girmez)
+    debugImplementation(libs.leakcanary.android)
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)

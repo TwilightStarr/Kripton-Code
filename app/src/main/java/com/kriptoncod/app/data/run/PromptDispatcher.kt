@@ -3,6 +3,7 @@ package com.kriptoncod.app.data.run
 import com.kriptoncod.app.data.ai.AiGenerationException
 import com.kriptoncod.app.data.ai.AiGenerationException.Kind
 import com.kriptoncod.app.data.ai.AiGenerator
+import com.kriptoncod.app.data.ai.StreamSink
 import com.kriptoncod.app.data.db.AiAccount
 import com.kriptoncod.app.data.db.Job
 import com.kriptoncod.app.data.db.PromptItem
@@ -49,7 +50,11 @@ class PromptDispatcher(
     private val web: WebSessionGenerator? = null,
     /** Hesap başına istek sonuçlarını kaydeder (kullanım panosu); null ise kaydedilmez. */
     private val usage: UsageRepository? = null,
+    /** Verilirse API üretimi akıtılır ve metin geldikçe buraya yazılır (ekranda canlı görünür). */
+    private val live: LiveOutput? = null,
 ) {
+
+    private fun sinkFor(job: Job): StreamSink = live?.sinkFor(job.id) ?: StreamSink.NONE
 
     private suspend fun recordUsage(
         account: AiAccount, job: Job, outcome: UsageOutcome, startedAt: Long, waitMs: Long? = null,
@@ -289,7 +294,7 @@ class PromptDispatcher(
                     // Web sohbeti: PLAN düz metin ister; diğer düğümler dosya bloğu bekler.
                     web!!.generate(account, item.body, expectFiles = job.kind != JobKind.PLAN, onAsset = { assets += it })
                 } else {
-                    generator.generate(endpoint!!, account.modelId, credential!!, item.body)
+                    generator.generate(endpoint!!, account.modelId, credential!!, item.body, sinkFor(job))
                 }
                 if (text.isBlank()) {
                     recordUsage(account, job, UsageOutcome.FAILED, startedAt)
@@ -345,6 +350,8 @@ class PromptDispatcher(
                 recordUsage(account, job, UsageOutcome.FAILED, startedAt)
                 runs.failJob(job.id)
                 return JobResult.Failed
+            } finally {
+                live?.clear(job.id) // kalıcı çıktı yazıldı (ya da iş düştü): canlı metin gerekmez
             }
         }
     }
@@ -363,7 +370,7 @@ class PromptDispatcher(
         val startedAt = now()
 
         return try {
-            val text = generator.generate(endpoint, account.modelId, credential, item.body)
+            val text = generator.generate(endpoint, account.modelId, credential, item.body, sinkFor(job))
             if (text.isBlank()) {
                 recordUsage(account, job, UsageOutcome.FAILED, startedAt)
                 runs.failJob(job.id)
@@ -413,6 +420,8 @@ class PromptDispatcher(
             recordUsage(account, job, UsageOutcome.FAILED, startedAt)
             runs.failJob(job.id)
             JobResult.Failed
+        } finally {
+            live?.clear(job.id)
         }
     }
 
