@@ -1,0 +1,38 @@
+name: ktlint-format
+
+# Elle çalıştırılır (Actions > ktlint-format > Run workflow).
+# Kodu ktlint ile otomatik düzeltir ve değişiklikleri aynı dala commit'ler.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - name: ktlint kur
+        env:
+          KTLINT_VERSION: "1.8.0"
+        run: |
+          curl -sSLO "https://github.com/pinterest/ktlint/releases/download/${KTLINT_VERSION}/ktlint"
+          chmod +x ktlint
+      - name: Otomatik düzelt
+        run: ./ktlint --format --relative "app/src/**/*.kt" "*.kts" || true
+      - name: Kalan (otomatik düzelmeyen) uyarılar
+        run: ./ktlint --relative "app/src/**/*.kt" "*.kts" 2>&1 | tee ktlint-kalan.txt || true
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ktlint-kalan
+          path: ktlint-kalan.txt
+      - name: Commit ve push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A app *.kts
+          git diff --cached --quiet && echo "Değişiklik yok" && exit 0
+          git commit -m "style: ktlint ile otomatik biçimlendirme"
+          git push

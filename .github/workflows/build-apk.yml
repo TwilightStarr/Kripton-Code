@@ -97,6 +97,12 @@ jobs:
             echo
             echo "=== Kotlin/Java derleme hataları (e: / error:) ==="
             grep -n -E "^e: |error:" build.log | head -300
+            echo
+            echo "=== Derleyici uyarıları (w:) ==="
+            grep -E "^w: " build.log | sort -u | head -300
+            echo
+            echo "=== Gradle / Java uyarıları ==="
+            grep -n -i -E "warning:|deprecat" build.log | sort -u -k2 | head -200
           } > errors.txt || true
           wc -l errors.txt
 
