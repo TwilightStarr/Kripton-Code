@@ -29,7 +29,6 @@ ktlint_standard_blank-line-between-when-conditions = disabled
 ktlint_standard_argument-list-wrapping = disabled
 ktlint_standard_no-multi-spaces = disabled
 ktlint_standard_chain-wrapping = disabled
-ktlint_standard_wrapping = disabled
 ktlint_standard_function-expression-body = disabled
 ktlint_standard_no-empty-first-line-in-method-block = disabled
 ktlint_standard_spacing-between-declarations-with-annotations = disabled

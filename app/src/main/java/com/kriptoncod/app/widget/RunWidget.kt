@@ -1,6 +1,7 @@
 package com.kriptoncod.app.widget
 
 import android.content.Context
+import android.content.Intent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -67,7 +68,7 @@ class RunWidget : GlanceAppWidget() {
     private fun WidgetContent(context: Context, run: WidgetRun?) {
         Column(
             modifier = GlanceModifier.fillMaxSize().background(BG).cornerRadius(20.dp).padding(14.dp)
-                .clickable(actionStartActivity<MainActivity>()),
+                .clickable(actionStartActivity(Intent(context, MainActivity::class.java))),
             verticalAlignment = Alignment.Vertical.CenterVertically,
         ) {
             if (run == null) {
