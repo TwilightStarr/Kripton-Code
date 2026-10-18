@@ -26,6 +26,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     continue-on-error: true
+    permissions:
+      contents: write   # main'e push'ta otomatik biçimlendirme commit'i için
     steps:
       - uses: actions/checkout@v6
       - name: ktlint kur
@@ -34,6 +36,21 @@ jobs:
         run: |
           curl -sSLO "https://github.com/pinterest/ktlint/releases/download/${KTLINT_VERSION}/ktlint"
           chmod +x ktlint
+      # main'e push'ta kod biçimi OTOMATİK düzeltilir ve geri commit edilir (GITHUB_TOKEN push'ları yeni
+      # çalışma tetiklemez, döngü olmaz). Sonraki push'ta derleme biçimlenmiş kodla çalışır.
+      - name: Otomatik biçimlendir ve commit'le
+        if: github.event_name == 'push'
+        run: |
+          ./ktlint --format --relative "app/src/**/*.kt" "*.kts" || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A app *.kts
+          if git diff --cached --quiet; then
+            echo "Biçim zaten temiz."
+          else
+            git commit -m "style: ktlint ile otomatik biçimlendirme [skip ci]"
+            git push origin "HEAD:${{ github.ref_name }}" || echo "Push başarısız (dal ilerlemiş olabilir); sonraki çalışmada denenecek."
+          fi
       - name: ktlint çalıştır
         run: |
           BASELINE=""
