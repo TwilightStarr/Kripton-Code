@@ -115,9 +115,9 @@ internal fun rememberKimiAuthViewModelFactory(
 }
 
 @Composable
-internal fun rememberWebAccountViewModelFactory(accountId: Long?): ViewModelProvider.Factory {
+internal fun rememberWebAccountViewModelFactory(accountId: Long?, initialProvider: String? = null): ViewModelProvider.Factory {
     val container = rememberContainer()
-    return remember(container, accountId) {
+    return remember(container, accountId, initialProvider) {
         viewModelFactory {
             initializer {
                 WebAccountViewModel(
@@ -125,6 +125,8 @@ internal fun rememberWebAccountViewModelFactory(accountId: Long?): ViewModelProv
                     accounts = container.aiAccountRepository,
                     sessions = container.webSessionStore,
                     models = container.modelService,
+                    initialProvider = initialProvider,
+                    settings = container.themeStore,
                 )
             }
         }

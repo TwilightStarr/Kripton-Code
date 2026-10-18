@@ -10,6 +10,7 @@ import com.kriptoncod.app.data.providers.ApiResult
 import com.kriptoncod.app.data.providers.ModelService
 import com.kriptoncod.app.data.providers.ProviderCatalog
 import com.kriptoncod.app.data.repo.AiAccountRepository
+import com.kriptoncod.app.data.settings.ThemeStore
 import com.kriptoncod.app.data.web.TokenImport
 import com.kriptoncod.app.data.web.WebCookies
 import com.kriptoncod.app.data.web.WebProvider
@@ -48,6 +49,9 @@ class WebAccountViewModel(
     private val accounts: AiAccountRepository,
     private val sessions: WebSessionStore,
     private val models: ModelService,
+    /** Tek dokunuşla ekleme: sağlayıcı kimliği verilirse seçim/devam adımları atlanır. */
+    private val initialProvider: String? = null,
+    private val settings: ThemeStore? = null,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(WebAccountState(relogin = accountId != null))
@@ -55,9 +59,13 @@ class WebAccountViewModel(
 
     private var pendingSession: WebSession? = null
 
+    /** Uyarı daha önce onaylandı mı (bir kez onaylanır; her hesapta yeniden sorulmaz). */
+    private var warnedBefore = false
+
     init {
-        if (accountId != null) {
-            viewModelScope.launch {
+        viewModelScope.launch {
+            warnedBefore = runCatching { settings?.webWarningAccepted?.first() ?: false }.getOrDefault(false)
+            if (accountId != null) {
                 val account = accounts.get(accountId)
                 val provider = WebProvider.fromId(account?.providerId)
                 if (account == null || provider == null) {
@@ -65,6 +73,11 @@ class WebAccountViewModel(
                 } else {
                     _state.update { it.copy(provider = provider, label = account.displayName) }
                     proceed(provider)
+                }
+            } else {
+                WebProvider.fromId(initialProvider)?.let { p ->
+                    _state.update { it.copy(provider = p) }
+                    proceed(p)
                 }
             }
         }
@@ -96,6 +109,8 @@ class WebAccountViewModel(
 
     fun dismissError() = _state.update { it.copy(error = null) }
 
+    fun showError(@StringRes res: Int) = _state.update { it.copy(error = res) }
+
     fun selectProvider(p: WebProvider) = _state.update { it.copy(provider = p, error = null) }
 
     fun onContinue() {
@@ -104,7 +119,7 @@ class WebAccountViewModel(
     }
 
     private fun proceed(p: WebProvider) {
-        if (p.requiresBanWarning && !_state.value.warningChecked) {
+        if (p.requiresBanWarning && !_state.value.warningChecked && !warnedBefore) {
             _state.update { it.copy(step = WebStep.WARNING) }
         } else {
             beginLogin()
@@ -112,7 +127,11 @@ class WebAccountViewModel(
     }
 
     fun acceptWarning() {
-        if (_state.value.warningChecked) beginLogin()
+        if (_state.value.warningChecked) {
+            warnedBefore = true
+            viewModelScope.launch { runCatching { settings?.setWebWarningAccepted(true) } }
+            beginLogin()
+        }
     }
 
     private fun beginLogin() {
@@ -126,6 +145,30 @@ class WebAccountViewModel(
             // Önceki hesabın çerezleri kalmasın: her giriş temiz bir çerez deposuyla başlar.
             WebCookies.clearAll()
             _state.update { it.copy(step = WebStep.LOGIN, error = null) }
+        }
+    }
+
+    private var autoChecking = false
+
+    /**
+     * Sayfa yüklendikçe / adres değiştikçe çağrılır: oturum açılmışsa (bkz. [WebProvider.isLoggedIn])
+     * "Girişi tamamladım" düğmesine basılmadan hesap otomatik kaydedilir. Şifre hiç okunmaz.
+     */
+    fun onPageChanged(webView: WebView?) {
+        val p = _state.value.provider ?: return
+        if (webView == null || autoChecking || _state.value.step != WebStep.LOGIN) return
+        autoChecking = true
+        viewModelScope.launch {
+            try {
+                val session = WebCookies.capture(p, webView)
+                if (p.isLoggedIn(session) && _state.value.step == WebStep.LOGIN) saveWebAccount(p, session)
+            } catch (c: CancellationException) {
+                throw c
+            } catch (_: Throwable) {
+                // Otomatik algılama başarısız olursa kullanıcı düğmeyle devam edebilir.
+            } finally {
+                autoChecking = false
+            }
         }
     }
 

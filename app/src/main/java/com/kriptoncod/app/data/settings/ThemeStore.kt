@@ -58,7 +58,17 @@ class ThemeStore(private val context: Context) {
         context.settingsDataStore.edit { it[ANIMATIONS] = value }
     }
 
+    // ---- Web hesabı "hesap kapatılabilir" uyarısı (bir kez onaylanır) ----
+    val webWarningAccepted: Flow<Boolean> = context.settingsDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[WEB_WARNING_ACCEPTED] ?: false }
+
+    suspend fun setWebWarningAccepted(value: Boolean) {
+        context.settingsDataStore.edit { it[WEB_WARNING_ACCEPTED] = value }
+    }
+
     private companion object {
+        val WEB_WARNING_ACCEPTED = booleanPreferencesKey("web_warning_accepted")
         val ANIMATIONS = booleanPreferencesKey("animations")
         val NOTIFY = booleanPreferencesKey("notify_events")
         const val SCHEMA_VERSION = 1

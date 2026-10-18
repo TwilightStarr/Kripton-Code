@@ -1,6 +1,12 @@
 package com.kriptoncod.app.ui.screens
 
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
+import android.view.View
+import android.view.WindowManager
 import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.WebResourceRequest
@@ -49,7 +55,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kriptoncod.app.R
 import com.kriptoncod.app.data.web.TokenImport
 import com.kriptoncod.app.data.web.WebProvider
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import com.kriptoncod.app.data.web.WebCookies
+import com.kriptoncod.app.data.web.WebScripts
 import com.kriptoncod.app.data.web.WebUserAgent
 import com.kriptoncod.app.ui.ais.WebAccountState
 import com.kriptoncod.app.ui.ais.WebAccountViewModel
@@ -66,10 +75,10 @@ import kotlinx.coroutines.launch
 
 /** E-posta ile (web oturumu) hesap ekleme veya [accountId] verilirse yeniden giriş ekranı. */
 @Composable
-fun WebAccountScreen(accountId: Long?, onClose: () -> Unit, onUseApiKey: () -> Unit = {}) {
+fun WebAccountScreen(accountId: Long?, onClose: () -> Unit, onUseApiKey: () -> Unit = {}, initialProvider: String? = null) {
     val vm: WebAccountViewModel = viewModel(
-        key = "web-account-$accountId",
-        factory = rememberWebAccountViewModelFactory(accountId),
+        key = "web-account-$accountId-$initialProvider",
+        factory = rememberWebAccountViewModelFactory(accountId, initialProvider),
     )
     val state by vm.state.collectAsStateWithLifecycle()
     LaunchedEffect(state.step) { if (state.step == WebStep.DONE) onClose() }
@@ -220,6 +229,16 @@ private fun ColumnScope.BrowserStep(state: WebAccountState, vm: WebAccountViewMo
     // Google, gömülü WebView'da girişe izin vermez ("disallowed_useragent"); ölü sayfaya gitmek yerine uyarı gösterilir.
     var googleBlocked by remember { mutableStateOf(false) }
     val k = KriptonTheme.colors
+    val context = LocalContext.current
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
+
+    // Giriş sayfasında e-posta ve doğrulama kodu görünür: ekran görüntüsü / son uygulamalar önizlemesi engellenir.
+    DisposableEffect(Unit) {
+        val window = context.findActivity()?.window
+        window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        onDispose { window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE) }
+    }
 
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
@@ -243,6 +262,29 @@ private fun ColumnScope.BrowserStep(state: WebAccountState, vm: WebAccountViewMo
         }
         IconButton(onClick = onClose) {
             Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.action_cancel))
+        }
+    }
+
+    if (!keyStep) {
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            // E-posta uygulamasını aç: kodu/bağlantıyı almak için tek dokunuş.
+            TextButton(onClick = { context.openMailApp() }) { Text(stringResource(R.string.web_open_mail)) }
+            // Panodaki kodu (kullanıcı e-postadan kopyaladıysa) sayfadaki kod alanına yaz.
+            TextButton(onClick = {
+                scope.launch {
+                    val raw = runCatching {
+                        clipboard.getClipEntry()?.clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.text?.toString()
+                    }.getOrNull().orEmpty()
+                    val code = CODE_REGEX.find(raw)?.value
+                    val view = holder
+                    if (code == null || view == null) {
+                        vm.showError(R.string.web_code_none)
+                    } else {
+                        val result = WebCookies.unquote(WebCookies.evalString(view, WebScripts.fillCode(code)))
+                        if (result != "ok") vm.showError(R.string.web_code_none)
+                    }
+                }
+            }) { Text(stringResource(R.string.web_code_paste)) }
         }
     }
 
@@ -284,6 +326,11 @@ private fun ColumnScope.BrowserStep(state: WebAccountState, vm: WebAccountViewMo
                     layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
+                    // Yerel dosya/içerik erişimi kapalı: giriş sayfası yalnız https içeriğiyle çalışır.
+                    settings.allowFileAccess = false
+                    settings.allowContentAccess = false
+                    // Telefonun otomatik doldurma hizmeti (parola yöneticisi / e-posta) giriş formunu doldurabilsin.
+                    importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_YES
                     // Sohbet WebView'ıyla AYNI kullanıcı-aracısı: oturum/bot kontrolleri buna bağlıdır.
                     WebUserAgent.apply(settings)
                     CookieManager.getInstance().setAcceptCookie(true)
@@ -292,6 +339,11 @@ private fun ColumnScope.BrowserStep(state: WebAccountState, vm: WebAccountViewMo
                         override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                             val scheme = request?.url?.scheme.orEmpty()
                             return scheme != "https" && scheme != "about"
+                        }
+
+                        // Giriş tamamlanınca (sayfa yüklendi / tek sayfalı uygulamada adres değişti) oturum otomatik kaydedilir.
+                        override fun onPageFinished(view: WebView?, url: String?) {
+                            vm.onPageChanged(view)
                         }
 
                         // "Google ile devam et" doğrudan denenir. Google gömülü tarayıcıyı reddederse (kendi güvenlik
@@ -303,6 +355,7 @@ private fun ColumnScope.BrowserStep(state: WebAccountState, vm: WebAccountViewMo
                             ) {
                                 googleBlocked = true
                             }
+                            vm.onPageChanged(view)
                         }
                     }
                     // Google/OAuth açılır pencereleri aynı pencerede açılsın (çoklu pencere desteklenmiyor).
@@ -316,6 +369,23 @@ private fun ColumnScope.BrowserStep(state: WebAccountState, vm: WebAccountViewMo
     }
     DisposableEffect(Unit) {
         onDispose { holder?.let { runCatching { it.stopLoading(); it.destroy() } } }
+    }
+}
+
+private val CODE_REGEX = Regex("(?<!\\d)\\d{4,8}(?!\\d)")
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
+/** Varsayılan e-posta uygulamasını açar; yoksa sessizce yok sayılır. */
+private fun Context.openMailApp() {
+    runCatching {
+        startActivity(
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_EMAIL).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+        )
     }
 }
 

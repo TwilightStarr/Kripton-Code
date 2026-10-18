@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Web session (email sign-in, no API key) screen strings -->
 <resources>
+    <string name="ais_quick_add">Add in one tap:</string>
     <string name="ais_add_web">+ With email</string>
     <string name="web_title">Add account with email</string>
     <string name="web_relogin_title">Sign in again</string>
@@ -24,10 +25,13 @@
     <string name="web_warning_gemini">Automating actions with your Google account may be considered a violation of Google\'s terms, and your account may be restricted or closed. Don\'t use your main Google account; use one you can afford to lose.</string>
     <string name="web_warning_accept">I understand the risk and add it at my own responsibility</string>
 
-    <string name="web_login_hint">Sign in on the page. You can try \"Continue with Google\" directly; if Google rejects in-app sign-in, a warning appears. When the chat screen shows up, tap \"I\'ve finished signing in\" at the top.</string>
+    <string name="web_login_hint">Sign in on the page. You can try \"Continue with Google\" directly; if Google rejects in-app sign-in, a warning appears. Once you are signed in the account is saved automatically; if it is not, tap \"I\'ve finished signing in\" at the top.</string>
     <string name="web_google_blocked">Google rejected sign-in in this window (Google blocks in-app browsers; the app can\'t get around this). Sign in with a phone number, or add Kimi with an API key.</string>
     <string name="web_help">Help</string>
     <string name="web_kimi_note">Kimi allows sign-in with phone, Google, or SSO; there is no email option.</string>
+    <string name="web_open_mail">Open email</string>
+    <string name="web_code_paste">Paste code</string>
+    <string name="web_code_none">No code found on the clipboard. Copy the code from the email, tap the code box, then try again.</string>
     <string name="web_login_done">I\'ve finished signing in</string>
     <string name="web_key_title">Get the API key</string>
     <string name="web_key_hint">Google doesn\'t allow sign-in from within an app. Tap \"Open in browser\", sign in with your Google account, create a key with \"Create API key\", copy it, and paste it below.</string>

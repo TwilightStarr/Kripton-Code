@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Web oturumu (e-posta ile giriş, API anahtarsız) ekranı metinleri -->
 <resources>
+    <string name="ais_quick_add">Tek dokunuşla ekle:</string>
     <string name="ais_add_web">+ E-posta ile</string>
     <string name="web_title">E-posta ile hesap ekle</string>
     <string name="web_relogin_title">Yeniden giriş</string>
@@ -24,10 +25,13 @@
     <string name="web_warning_gemini">Google hesabınla otomatik işlem yapmak Google koşullarına aykırı sayılabilir ve hesabın kısıtlanabilir veya kapatılabilir. Ana Google hesabını değil, kaybetmeyi göze aldığın bir hesabı kullan.</string>
     <string name="web_warning_accept">Riski anladım, kendi sorumluluğumda ekliyorum</string>
 
-    <string name="web_login_hint">Sayfada giriş yap. \"Google ile devam et\" doğrudan denenebilir; Google uygulama içi girişi reddederse uyarı çıkar. Sohbet ekranı görününce üstteki \"Girişi tamamladım\"a bas.</string>
+    <string name="web_login_hint">Sayfada giriş yap. \"Google ile devam et\" doğrudan denenebilir; Google uygulama içi girişi reddederse uyarı çıkar. Giriş tamamlanınca hesap otomatik kaydedilir; kaydedilmezse üstteki \"Girişi tamamladım\"a bas.</string>
     <string name="web_google_blocked">Google bu pencerede girişi reddetti (Google, uygulama içi tarayıcıları engeller; bunu uygulama aşamaz). Telefon numarasıyla giriş yap ya da Kimi\'yi API anahtarıyla ekle.</string>
     <string name="web_help">Yardım</string>
     <string name="web_kimi_note">Kimi telefon, Google veya SSO ile girişe izin verir; e-posta seçeneği yoktur.</string>
+    <string name="web_open_mail">E-postayı aç</string>
+    <string name="web_code_paste">Kodu yapıştır</string>
+    <string name="web_code_none">Panoda kod bulunamadı. Önce e-postadaki kodu kopyala, kod kutusuna dokun, sonra tekrar dene.</string>
     <string name="web_login_done">Girişi tamamladım</string>
     <string name="web_key_title">API anahtarını al</string>
     <string name="web_key_hint">Google, uygulama içinden girişe izin vermez. "Tarayıcıda aç"a bas, Google hesabınla giriş yapıp "Create API key" ile anahtarı oluştur, kopyala ve aşağıya yapıştır.</string>

@@ -29,6 +29,12 @@ object AisRoutes {
     const val WEB_ADD = "ais/web"
     const val WEB_RELOGIN = "ais/web/{$ARG_ID}"
 
+    /** Tek dokunuşla ekleme: sağlayıcı seçimi atlanır, doğrudan giriş sayfası açılır. */
+    const val ARG_PROVIDER = "provider"
+    const val WEB_QUICK = "ais/webquick/{$ARG_PROVIDER}"
+
+    fun webQuick(providerId: String): String = "ais/webquick/$providerId"
+
     /** Web oturumu hesabının adını düzenleme (giriş gerektirmez). */
     const val WEB_EDIT = "ais/webedit/{$ARG_ID}"
 

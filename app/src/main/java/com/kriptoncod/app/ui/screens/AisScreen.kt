@@ -57,6 +57,7 @@ import com.kriptoncod.app.ui.ais.ListError
 import com.kriptoncod.app.ui.ais.rememberAisViewModelFactory
 import com.kriptoncod.app.ui.components.KriptonLoader
 import com.kriptoncod.app.ui.components.EmptyState
+import com.kriptoncod.app.data.web.WebProvider
 import com.kriptoncod.app.ui.components.KButton
 import com.kriptoncod.app.ui.components.KButtonStyle
 import com.kriptoncod.app.ui.components.NodeAccent
@@ -64,13 +65,14 @@ import com.kriptoncod.app.ui.components.NodeCard
 import com.kriptoncod.app.ui.theme.KriptonTheme
 
 @Composable
-fun AisScreen(onAdd: () -> Unit, onAddWeb: () -> Unit, onEdit: (Long) -> Unit) {
+fun AisScreen(onAdd: () -> Unit, onAddWeb: () -> Unit, onEdit: (Long) -> Unit, onQuickAdd: (String) -> Unit = {}) {
     val viewModel: AisViewModel = viewModel(factory = rememberAisViewModelFactory())
     val state by viewModel.state.collectAsStateWithLifecycle()
     AisContent(
         state = state,
         onAdd = onAdd,
         onAddWeb = onAddWeb,
+        onQuickAdd = onQuickAdd,
         onEdit = onEdit,
         onToggle = viewModel::setEnabled,
         onRequestDelete = viewModel::requestDelete,
@@ -81,11 +83,13 @@ fun AisScreen(onAdd: () -> Unit, onAddWeb: () -> Unit, onEdit: (Long) -> Unit) {
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AisContent(
     state: AisUiState,
     onAdd: () -> Unit,
     onAddWeb: () -> Unit,
+    onQuickAdd: (String) -> Unit,
     onEdit: (Long) -> Unit,
     onToggle: (Long, Boolean) -> Unit,
     onRequestDelete: (Long) -> Unit,
@@ -122,6 +126,20 @@ private fun AisContent(
                 style = KButtonStyle.Outline,
                 modifier = Modifier.fillMaxWidth(),
             )
+        }
+        item(key = "quick-add", span = { GridItemSpan(maxLineSpan) }) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    stringResource(R.string.ais_quick_add),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KriptonTheme.colors.muted,
+                )
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    WebProvider.entries.forEach { p ->
+                        KButton(text = "+ ${p.displayName}", onClick = { onQuickAdd(p.id) }, style = KButtonStyle.Outline)
+                    }
+                }
+            }
         }
         state.error?.let { error ->
             item(key = "error", span = { GridItemSpan(maxLineSpan) }) { ErrorCard(error, onRetry, onDismissError) }

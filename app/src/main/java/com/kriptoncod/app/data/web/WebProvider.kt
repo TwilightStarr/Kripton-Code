@@ -70,10 +70,25 @@ enum class WebProvider(
     ),
     ;
 
+    /**
+     * Yakalanan oturum GERÇEKTEN giriş yapılmış bir oturum mu? Yalnız bilinen oturum çerezi/anahtarı varsa true;
+     * bilinmiyorsa (ör. Gemini) false döner ve kullanıcı "Girişi tamamladım" düğmesini kullanır.
+     * Böylece anonim (girişsiz) bir oturum yanlışlıkla kaydedilmez.
+     */
+    fun isLoggedIn(session: WebSession): Boolean = when (this) {
+        CLAUDE -> session.hasCookie { it == "sessionKey" }
+        CHATGPT -> session.hasCookie { it.contains("session-token") }
+        KIMI -> !session.localStorage["access_token"].isNullOrBlank()
+        GEMINI -> false
+    }
+
     companion object {
         fun fromId(id: String?): WebProvider? = entries.firstOrNull { it.id == id }
     }
 }
+
+private fun WebSession.hasCookie(match: (String) -> Boolean): Boolean =
+    cookies.values.any { header -> CookieText.parse(header).any { (name, value) -> value.isNotEmpty() && match(name) } }
 
 /** Sağlayıcının çıktı verme biçimi; çıktı adaptörünü ve istem ekini belirler. */
 enum class OutputStyle {

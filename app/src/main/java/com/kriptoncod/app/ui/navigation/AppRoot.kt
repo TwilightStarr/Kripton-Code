@@ -156,6 +156,7 @@ fun AppRoot(
                 AisScreen(
                     onAdd = { navController.navigate(AisRoutes.ADD) },
                     onAddWeb = { navController.navigate(AisRoutes.WEB_ADD) },
+                    onQuickAdd = { providerId -> navController.navigate(AisRoutes.webQuick(providerId)) },
                     onEdit = { id ->
                         // Web oturumu hesabında "düzenle" = ad düzenleme (yeniden giriş oradan ayrıca açılır); diğerleri anahtar düzenleyicisini açar.
                         scope.launch {
@@ -168,6 +169,21 @@ fun AppRoot(
             composable(AisRoutes.WEB_ADD) {
                 AdaptiveFrame(Adaptive.WideFormMaxWidth) { WebAccountScreen(
                     accountId = null,
+                    onClose = { navController.popBackStack() },
+                    onUseApiKey = {
+                        navController.popBackStack()
+                        navController.navigate(AisRoutes.ADD)
+                    },
+                ) }
+            }
+            composable(
+                AisRoutes.WEB_QUICK,
+                arguments = listOf(navArgument(AisRoutes.ARG_PROVIDER) { type = NavType.StringType }),
+            ) { entry ->
+                val providerId = entry.arguments?.getString(AisRoutes.ARG_PROVIDER)
+                AdaptiveFrame(Adaptive.WideFormMaxWidth) { WebAccountScreen(
+                    accountId = null,
+                    initialProvider = providerId,
                     onClose = { navController.popBackStack() },
                     onUseApiKey = {
                         navController.popBackStack()
