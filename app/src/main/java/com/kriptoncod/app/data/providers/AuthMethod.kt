@@ -21,8 +21,7 @@ data class ApiKey(
     override val type: AuthType = AuthType.API_KEY
     override val isAvailable: Boolean = true
 
-    override fun authorize(request: Request.Builder, credential: String): Request.Builder =
-        request.header(headerName, if (scheme.isNullOrEmpty()) credential else "$scheme $credential")
+    override fun authorize(request: Request.Builder, credential: String): Request.Builder = request.header(headerName, if (scheme.isNullOrEmpty()) credential else "$scheme $credential")
 }
 
 /**
@@ -34,8 +33,7 @@ data object Google : AuthMethod {
     override val type: AuthType = AuthType.GOOGLE
     override val isAvailable: Boolean = true
 
-    override fun authorize(request: Request.Builder, credential: String): Request.Builder =
-        request.header("Authorization", "Bearer $credential")
+    override fun authorize(request: Request.Builder, credential: String): Request.Builder = request.header("Authorization", "Bearer $credential")
 }
 
 /**
@@ -47,8 +45,7 @@ data object EmailPassword : AuthMethod {
     override val type: AuthType = AuthType.EMAIL
     override val isAvailable: Boolean = true
 
-    override fun authorize(request: Request.Builder, credential: String): Request.Builder =
-        request.header("Authorization", "Bearer $credential")
+    override fun authorize(request: Request.Builder, credential: String): Request.Builder = request.header("Authorization", "Bearer $credential")
 }
 
 /**
@@ -60,6 +57,5 @@ data object KimiSession : AuthMethod {
     override val type: AuthType = AuthType.KIMI
     override val isAvailable: Boolean = true
 
-    override fun authorize(request: Request.Builder, credential: String): Request.Builder =
-        request.header("Authorization", "Bearer $credential")
+    override fun authorize(request: Request.Builder, credential: String): Request.Builder = request.header("Authorization", "Bearer $credential")
 }

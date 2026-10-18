@@ -55,7 +55,8 @@ private val LocalKriptonColors = staticCompositionLocalOf { Palette.Black.toKrip
 
 object KriptonTheme {
     val colors: KriptonColors
-        @Composable @ReadOnlyComposable get() = LocalKriptonColors.current
+        @Composable @ReadOnlyComposable
+        get() = LocalKriptonColors.current
 }
 
 @Composable

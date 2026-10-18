@@ -28,8 +28,7 @@ class EmailPasswordAuth(
      * OkHttp isteğine Authorization: Bearer <token> ekler.
      * [credential] → kasadan okunan geçerli session token.
      */
-    override fun authorize(request: Request.Builder, credential: String): Request.Builder =
-        request.header("Authorization", "Bearer $credential")
+    override fun authorize(request: Request.Builder, credential: String): Request.Builder = request.header("Authorization", "Bearer $credential")
 
     /** Kasadan geçerli token'ı döndürür; yoksa null. */
     suspend fun loadToken(): String? = tokenStore.getValid(accountId)?.sessionToken
@@ -51,21 +50,23 @@ class EmailPasswordAuth(
                 tokenStore.save(accountId, result.sessionToken, result.expiresAtMs)
                 EmailAuthState.Valid(result.sessionToken)
             }
+
             is EmailAuthResult.NeedsReauth -> EmailAuthState.NeedsReauth
+
             is EmailAuthResult.Error -> EmailAuthState.Error(result.message, result.cause)
         }
     }
 
     /** Kullanıcı e-posta ve şifresiyle giriş yapar; token kasaya yazılır. */
-    suspend fun signIn(email: String, password: String): EmailAuthState {
-        return when (val result = authClient.login(loginUrl, email, password)) {
-            is EmailAuthResult.Success -> {
-                tokenStore.save(accountId, result.sessionToken, result.expiresAtMs)
-                EmailAuthState.Valid(result.sessionToken)
-            }
-            is EmailAuthResult.NeedsReauth -> EmailAuthState.NeedsReauth
-            is EmailAuthResult.Error -> EmailAuthState.Error(result.message, result.cause)
+    suspend fun signIn(email: String, password: String): EmailAuthState = when (val result = authClient.login(loginUrl, email, password)) {
+        is EmailAuthResult.Success -> {
+            tokenStore.save(accountId, result.sessionToken, result.expiresAtMs)
+            EmailAuthState.Valid(result.sessionToken)
         }
+
+        is EmailAuthResult.NeedsReauth -> EmailAuthState.NeedsReauth
+
+        is EmailAuthResult.Error -> EmailAuthState.Error(result.message, result.cause)
     }
 
     /** Oturumu kapatır; token kasadan silinir. */

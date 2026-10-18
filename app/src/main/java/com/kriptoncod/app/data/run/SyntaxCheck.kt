@@ -29,8 +29,7 @@ object SyntaxCheck {
 
     private const val MAX_ISSUES = 20
 
-    fun checkOutput(rawOutput: String): List<Issue> =
-        checkBlocks(CodeBlockParser.parse(WebOutputCheck.canonical(rawOutput)))
+    fun checkOutput(rawOutput: String): List<Issue> = checkBlocks(CodeBlockParser.parse(WebOutputCheck.canonical(rawOutput)))
 
     fun checkBlocks(blocks: List<CodeBlockParser.Block>): List<Issue> {
         val out = ArrayList<Issue>()
@@ -55,9 +54,8 @@ object SyntaxCheck {
 
     // --- JSON ---------------------------------------------------------------------------------
 
-    private fun isJsonWithComments(name: String) =
-        name.startsWith("tsconfig") || name.startsWith("jsconfig") || name.contains("devcontainer") ||
-            name.startsWith(".eslintrc") || name.startsWith("launch") || name.startsWith("settings")
+    private fun isJsonWithComments(name: String) = name.startsWith("tsconfig") || name.startsWith("jsconfig") || name.contains("devcontainer") ||
+        name.startsWith(".eslintrc") || name.startsWith("launch") || name.startsWith("settings")
 
     private fun checkJson(path: String, content: String): List<Issue> = try {
         Json.parseToJsonElement(content)
@@ -137,7 +135,11 @@ object SyntaxCheck {
 
     private class Open(val ch: Char, val line: Int)
 
-    private fun closerOf(open: Char) = when (open) { '(' -> ')'; '[' -> ']'; else -> '}' }
+    private fun closerOf(open: Char) = when (open) {
+        '(' -> ')'
+        '[' -> ']'
+        else -> '}'
+    }
 
     /**
      * Tek geçişli tarayıcı. `modes` yığını: null = kod, aksi halde açık metnin sınırlayıcısı.
@@ -166,10 +168,12 @@ object SyntaxCheck {
                         while (i < n && s[i] != '\n') i++
                         continue
                     }
+
                     c.hashComment && ch == '#' -> {
                         while (i < n && s[i] != '\n') i++
                         continue
                     }
+
                     c.blockComment && ch == '/' && next == '*' -> {
                         val end = s.indexOf("*/", i + 2)
                         val stop = if (end < 0) n else end + 2
@@ -179,12 +183,38 @@ object SyntaxCheck {
                         i = stop
                         continue
                     }
-                    c.triple && s.startsWith("\"\"\"", i) -> { modes += "\"\"\""; modeLines += line; i += 3; continue }
-                    c.triple && c.hashComment && s.startsWith("'''", i) -> { modes += "'''"; modeLines += line; i += 3; continue }
-                    ch == '"' -> { modes += "\""; modeLines += line }
-                    ch == '\'' && c.singleQuote -> { modes += "'"; modeLines += line }
-                    ch == '`' && c.backtick -> { modes += "`"; modeLines += line }
+
+                    c.triple && s.startsWith("\"\"\"", i) -> {
+                        modes += "\"\"\""
+                        modeLines += line
+                        i += 3
+                        continue
+                    }
+
+                    c.triple && c.hashComment && s.startsWith("'''", i) -> {
+                        modes += "'''"
+                        modeLines += line
+                        i += 3
+                        continue
+                    }
+
+                    ch == '"' -> {
+                        modes += "\""
+                        modeLines += line
+                    }
+
+                    ch == '\'' && c.singleQuote -> {
+                        modes += "'"
+                        modeLines += line
+                    }
+
+                    ch == '`' && c.backtick -> {
+                        modes += "`"
+                        modeLines += line
+                    }
+
                     ch == '(' || ch == '[' || ch == '{' -> brackets += Open(ch, line)
+
                     ch == ')' || ch == ']' || ch == '}' -> {
                         val top = brackets.lastOrNull()
                         if (ch == '}' && top?.ch == '$') {
@@ -212,12 +242,14 @@ object SyntaxCheck {
                     i += 2
                     continue
                 }
+
                 s.startsWith(mode, i) -> {
                     modes.removeAt(modes.lastIndex)
                     modeLines.removeAt(modeLines.lastIndex)
                     i += mode.length
                     continue
                 }
+
                 ch == '$' && next == '{' &&
                     ((c.dollarTemplate && (mode == "\"" || mode == "\"\"\"" || mode == "'")) || (c.backtickTemplate && mode == "`")) -> {
                     brackets += Open('$', line)
@@ -226,6 +258,7 @@ object SyntaxCheck {
                     i += 2
                     continue
                 }
+
                 ch == '\n' && (mode == "\"" || mode == "'") -> {
                     return issue(modeLines.last(), "Kapanmamış metin değişmezi (olası; JSX metni/regex ise yanlış alarm olabilir)")
                 }

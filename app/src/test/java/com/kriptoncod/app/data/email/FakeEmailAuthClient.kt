@@ -19,18 +19,18 @@ class FakeEmailAuthClient(
     override suspend fun login(loginUrl: String, email: String, password: String): EmailAuthResult {
         loginCallCount++
         return when {
-            shouldFail     -> EmailAuthResult.Error("Sahte giriş hatası")
+            shouldFail -> EmailAuthResult.Error("Sahte giriş hatası")
             shouldNeedReauth -> EmailAuthResult.NeedsReauth
-            else           -> EmailAuthResult.Success(fakeToken, fakeExpiresAtMs)
+            else -> EmailAuthResult.Success(fakeToken, fakeExpiresAtMs)
         }
     }
 
     override suspend fun silentRefresh(loginUrl: String, token: String): EmailAuthResult {
         refreshCallCount++
         return when {
-            shouldFail       -> EmailAuthResult.Error("Sahte yenileme hatası")
+            shouldFail -> EmailAuthResult.Error("Sahte yenileme hatası")
             shouldNeedReauth -> EmailAuthResult.NeedsReauth
-            else             -> EmailAuthResult.Success(fakeToken, fakeExpiresAtMs)
+            else -> EmailAuthResult.Success(fakeToken, fakeExpiresAtMs)
         }
     }
 

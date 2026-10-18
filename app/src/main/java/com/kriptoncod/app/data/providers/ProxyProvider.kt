@@ -25,8 +25,7 @@ enum class UpstreamProvider(val id: String) {
         fun fromId(id: String?): UpstreamProvider? = entries.firstOrNull { it.id == id }
 
         /** Önce model kimliğine, sonra `owned_by` ipucuna bakar; hiçbiri tanınmazsa [OTHER]. */
-        fun detect(modelId: String, ownedBy: String? = null): UpstreamProvider =
-            fromModelId(modelId) ?: fromOwner(ownedBy) ?: OTHER
+        fun detect(modelId: String, ownedBy: String? = null): UpstreamProvider = fromModelId(modelId) ?: fromOwner(ownedBy) ?: OTHER
 
         /** Yalnız model kimliğinden; tanınmazsa null (ör. "llama-3"). */
         fun fromModelId(modelId: String): UpstreamProvider? {
@@ -117,8 +116,7 @@ object ProxyProvider {
     }
 
     /** Normalleştirilmiş taban adres metni; geçersizse null. */
-    fun normalizeBaseUrl(raw: String): String? =
-        (parseBaseUrl(raw) as? ProxyUrlResult.Valid)?.baseUrl?.toString()
+    fun normalizeBaseUrl(raw: String): String? = (parseBaseUrl(raw) as? ProxyUrlResult.Valid)?.baseUrl?.toString()
 
     /** [baseUrl] çözümlenemezse null. [upstream], hesabın `providerId`'si olarak uç noktaya yazılır. */
     fun endpoint(baseUrl: String, upstream: UpstreamProvider? = null): ProviderEndpoint? {
@@ -179,10 +177,9 @@ object ProxyProvider {
 
 /** Hesaptan istek atılacak uç noktayı çözer: proxy hesabında kendi taban adresi, diğerlerinde katalog. */
 object AccountEndpoints {
-    fun resolve(account: AiAccount): ProviderEndpoint? =
-        if (account.authType == AuthType.PROXY) {
-            ProxyProvider.endpoint(account.baseUrl.orEmpty(), UpstreamProvider.fromId(account.providerId))
-        } else {
-            ProviderCatalog.byId(account.providerId)?.resolve()
-        }
+    fun resolve(account: AiAccount): ProviderEndpoint? = if (account.authType == AuthType.PROXY) {
+        ProxyProvider.endpoint(account.baseUrl.orEmpty(), UpstreamProvider.fromId(account.providerId))
+    } else {
+        ProviderCatalog.byId(account.providerId)?.resolve()
+    }
 }

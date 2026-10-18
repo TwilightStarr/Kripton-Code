@@ -22,8 +22,12 @@ class StreamingGenerationTest {
     private class Recorder : StreamSink {
         val deltas = mutableListOf<String>()
         var resets = 0
-        override fun append(delta: String) { deltas += delta }
-        override fun reset() { resets++ }
+        override fun append(delta: String) {
+            deltas += delta
+        }
+        override fun reset() {
+            resets++
+        }
     }
 
     @Before fun setUp() {
@@ -36,7 +40,9 @@ class StreamingGenerationTest {
         )
     }
 
-    @After fun tearDown() { runCatching { server.shutdown() } }
+    @After fun tearDown() {
+        runCatching { server.shutdown() }
+    }
 
     private fun endpoint(): ProviderEndpoint {
         val base = server.url("/v1")
@@ -54,11 +60,9 @@ class StreamingGenerationTest {
         .setHeader("Content-Type", "text/event-stream")
         .setBody(events.joinToString("") { "data: $it\n\n" })
 
-    private fun delta(text: String, finish: String? = null) =
-        """{"choices":[{"index":0,"delta":{"content":"$text"},"finish_reason":${finish?.let { "\"$it\"" } ?: "null"}}]}"""
+    private fun delta(text: String, finish: String? = null) = """{"choices":[{"index":0,"delta":{"content":"$text"},"finish_reason":${finish?.let { "\"$it\"" } ?: "null"}}]}"""
 
-    private fun gen(sink: StreamSink, prompt: String = "Yaz") =
-        runBlocking { generator.generate(endpoint(), "m-1", key, prompt, sink) }
+    private fun gen(sink: StreamSink, prompt: String = "Yaz") = runBlocking { generator.generate(endpoint(), "m-1", key, prompt, sink) }
 
     @Test fun streamsDeltasToSinkAndReturnsJoinedText() {
         server.enqueue(sse(delta("Mer"), delta("haba "), delta("dünya", "stop"), "[DONE]"))

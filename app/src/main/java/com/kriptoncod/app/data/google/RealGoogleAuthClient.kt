@@ -22,8 +22,7 @@ class RealGoogleAuthClient(private val clientId: suspend () -> String?) : Google
         .setRequestedScopes(scopes)
         .build()
 
-    private fun client(activity: Activity): AuthorizationClient =
-        Identity.getAuthorizationClient(activity)
+    private fun client(activity: Activity): AuthorizationClient = Identity.getAuthorizationClient(activity)
 
     override suspend fun authorize(activity: Activity): GoogleAuthResult {
         if (clientId().isNullOrBlank()) {

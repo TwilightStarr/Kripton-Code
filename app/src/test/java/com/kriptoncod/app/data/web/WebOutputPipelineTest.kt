@@ -15,7 +15,10 @@ import org.junit.Test
 
 private class Sess(private val replies: ArrayDeque<WebReply>, private val files: Map<String, WebFile> = emptyMap()) : WebChatSession {
     val sent = mutableListOf<String>()
-    override suspend fun send(prompt: String): WebReply { sent += prompt; return replies.removeFirst() }
+    override suspend fun send(prompt: String): WebReply {
+        sent += prompt
+        return replies.removeFirst()
+    }
     override suspend fun download(url: String): WebFile? = files[url]
     override suspend fun close() = Unit
 }
@@ -25,8 +28,13 @@ private class Drv(val s: Sess) : WebChatDriver {
 }
 
 private fun acct(p: WebProvider) = AiAccount(
-    id = 1, providerId = p.id, displayName = "t", authType = AuthType.WEB_SESSION,
-    modelId = "web", powerRank = 1, status = AccountStatus.READY,
+    id = 1,
+    providerId = p.id,
+    displayName = "t",
+    authType = AuthType.WEB_SESSION,
+    modelId = "web",
+    powerRank = 1,
+    status = AccountStatus.READY,
 )
 
 private fun gen(s: Sess) = WebSessionGenerator(Drv(s), WebPacer(minGapMs = 0, jitterMs = 0), now = { 0L })
@@ -85,8 +93,12 @@ class WebPipelineTest {
     @Test fun zipBinariesAndRawZipArePassedAsAssets() = runBlocking {
         val bos = ByteArrayOutputStream()
         ZipOutputStream(bos).use { z ->
-            z.putNextEntry(ZipEntry("app/Main.kt")); z.write("fun main() {}".toByteArray()); z.closeEntry()
-            z.putNextEntry(ZipEntry("assets/logo.png")); z.write(byteArrayOf(0, 1, 2, -1, -2)); z.closeEntry()
+            z.putNextEntry(ZipEntry("app/Main.kt"))
+            z.write("fun main() {}".toByteArray())
+            z.closeEntry()
+            z.putNextEntry(ZipEntry("assets/logo.png"))
+            z.write(byteArrayOf(0, 1, 2, -1, -2))
+            z.closeEntry()
         }
         val s = Sess(
             ArrayDeque(listOf(WebReply(WebReply.Status.OK, "ok", listOf("https://claude.ai/f.zip")))),

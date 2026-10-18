@@ -32,7 +32,9 @@ class OpenAiCompatibleGeneratorTest {
         )
     }
 
-    @After fun tearDown() { runCatching { server.shutdown() } }
+    @After fun tearDown() {
+        runCatching { server.shutdown() }
+    }
 
     private fun endpoint(): ProviderEndpoint {
         val base = server.url("/v1")
@@ -46,18 +48,15 @@ class OpenAiCompatibleGeneratorTest {
         )
     }
 
-    private fun json(body: String, code: Int = 200) =
-        MockResponse().setResponseCode(code).setHeader("Content-Type", "application/json").setBody(body)
+    private fun json(body: String, code: Int = 200) = MockResponse().setResponseCode(code).setHeader("Content-Type", "application/json").setBody(body)
 
-    private fun reply(content: String, finish: String = "stop") =
-        json("""{"choices":[{"index":0,"message":{"role":"assistant","content":${quote(content)}},"finish_reason":"$finish"}]}""")
+    private fun reply(content: String, finish: String = "stop") = json("""{"choices":[{"index":0,"message":{"role":"assistant","content":${quote(content)}},"finish_reason":"$finish"}]}""")
 
     private fun quote(s: String) = "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\""
 
     private fun generate(prompt: String = "Yaz") = runBlocking { generator.generate(endpoint(), "m-1", key, prompt) }
 
-    private fun failure(block: () -> Unit): AiGenerationException =
-        runCatching(block).exceptionOrNull() as AiGenerationException
+    private fun failure(block: () -> Unit): AiGenerationException = runCatching(block).exceptionOrNull() as AiGenerationException
 
     // ---- başarı
 
@@ -197,7 +196,8 @@ class OpenAiCompatibleGeneratorTest {
         val out = runBlocking { continuing.generate(endpoint(), "m-1", key, "Yaz") }
         assertTrue("ilk" in out && "ikinci" in out && "son" in out)
         assertEquals(3, server.requestCount)
-        server.takeRequest(); server.takeRequest()
+        server.takeRequest()
+        server.takeRequest()
         assertTrue("assistant" in server.takeRequest().body.readUtf8())
     }
 

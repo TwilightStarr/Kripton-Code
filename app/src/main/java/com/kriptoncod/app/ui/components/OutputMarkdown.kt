@@ -55,7 +55,10 @@ object OutputMarkdown {
             var close = -1
             for (j in i + 1 until lines.size) {
                 val t = lines[j].trim()
-                if (t.length >= fence.length && t.all { it == fence[0] } && t.startsWith(fence)) { close = j; break }
+                if (t.length >= fence.length && t.all { it == fence[0] } && t.startsWith(fence)) {
+                    close = j
+                    break
+                }
             }
             val bodyEnd = if (close >= 0) close else lines.size
             val body = lines.subList(i + 1, bodyEnd)

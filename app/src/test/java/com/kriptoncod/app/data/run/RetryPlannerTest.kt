@@ -9,7 +9,12 @@ import org.junit.Test
 class RetryPlannerTest {
 
     private fun job(
-        id: Long, kind: JobKind, state: JobState, catalog: String? = null, title: String? = null, body: String? = null,
+        id: Long,
+        kind: JobKind,
+        state: JobState,
+        catalog: String? = null,
+        title: String? = null,
+        body: String? = null,
     ) = Job(id = id, runId = 1, promptId = 0, state = state, updatedAt = 0, kind = kind, catalog = catalog, title = title, body = body)
 
     private val plan = job(1, JobKind.PLAN, JobState.DONE)

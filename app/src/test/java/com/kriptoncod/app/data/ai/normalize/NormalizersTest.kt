@@ -13,8 +13,7 @@ import org.junit.Test
 class NormalizersTest {
     private fun read(choice: String) = ChoiceReader.read(Json.parseToJsonElement(choice).jsonObject)
 
-    private fun run(modelId: String, choice: String, hint: UpstreamProvider? = null): NormalizedOutput =
-        Normalizers.forModel(modelId, hint).normalize(read(choice))
+    private fun run(modelId: String, choice: String, hint: UpstreamProvider? = null): NormalizedOutput = Normalizers.forModel(modelId, hint).normalize(read(choice))
 
     /** Düz metin içerikli bir `choice` nesnesi (JSON kaçışlı). */
     private fun text(content: String, finish: String = "stop"): String {

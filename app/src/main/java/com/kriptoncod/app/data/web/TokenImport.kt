@@ -17,7 +17,10 @@ object TokenImport {
         "javascript:(function(){var o={};for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);" +
             "if(/token/i.test(k))o[k]=localStorage.getItem(k)}prompt('Tümünü seçip kopyala:',JSON.stringify(o))})()"
 
-    private val json = Json { isLenient = true; ignoreUnknownKeys = true }
+    private val json = Json {
+        isLenient = true
+        ignoreUnknownKeys = true
+    }
 
     /** Yapıştırılan metinden {anahtar: değer} çıkarır; ilk `{` ile son `}` arası alınır. Geçersizse null. */
     fun parse(raw: String): Map<String, String>? {

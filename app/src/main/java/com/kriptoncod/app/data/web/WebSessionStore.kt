@@ -21,7 +21,10 @@ data class WebSession(
 
 class WebSessionStore(private val vault: KeyVault, private val now: () -> Long = System::currentTimeMillis) {
 
-    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
 
     private fun keyId(accountId: Long) = "web-session-$accountId"
 
@@ -41,9 +44,8 @@ class WebSessionStore(private val vault: KeyVault, private val now: () -> Long =
 
 /** "a=b; c=d" biçimli çerez metnini çiftlere ayırır (bozuk parçalar atlanır). */
 object CookieText {
-    fun parse(cookieHeader: String?): List<Pair<String, String>> =
-        cookieHeader.orEmpty().split(';').mapNotNull { part ->
-            val i = part.indexOf('=')
-            if (i <= 0) null else part.substring(0, i).trim() to part.substring(i + 1).trim()
-        }.filter { it.first.isNotEmpty() }
+    fun parse(cookieHeader: String?): List<Pair<String, String>> = cookieHeader.orEmpty().split(';').mapNotNull { part ->
+        val i = part.indexOf('=')
+        if (i <= 0) null else part.substring(0, i).trim() to part.substring(i + 1).trim()
+    }.filter { it.first.isNotEmpty() }
 }

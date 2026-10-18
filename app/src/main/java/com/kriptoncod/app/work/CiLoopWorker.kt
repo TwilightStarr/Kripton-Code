@@ -21,8 +21,7 @@ import kotlinx.coroutines.flow.first
  * GitHub Actions sonucunu bekler; başarısızsa log özetini AI'a verip düzeltmeyi aynı dala commit'ler.
  * Geçici hatalarda [Result.retry] kullanılır; [MAX_WORKER_ATTEMPTS] aşılırsa run FAILED olur.
  */
-class CiLoopWorker(context: Context, params: WorkerParameters) :
-    CoroutineWorker(context, params) {
+class CiLoopWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
         val runId = inputData.getLong(KEY_RUN_ID, -1L)
@@ -37,8 +36,7 @@ class CiLoopWorker(context: Context, params: WorkerParameters) :
         val branch = GitHubService.runBranch(runId)
 
         // Geçici hata: sınırsız yeniden denemeyi önle.
-        suspend fun retryOrFail(): Result =
-            if (runAttemptCount < MAX_WORKER_ATTEMPTS) Result.retry() else failNow(c, runId)
+        suspend fun retryOrFail(): Result = if (runAttemptCount < MAX_WORKER_ATTEMPTS) Result.retry() else failNow(c, runId)
 
         // Push yapan commit'in SHA'sı (dal ucundan okunur).
         val headSha = when (val head = c.githubService.branchSha(token, repo, branch)) {
@@ -106,7 +104,9 @@ class CiLoopWorker(context: Context, params: WorkerParameters) :
         // Yeni commit + push
         val commit = try {
             c.githubService.commitFiles(
-                token, repo, branch,
+                token,
+                repo,
+                branch,
                 "Kripton Cod: CI düzeltmesi (deneme ${current.ciAttempts})",
                 blocks.map { GitHubFile(it.path, it.content) },
             )

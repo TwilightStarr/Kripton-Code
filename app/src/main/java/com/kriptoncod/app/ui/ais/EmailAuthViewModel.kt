@@ -64,9 +64,9 @@ class EmailAuthViewModel(
         }
         val auth = emailAuth(id)
         _state.value = when (auth.silentRefreshIfNeeded()) {
-            is EmailAuthState.Valid     -> EmailAuthCardState.Connected
+            is EmailAuthState.Valid -> EmailAuthCardState.Connected
             is EmailAuthState.NeedsReauth -> EmailAuthCardState.NeedsReauth
-            is EmailAuthState.Error     -> EmailAuthCardState.Disconnected
+            is EmailAuthState.Error -> EmailAuthCardState.Disconnected
         }
     }
 
@@ -83,8 +83,10 @@ class EmailAuthViewModel(
                         if (account?.status == AccountStatus.ERROR) repository.markReady(id)
                         _state.value = EmailAuthCardState.Connected
                     }
+
                     is EmailAuthState.NeedsReauth ->
                         _state.value = EmailAuthCardState.NeedsReauth
+
                     is EmailAuthState.Error ->
                         _state.value = EmailAuthCardState.Error(R.string.email_auth_sign_in_failed)
                 }
@@ -104,10 +106,12 @@ class EmailAuthViewModel(
             val auth = emailAuth(id)
             _state.value = when (auth.silentRefreshIfNeeded()) {
                 is EmailAuthState.Valid -> EmailAuthCardState.Connected
+
                 is EmailAuthState.NeedsReauth -> {
                     repository.markError(id)
                     EmailAuthCardState.NeedsReauth
                 }
+
                 is EmailAuthState.Error ->
                     EmailAuthCardState.Error(R.string.email_auth_refresh_failed)
             }
@@ -129,8 +133,7 @@ class EmailAuthViewModel(
         }
     }
 
-    private fun emailAuth(id: Long) =
-        EmailPasswordAuth(tokenStore, authClient, id, loginUrl, revokeUrl)
+    private fun emailAuth(id: Long) = EmailPasswordAuth(tokenStore, authClient, id, loginUrl, revokeUrl)
 
     class Factory(
         private val accountId: Long?,
@@ -141,9 +144,13 @@ class EmailAuthViewModel(
         private val repository: AiAccountRepository,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            EmailAuthViewModel(
-                accountId, tokenStore, authClient, loginUrl, revokeUrl, repository,
-            ) as T
+        override fun <T : ViewModel> create(modelClass: Class<T>): T = EmailAuthViewModel(
+            accountId,
+            tokenStore,
+            authClient,
+            loginUrl,
+            revokeUrl,
+            repository,
+        ) as T
     }
 }

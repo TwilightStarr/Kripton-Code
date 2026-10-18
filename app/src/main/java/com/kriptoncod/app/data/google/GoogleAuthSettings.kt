@@ -25,8 +25,11 @@ class GoogleAuthSettings(private val context: Context) {
 
     suspend fun setClientId(id: String) {
         context.googleAuthDataStore.edit { prefs ->
-            if (id.isBlank()) prefs.remove(clientIdKey)
-            else prefs[clientIdKey] = id.trim()
+            if (id.isBlank()) {
+                prefs.remove(clientIdKey)
+            } else {
+                prefs[clientIdKey] = id.trim()
+            }
         }
     }
 

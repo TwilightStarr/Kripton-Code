@@ -61,6 +61,7 @@ fun KimiAuthCard(
                         style = KButtonStyle.Outline,
                     )
                 }
+
                 is KimiAuthCardState.Loading -> {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         KriptonLoader(size = 28.dp)
@@ -71,6 +72,7 @@ fun KimiAuthCard(
                         )
                     }
                 }
+
                 else -> {
                     if (s is KimiAuthCardState.NeedsReauth) {
                         Text(

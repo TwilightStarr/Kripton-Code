@@ -82,7 +82,7 @@ internal fun rememberEmailAuthViewModelFactory(
         val endpoint = provider?.resolve()
         // loginUrl ve revokeUrl endpoint'ten alınır; null ise boş string guard yeterli
         val loginUrl = endpoint?.loginUrl ?: ""
-        val revokeUrl: String? = null  // Anthropic / OpenAI revoke uç noktası şu an tanımlı değil
+        val revokeUrl: String? = null // Anthropic / OpenAI revoke uç noktası şu an tanımlı değil
         EmailAuthViewModel.Factory(
             accountId = accountId,
             tokenStore = container.emailTokenStore,

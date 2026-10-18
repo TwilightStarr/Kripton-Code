@@ -10,7 +10,6 @@ import java.util.zip.ZipInputStream
  */
 object CiLogSummarizer {
 
-
     private val ANSI = Regex("\u001B\\[[0-9;]*[A-Za-z]")
     private val TIMESTAMP = Regex("^\\d{4}-\\d{2}-\\d{2}T[\\d:.]+Z\\s?")
     private val STRONG = Regex("##\\[error\\]|^e: |\\bFAILED\\b|Process completed with exit code [1-9]")
@@ -67,6 +66,5 @@ object CiLogSummarizer {
         return if (text.length <= maxChars) text else text.take(maxChars).trimEnd() + "\n…"
     }
 
-    private fun clean(line: String): String =
-        TIMESTAMP.replace(ANSI.replace(line, ""), "").trimEnd()
+    private fun clean(line: String): String = TIMESTAMP.replace(ANSI.replace(line, ""), "").trimEnd()
 }

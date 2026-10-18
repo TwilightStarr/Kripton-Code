@@ -90,8 +90,11 @@ class RunWidget : GlanceAppWidget() {
             val node = run.nodeTitle?.takeIf { it.isNotBlank() }
                 ?: run.nodeKind?.let { context.getString(it.labelRes()) }
             Text(
-                if (node != null) context.getString(R.string.widget_node, node)
-                else context.getString(R.string.widget_progress, run.done, run.total),
+                if (node != null) {
+                    context.getString(R.string.widget_node, node)
+                } else {
+                    context.getString(R.string.widget_progress, run.done, run.total)
+                },
                 style = TextStyle(color = MUTED, fontSize = 12.sp),
                 maxLines = 1,
             )
@@ -154,16 +157,13 @@ private suspend fun runAction(context: Context, parameters: ActionParameters, ac
 }
 
 class PauseRunAction : ActionCallback {
-    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) =
-        runAction(context, parameters, RunControl.Action.PAUSE)
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) = runAction(context, parameters, RunControl.Action.PAUSE)
 }
 
 class ResumeRunAction : ActionCallback {
-    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) =
-        runAction(context, parameters, RunControl.Action.RESUME)
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) = runAction(context, parameters, RunControl.Action.RESUME)
 }
 
 class CancelRunAction : ActionCallback {
-    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) =
-        runAction(context, parameters, RunControl.Action.CANCEL)
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) = runAction(context, parameters, RunControl.Action.CANCEL)
 }

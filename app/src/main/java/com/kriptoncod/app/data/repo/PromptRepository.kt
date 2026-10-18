@@ -54,11 +54,13 @@ class PromptRepository(
     suspend fun duplicateItem(promptId: Long): Long? {
         val src = items.get(promptId) ?: return null
         return db.withTransaction {
-            items.insert(src.copy(
-                id = 0,
-                title = src.title + " (kopya)",
-                order = items.maxPosition(src.setId) + 1,
-            ))
+            items.insert(
+                src.copy(
+                    id = 0,
+                    title = src.title + " (kopya)",
+                    order = items.maxPosition(src.setId) + 1,
+                ),
+            )
         }
     }
 

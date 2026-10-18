@@ -74,8 +74,11 @@ class RunFinalizer(private val runs: RunRepository) {
         for (job in jobs.sortedBy { it.id }) {
             val text = outputs[job.id] ?: continue
             val blocks = safeBlocks(text, job.id)
-            if (blocks.isEmpty()) set.putText("output_${job.promptId}.txt", text, "job${job.id}")
-            else blocks.forEach { (path, content) -> set.putText(path, content, "job${job.id}") }
+            if (blocks.isEmpty()) {
+                set.putText("output_${job.promptId}.txt", text, "job${job.id}")
+            } else {
+                blocks.forEach { (path, content) -> set.putText(path, content, "job${job.id}") }
+            }
         }
         addAssets(set, jobs)
         writeZip(runId, all, outputs, set, extra = emptyMap())
@@ -97,8 +100,11 @@ class RunFinalizer(private val runs: RunRepository) {
 
         val set = FileSet()
         val finalBlocks = safeBlocks(finalText, final.id)
-        if (finalBlocks.isEmpty()) set.putText("final.md", finalText, "final")
-        else finalBlocks.forEach { (p, c) -> set.putText(p, c, "final") }
+        if (finalBlocks.isEmpty()) {
+            set.putText("final.md", finalText, "final")
+        } else {
+            finalBlocks.forEach { (p, c) -> set.putText(p, c, "final") }
+        }
 
         // Tamamlık denetimi: birleştirmeye girmesi gereken düğümlerin dosyaları nihai pakette var mı?
         val shareable = all.filter {
@@ -149,14 +155,13 @@ class RunFinalizer(private val runs: RunRepository) {
     // --- yardımcılar ----------------------------------------------------------------------------
 
     /** Güvenli yollu bloklar; yolsuz bloklar `unnamed/job<id>_part_N.<uzantı>` olarak kurtarılır. */
-    private fun safeBlocks(text: String, jobId: Long): List<Pair<String, String>> =
-        CodeBlockParser.parse(WebOutputCheck.canonical(text)).mapNotNull { b ->
-            val path = if (b.path.startsWith("unnamed/part_")) "unnamed/job${jobId}_${b.path.removePrefix("unnamed/")}" else b.path
-            when (val r = PathSafety.validate(path)) {
-                is PathSafety.Result.Safe -> r.normalized to b.content
-                is PathSafety.Result.Rejected -> null
-            }
+    private fun safeBlocks(text: String, jobId: Long): List<Pair<String, String>> = CodeBlockParser.parse(WebOutputCheck.canonical(text)).mapNotNull { b ->
+        val path = if (b.path.startsWith("unnamed/part_")) "unnamed/job${jobId}_${b.path.removePrefix("unnamed/")}" else b.path
+        when (val r = PathSafety.validate(path)) {
+            is PathSafety.Result.Safe -> r.normalized to b.content
+            is PathSafety.Result.Rejected -> null
         }
+    }
 
     /** İşlerin ham/ikili dosyaları: özgün yoluna, doluysa `_kripton/alternatives/`; orijinal zip `_kripton/raw/`. */
     private suspend fun addAssets(set: FileSet, jobs: List<Job>) {
@@ -165,10 +170,12 @@ class RunFinalizer(private val runs: RunRepository) {
                 when {
                     path.startsWith("_kripton/raw/") ->
                         set.files["_kripton/raw/job${job.id}_${path.removePrefix("_kripton/raw/")}"] = bytes
+
                     path in set.files -> {
                         set.files["_kripton/alternatives/job${job.id}/$path"] = bytes
                         set.notes += "İkili dosya yolu çakıştı: $path — düğüm ${job.id} sürümü _kripton/alternatives/ altında."
                     }
+
                     else -> set.files[path] = bytes
                 }
             }

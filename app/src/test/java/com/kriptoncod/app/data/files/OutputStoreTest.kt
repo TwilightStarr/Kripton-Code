@@ -42,8 +42,10 @@ class OutputStoreTest {
 
     @Test fun startPartialResetsOldContent() = runBlocking {
         val s = store()
-        s.startPartial(1, 1); s.appendPartial(1, 1, "eski")
-        s.startPartial(1, 1); s.appendPartial(1, 1, "yeni")
+        s.startPartial(1, 1)
+        s.appendPartial(1, 1, "eski")
+        s.startPartial(1, 1)
+        s.appendPartial(1, 1, "yeni")
         assertEquals("yeni", s.read(s.commitPartial(1, 1)))
     }
 
@@ -76,10 +78,10 @@ class OutputStoreTest {
 
     @Test fun recoverDeletesIncompletePartialsAndReportsThem() = runBlocking {
         file("outputs/2").mkdirs()
-        file("outputs/2/5.partial").writeText("yarım")          // .txt yok -> yarım üretim
-        file("outputs/2/6.partial").writeText("eski")           // .txt var -> eski artık
+        file("outputs/2/5.partial").writeText("yarım") // .txt yok -> yarım üretim
+        file("outputs/2/6.partial").writeText("eski") // .txt var -> eski artık
         file("outputs/2/6.txt").writeText("tam")
-        file("outputs/2/8.txt.123.tmp").writeText("yarım tmp")  // yarım atomik yazma
+        file("outputs/2/8.txt.123.tmp").writeText("yarım tmp") // yarım atomik yazma
         file("zips").mkdirs()
         file("zips/2.zip.456.tmp").writeText("yarım zip")
 
@@ -119,7 +121,10 @@ class OutputStoreTest {
         assertEquals(listOf<Byte>(1, 2, 3), file(path).readBytes().toList())
 
         try {
-            s.writeZip(4) { it.write(9); error("yazma sırasında çöktü") }
+            s.writeZip(4) {
+                it.write(9)
+                error("yazma sırasında çöktü")
+            }
             fail()
         } catch (_: IllegalStateException) {
         }
@@ -129,7 +134,8 @@ class OutputStoreTest {
 
     @Test fun deleteRunRemovesOutputsAndZip() = runBlocking {
         val s = store()
-        s.write(5, 1, "a"); s.writeZip(5) { it.write(1) }
+        s.write(5, 1, "a")
+        s.writeZip(5) { it.write(1) }
         s.deleteRun(5)
         assertFalse(file("outputs/5").exists())
         assertFalse(file("zips/5.zip").exists())

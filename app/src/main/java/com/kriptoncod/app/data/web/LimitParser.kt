@@ -51,12 +51,24 @@ object LimitParser {
     private fun relativeMs(t: String): Long? {
         var total = 0.0
         var found = false
-        DAYS.find(t)?.let { total += it.groupValues[1].toDouble() * 86_400_000; found = true }
-        HOURS.find(t)?.let {
-            total += it.groupValues[1].replace(',', '.').toDouble() * 3_600_000; found = true
+        DAYS.find(t)?.let {
+            total += it.groupValues[1].toDouble() * 86_400_000
+            found = true
         }
-        MINUTES.find(t)?.let { total += it.groupValues[1].toDouble() * 60_000; found = true }
-        if (!found) SECONDS.find(t)?.let { total += it.groupValues[1].toDouble() * 1_000; found = true }
+        HOURS.find(t)?.let {
+            total += it.groupValues[1].replace(',', '.').toDouble() * 3_600_000
+            found = true
+        }
+        MINUTES.find(t)?.let {
+            total += it.groupValues[1].toDouble() * 60_000
+            found = true
+        }
+        if (!found) {
+            SECONDS.find(t)?.let {
+                total += it.groupValues[1].toDouble() * 1_000
+                found = true
+            }
+        }
         return if (found) total.toLong() else null
     }
 

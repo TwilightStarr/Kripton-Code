@@ -63,9 +63,11 @@ fun RunLaunchDialog(
             val token = container.githubTokenStore.get()
             if (token == null) {
                 RepoState.NoToken
-            } else when (val r = container.githubService.listRepos(token)) {
-                is ApiResult.Ok -> RepoState.Loaded(r.value)
-                is ApiResult.Fail -> RepoState.Failed
+            } else {
+                when (val r = container.githubService.listRepos(token)) {
+                    is ApiResult.Ok -> RepoState.Loaded(r.value)
+                    is ApiResult.Fail -> RepoState.Failed
+                }
             }
         } catch (e: KeyVaultException) {
             RepoState.NoToken
@@ -96,16 +98,19 @@ fun RunLaunchDialog(
                                 color = k.muted,
                             )
                         }
+
                         RepoState.NoToken -> Text(
                             stringResource(R.string.run_launch_no_token),
                             style = MaterialTheme.typography.bodySmall,
                             color = k.muted,
                         )
+
                         RepoState.Failed -> Text(
                             stringResource(R.string.run_launch_repo_error),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                         )
+
                         is RepoState.Loaded -> {
                             Column(
                                 modifier = Modifier

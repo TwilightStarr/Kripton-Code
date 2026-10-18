@@ -19,8 +19,7 @@ import org.junit.rules.TemporaryFolder
 class AndroidKeystoreKeyVaultTest {
     @get:Rule val tmp = TemporaryFolder()
 
-    private fun vault(dir: File = File(tmp.root, "vault"), provider: SecretKeyProvider = SoftwareKeyProvider()) =
-        AndroidKeystoreKeyVault(dir, provider)
+    private fun vault(dir: File = File(tmp.root, "vault"), provider: SecretKeyProvider = SoftwareKeyProvider()) = AndroidKeystoreKeyVault(dir, provider)
 
     @Test fun putGetRoundTripAndDelete() = runBlocking {
         val v = vault()
@@ -35,7 +34,9 @@ class AndroidKeystoreKeyVaultTest {
 
     @Test fun overwriteReplacesValueAndListIds() = runBlocking {
         val v = vault()
-        v.put("b", "1"); v.put("a", "1"); v.put("a", "2")
+        v.put("b", "1")
+        v.put("a", "1")
+        v.put("a", "2")
         assertEquals("2", v.get("a"))
         assertEquals(listOf("a", "b"), v.listIds())
     }

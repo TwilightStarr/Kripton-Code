@@ -13,8 +13,7 @@ import org.junit.Test
 
 class RunWidgetDataTest {
     private fun run(id: Long, status: RunStatus) = RunRecord(id = id, createdAt = id, status = status)
-    private fun job(id: Long, state: JobState, title: String? = null, kind: JobKind = JobKind.WORK) =
-        Job(id = id, runId = 1, promptId = id, state = state, updatedAt = 0, kind = kind, title = title)
+    private fun job(id: Long, state: JobState, title: String? = null, kind: JobKind = JobKind.WORK) = Job(id = id, runId = 1, promptId = id, state = state, updatedAt = 0, kind = kind, title = title)
 
     @Test fun picksNewestActiveRun() {
         val runs = listOf(run(5, RunStatus.DONE), run(4, RunStatus.PAUSED), run(3, RunStatus.RUNNING))

@@ -26,8 +26,7 @@ object CodeBlockParser {
      * [rawOutput] içindeki yollu kod blokları sırayla. Yol PathSafety ile doğrulanmaz; çağıran doğrular.
      * Kapanmamış son blok da (geriye dönük uyumluluk için) dahildir; kesiklik için [analyze] kullan.
      */
-    fun parse(rawOutput: String): List<Block> =
-        analyze(rawOutput).blocks.mapNotNull { b -> b.path?.let { Block(it, b.content) } }
+    fun parse(rawOutput: String): List<Block> = analyze(rawOutput).blocks.mapNotNull { b -> b.path?.let { Block(it, b.content) } }
 
     fun analyze(rawOutput: String): Analysis {
         val lines = rawOutput.replace("\r\n", "\n").replace('\r', '\n').split('\n')

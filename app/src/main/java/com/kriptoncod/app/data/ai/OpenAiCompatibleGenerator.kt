@@ -55,7 +55,10 @@ import okhttp3.sse.EventSources
  */
 class OpenAiCompatibleGenerator(
     private val client: OkHttpClient = defaultClient(),
-    private val json: Json = Json { ignoreUnknownKeys = true; isLenient = true },
+    private val json: Json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+    },
     private val maxContinuations: Int = DEFAULT_MAX_CONTINUATIONS,
 ) : AiGenerator {
 
@@ -105,10 +108,25 @@ class OpenAiCompatibleGenerator(
 
     /** İlk tur: yalnız prompt. Sonraki turlar: o ana kadarki yanıt + "devam et" mesajı. */
     private fun messagesFor(prompt: String, parts: List<String>) = buildJsonArray {
-        add(buildJsonObject { put("role", "user"); put("content", prompt) })
+        add(
+            buildJsonObject {
+                put("role", "user")
+                put("content", prompt)
+            },
+        )
         if (parts.isNotEmpty()) {
-            add(buildJsonObject { put("role", "assistant"); put("content", ContinuationMerger.merge(parts)) })
-            add(buildJsonObject { put("role", "user"); put("content", PromptWrapper.continuation()) })
+            add(
+                buildJsonObject {
+                    put("role", "assistant")
+                    put("content", ContinuationMerger.merge(parts))
+                },
+            )
+            add(
+                buildJsonObject {
+                    put("role", "user")
+                    put("content", PromptWrapper.continuation())
+                },
+            )
         }
     }
 
@@ -234,8 +252,11 @@ class OpenAiCompatibleGenerator(
                 override fun onClosed(eventSource: EventSource) {
                     // [DONE] gelmeden kapanan akış: metin ve bitiş nedeni varsa tamam, yoksa yarım kalmıştır.
                     if (!cont.isActive) return
-                    if (text.isNotEmpty() && finish != null) cont.resume(finishStream())
-                    else cont.resumeWithException(AiGenerationException(Kind.NETWORK))
+                    if (text.isNotEmpty() && finish != null) {
+                        cont.resume(finishStream())
+                    } else {
+                        cont.resumeWithException(AiGenerationException(Kind.NETWORK))
+                    }
                 }
 
                 override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
@@ -275,8 +296,7 @@ class OpenAiCompatibleGenerator(
     }
 
     /** Yalnız saniye biçimi desteklenir; HTTP-date veya geçersiz değer null. */
-    private fun parseRetryAfter(value: String?): Long? =
-        value?.trim()?.toLongOrNull()?.takeIf { it >= 0 }?.let { if (it > Long.MAX_VALUE / 1000) Long.MAX_VALUE else it * 1000 }
+    private fun parseRetryAfter(value: String?): Long? = value?.trim()?.toLongOrNull()?.takeIf { it >= 0 }?.let { if (it > Long.MAX_VALUE / 1000) Long.MAX_VALUE else it * 1000 }
 
     /**
      * Yanıtı ayrıştırır: `choices[0]` → [ChoiceReader] (içerik biçimleri, muhakeme parçaları) →

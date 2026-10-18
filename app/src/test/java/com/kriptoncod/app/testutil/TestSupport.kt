@@ -13,10 +13,14 @@ import javax.crypto.SecretKey
 /** Bellek içi KeyVault (Keystore gerektirmez). */
 class FakeKeyVault : KeyVault {
     val store = ConcurrentHashMap<String, String>()
-    override suspend fun put(keyId: String, secret: String) { store[keyId] = secret }
+    override suspend fun put(keyId: String, secret: String) {
+        store[keyId] = secret
+    }
     override suspend fun get(keyId: String): String? = store[keyId]
     override suspend fun contains(keyId: String): Boolean = store.containsKey(keyId)
-    override suspend fun delete(keyId: String) { store.remove(keyId) }
+    override suspend fun delete(keyId: String) {
+        store.remove(keyId)
+    }
     override suspend fun listIds(): List<String> = store.keys.sorted()
 }
 

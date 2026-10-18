@@ -224,7 +224,13 @@ fun RunGraph(
                         JobState.FAILED -> k.danger
                     }
                     val selected = p.node.id == selectedId
-                    val borderWidth = if (selected) 4.dp else if (state == JobState.RUNNING) 3.dp else 2.dp
+                    val borderWidth = if (selected) {
+                        4.dp
+                    } else if (state == JobState.RUNNING) {
+                        3.dp
+                    } else {
+                        2.dp
+                    }
                     Box(
                         modifier = Modifier
                             .offset((p.x - p.size / 2f).dp, (p.y - p.size / 2f).dp)

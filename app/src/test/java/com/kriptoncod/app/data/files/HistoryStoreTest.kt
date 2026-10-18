@@ -15,7 +15,12 @@ class HistoryStoreTest {
     private val store get() = HistoryStore(tmp.root)
 
     private fun entry(id: Long, createdAt: Long = id) = HistoryFile(
-        runId = id, createdAt = createdAt, status = "DONE", repo = "o/r", ciAttempts = 2, zipPath = "zips/$id.zip",
+        runId = id,
+        createdAt = createdAt,
+        status = "DONE",
+        repo = "o/r",
+        ciAttempts = 2,
+        zipPath = "zips/$id.zip",
         jobs = listOf(HistoryJob(1, 2, 3, "DONE", 1, "outputs/$id/1.txt")),
     )
 
@@ -43,7 +48,9 @@ class HistoryStoreTest {
     }
 
     @Test fun listSkipsBrokenAndSortsNewestFirst() = runBlocking {
-        store.write(entry(1, createdAt = 10)); store.write(entry(2, createdAt = 30)); store.write(entry(3, createdAt = 20))
+        store.write(entry(1, createdAt = 10))
+        store.write(entry(2, createdAt = 30))
+        store.write(entry(3, createdAt = 20))
         File(tmp.root, "history/9.json").writeText("bozuk")
         assertEquals(listOf(2L, 3L, 1L), store.list().map { it.runId })
     }

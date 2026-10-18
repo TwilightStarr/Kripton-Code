@@ -157,8 +157,11 @@ class OutputStore(
         }
     }
 
-    private fun safeResolve(relativePath: String): File? =
-        try { resolve(relativePath) } catch (_: IllegalArgumentException) { null }
+    private fun safeResolve(relativePath: String): File? = try {
+        resolve(relativePath)
+    } catch (_: IllegalArgumentException) {
+        null
+    }
 
     /** zips/<runId>.zip'i atomik yazar; göreli yolu döndürür. */
     suspend fun writeZip(runId: Long, writer: (OutputStream) -> Unit): String {

@@ -27,8 +27,7 @@ class GeminiGoogleAuth(
      * Token yoksa veya süresi dolmuşsa boş "Bearer" gönderir;
      * çağıran katman önceden [silentRefreshIfNeeded] çalıştırmalıdır.
      */
-    override fun authorize(request: Request.Builder, credential: String): Request.Builder =
-        request.header("Authorization", "Bearer $credential")
+    override fun authorize(request: Request.Builder, credential: String): Request.Builder = request.header("Authorization", "Bearer $credential")
 
     /** Kasadan geçerli access token'ı döndürür; yoksa null. */
     suspend fun loadToken(): String? = tokenStore.getValid(accountId)?.accessToken
@@ -48,21 +47,23 @@ class GeminiGoogleAuth(
                 tokenStore.save(accountId, result.accessToken, result.expiresAtMs)
                 GoogleAuthState.Valid(result.accessToken)
             }
+
             is GoogleAuthResult.NeedsReauth -> GoogleAuthState.NeedsReauth
+
             is GoogleAuthResult.Error -> GoogleAuthState.Error(result.message, result.cause)
         }
     }
 
     /** Kullanıcı etkileşimiyle oturum açar; token'ı kasaya yazar. */
-    suspend fun signIn(activity: Activity): GoogleAuthState {
-        return when (val result = authClient.authorize(activity)) {
-            is GoogleAuthResult.Success -> {
-                tokenStore.save(accountId, result.accessToken, result.expiresAtMs)
-                GoogleAuthState.Valid(result.accessToken)
-            }
-            is GoogleAuthResult.NeedsReauth -> GoogleAuthState.NeedsReauth
-            is GoogleAuthResult.Error -> GoogleAuthState.Error(result.message, result.cause)
+    suspend fun signIn(activity: Activity): GoogleAuthState = when (val result = authClient.authorize(activity)) {
+        is GoogleAuthResult.Success -> {
+            tokenStore.save(accountId, result.accessToken, result.expiresAtMs)
+            GoogleAuthState.Valid(result.accessToken)
         }
+
+        is GoogleAuthResult.NeedsReauth -> GoogleAuthState.NeedsReauth
+
+        is GoogleAuthResult.Error -> GoogleAuthState.Error(result.message, result.cause)
     }
 
     /** Oturumu kapatır; token'ı kasadan siler. */

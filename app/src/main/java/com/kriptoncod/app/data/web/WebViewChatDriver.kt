@@ -231,7 +231,10 @@ class WebViewChatDriver(
                 if (wv != null) {
                     // Ana iş parçacığında yok et; çerez deposunu hemen temizle (hesaplar karışmasın).
                     android.os.Handler(android.os.Looper.getMainLooper()).post {
-                        runCatching { wv.stopLoading(); wv.destroy() }
+                        runCatching {
+                            wv.stopLoading()
+                            wv.destroy()
+                        }
                     }
                 }
             } finally {

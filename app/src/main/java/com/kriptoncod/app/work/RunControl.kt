@@ -15,7 +15,11 @@ object RunControl {
 
     /** İptal edilebilir: bitmemiş her durum (duraklatılmış dahil). */
     val CANCELLABLE: Set<RunStatus> = setOf(
-        RunStatus.PREPARING, RunStatus.RUNNING, RunStatus.PUSHING, RunStatus.CI_WAITING, RunStatus.FIXING,
+        RunStatus.PREPARING,
+        RunStatus.RUNNING,
+        RunStatus.PUSHING,
+        RunStatus.CI_WAITING,
+        RunStatus.FIXING,
         RunStatus.PAUSED,
     )
 

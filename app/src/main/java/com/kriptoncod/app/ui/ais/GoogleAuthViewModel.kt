@@ -91,9 +91,12 @@ class GoogleAuthViewModel(
                         if (account?.status == AccountStatus.ERROR) repository.markReady(id)
                         _state.value = GoogleAuthCardState.Connected
                     }
+
                     is GoogleAuthState.NeedsReauth -> _state.value = GoogleAuthCardState.NeedsReauth
-                    is GoogleAuthState.Error -> _state.value =
-                        GoogleAuthCardState.Error(R.string.google_auth_sign_in_failed)
+
+                    is GoogleAuthState.Error ->
+                        _state.value =
+                            GoogleAuthCardState.Error(R.string.google_auth_sign_in_failed)
                 }
             } catch (c: CancellationException) {
                 throw c
@@ -111,10 +114,12 @@ class GoogleAuthViewModel(
             val auth = geminiAuth(id)
             _state.value = when (auth.silentRefreshIfNeeded()) {
                 is GoogleAuthState.Valid -> GoogleAuthCardState.Connected
+
                 is GoogleAuthState.NeedsReauth -> {
                     repository.markError(id)
                     GoogleAuthCardState.NeedsReauth
                 }
+
                 is GoogleAuthState.Error ->
                     GoogleAuthCardState.Error(R.string.google_auth_refresh_failed)
             }
@@ -146,7 +151,6 @@ class GoogleAuthViewModel(
         private val clientIdAvailable: Boolean,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            GoogleAuthViewModel(accountId, tokenStore, authClient, repository, clientIdAvailable) as T
+        override fun <T : ViewModel> create(modelClass: Class<T>): T = GoogleAuthViewModel(accountId, tokenStore, authClient, repository, clientIdAvailable) as T
     }
 }

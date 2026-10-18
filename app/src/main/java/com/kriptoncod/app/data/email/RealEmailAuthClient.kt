@@ -32,7 +32,7 @@ class RealEmailAuthClient(
     @Serializable
     private data class AnthropicLoginResponse(
         @SerialName("session_token") val sessionToken: String? = null,
-        @SerialName("expires_at") val expiresAt: String? = null,     // ISO-8601 veya epoch-sn
+        @SerialName("expires_at") val expiresAt: String? = null, // ISO-8601 veya epoch-sn
     )
 
     // ── OpenAI ────────────────────────────────────────────────────────────────
@@ -43,7 +43,7 @@ class RealEmailAuthClient(
     @Serializable
     private data class OpenAiLoginResponse(
         @SerialName("access_token") val accessToken: String? = null,
-        @SerialName("expires_in") val expiresIn: Long? = null,        // saniye
+        @SerialName("expires_in") val expiresIn: Long? = null, // saniye
     )
 
     // ── Ortak ─────────────────────────────────────────────────────────────────
@@ -54,6 +54,7 @@ class RealEmailAuthClient(
             val body = when {
                 loginUrl.contains("anthropic.com") ->
                     json.encodeToString(AnthropicLoginRequest(email, password))
+
                 else ->
                     json.encodeToString(OpenAiLoginRequest(email, password))
             }.toRequestBody(jsonMediaType)
@@ -94,30 +95,28 @@ class RealEmailAuthClient(
 
     // ── Yardımcılar ───────────────────────────────────────────────────────────
 
-    private fun parseToken(loginUrl: String, raw: String): EmailAuthResult {
-        return if (loginUrl.contains("anthropic.com")) {
-            val resp = runCatching { json.decodeFromString<AnthropicLoginResponse>(raw) }
-                .getOrNull()
-            val token = resp?.sessionToken
-            if (token.isNullOrBlank()) {
-                EmailAuthResult.Error("Anthropic oturum açma yanıtı beklenmedik biçimde geldi")
-            } else {
-                val expiresAtMs = parseIsoOrEpochSec(resp.expiresAt)
-                    ?: (System.currentTimeMillis() + DEFAULT_LIFETIME_MS)
-                EmailAuthResult.Success(token, expiresAtMs)
-            }
+    private fun parseToken(loginUrl: String, raw: String): EmailAuthResult = if (loginUrl.contains("anthropic.com")) {
+        val resp = runCatching { json.decodeFromString<AnthropicLoginResponse>(raw) }
+            .getOrNull()
+        val token = resp?.sessionToken
+        if (token.isNullOrBlank()) {
+            EmailAuthResult.Error("Anthropic oturum açma yanıtı beklenmedik biçimde geldi")
         } else {
-            val resp = runCatching { json.decodeFromString<OpenAiLoginResponse>(raw) }
-                .getOrNull()
-            val token = resp?.accessToken
-            if (token.isNullOrBlank()) {
-                EmailAuthResult.Error("OpenAI oturum açma yanıtı beklenmedik biçimde geldi")
-            } else {
-                val expiresAtMs = resp.expiresIn
-                    ?.let { System.currentTimeMillis() + it * 1000 }
-                    ?: (System.currentTimeMillis() + DEFAULT_LIFETIME_MS)
-                EmailAuthResult.Success(token, expiresAtMs)
-            }
+            val expiresAtMs = parseIsoOrEpochSec(resp.expiresAt)
+                ?: (System.currentTimeMillis() + DEFAULT_LIFETIME_MS)
+            EmailAuthResult.Success(token, expiresAtMs)
+        }
+    } else {
+        val resp = runCatching { json.decodeFromString<OpenAiLoginResponse>(raw) }
+            .getOrNull()
+        val token = resp?.accessToken
+        if (token.isNullOrBlank()) {
+            EmailAuthResult.Error("OpenAI oturum açma yanıtı beklenmedik biçimde geldi")
+        } else {
+            val expiresAtMs = resp.expiresIn
+                ?.let { System.currentTimeMillis() + it * 1000 }
+                ?: (System.currentTimeMillis() + DEFAULT_LIFETIME_MS)
+            EmailAuthResult.Success(token, expiresAtMs)
         }
     }
 

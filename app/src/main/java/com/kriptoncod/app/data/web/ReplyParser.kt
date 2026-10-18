@@ -13,7 +13,10 @@ import kotlinx.serialization.json.jsonObject
  * tırnaklanmış gelir; hem tırnaklı (iç içe) hem düz nesne kabul edilir.
  */
 object ReplyParser {
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
 
     fun parse(raw: String?): WebReply {
         val text = raw?.trim().orEmpty()

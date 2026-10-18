@@ -59,9 +59,11 @@ object RunNotifier {
     }
 
     private fun NotificationCompat.Builder.addControl(
-        ctx: Context, action: RunControl.Action, runId: Long, labelRes: Int,
-    ): NotificationCompat.Builder =
-        addAction(0, ctx.getString(labelRes), actionIntent(ctx, action, runId))
+        ctx: Context,
+        action: RunControl.Action,
+        runId: Long,
+        labelRes: Int,
+    ): NotificationCompat.Builder = addAction(0, ctx.getString(labelRes), actionIntent(ctx, action, runId))
 
     /**
      * Süren çalışma için ön plan bilgisi; [total] 0 ise belirsiz ilerleme çubuğu gösterilir.

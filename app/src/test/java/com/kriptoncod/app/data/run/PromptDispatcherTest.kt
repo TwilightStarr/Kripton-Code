@@ -64,15 +64,19 @@ class PromptDispatcherTest {
         runs = RunRepository(db, OutputStore(tmp.root), HistoryStore(tmp.root)) { clock }
     }
 
-    @After fun tearDown() { db.close() }
+    @After fun tearDown() {
+        db.close()
+    }
 
-    private fun dispatcher(generator: AiGenerator) =
-        PromptDispatcher(runs, prompts, accounts, credentials, generator, now = { clock })
+    private fun dispatcher(generator: AiGenerator) = PromptDispatcher(runs, prompts, accounts, credentials, generator, now = { clock })
 
     private suspend fun account(model: String, rank: Int): Long = accounts.add(
         AiAccount(
-            providerId = "openai", displayName = model, authType = AuthType.API_KEY,
-            modelId = model, powerRank = rank,
+            providerId = "openai",
+            displayName = model,
+            authType = AuthType.API_KEY,
+            modelId = model,
+            powerRank = rank,
         ),
         "sk-$model",
     )

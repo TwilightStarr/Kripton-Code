@@ -36,7 +36,9 @@ class KimiTokenStore(private val vault: KeyVault) {
 
     suspend fun hasToken(accountId: Long): Boolean = vault.contains(keyId(accountId))
 
-    suspend fun clear(accountId: Long) { vault.delete(keyId(accountId)) }
+    suspend fun clear(accountId: Long) {
+        vault.delete(keyId(accountId))
+    }
 
     companion object {
         private const val BUFFER_MS = 5L * 60 * 1000

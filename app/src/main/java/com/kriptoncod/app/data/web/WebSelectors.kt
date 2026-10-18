@@ -43,6 +43,7 @@ object WebSelectors {
             assistant = listOf("[data-testid=assistant-message]", ".font-claude-response", "[data-is-streaming]"),
             downloadHref = listOf("\\.zip(\\?|$)", "/download", "/files/", "^blob:"),
         )
+
         WebProvider.CHATGPT -> SiteSelectors(
             input = listOf("#prompt-textarea", "div.ProseMirror[contenteditable=true]", "textarea"),
             send = listOf("button[data-testid=send-button]", "button[aria-label*='Send']"),
@@ -50,17 +51,23 @@ object WebSelectors {
             assistant = listOf("div[data-message-author-role=assistant]"),
             downloadHref = listOf("interpreter/download", "/files/", "\\.zip(\\?|$)", "^sandbox:", "/download"),
         )
+
         WebProvider.KIMI -> SiteSelectors(
             input = listOf("div.chat-input-editor[contenteditable=true]", "[contenteditable=true]", "textarea"),
             send = listOf("[data-testid=msh-chatinput-send-button]", "div.send-button-container", "button[class*=send]"),
             stop = listOf("[class*=stop-button]", "[class*=stop]"),
             assistant = listOf(".segment-assistant", "[class*=markdown]", "[class*=assistant]"),
         )
+
         // Gemini web arayüzü kullanılmaz; yalnız AI Studio anahtar sayfası okunur.
         WebProvider.GEMINI -> SiteSelectors(input = emptyList(), send = emptyList(), stop = emptyList(), assistant = emptyList())
     }
 
-    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true; isLenient = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+        isLenient = true
+    }
 
     /** Cihazdaki `web-selectors.json` (sağlayıcı kimliği -> SiteSelectors) varsa varsayılanı ezer. */
     fun load(provider: WebProvider, overrideFile: File?): SiteSelectors {
@@ -73,6 +80,5 @@ object WebSelectors {
     }
 
     /** Dışa aktarma/düzenleme için tüm varsayılanlar. */
-    fun defaultsJson(): String =
-        json.encodeToString(WebProvider.entries.filter { it.output != OutputStyle.API_KEY }.associate { it.id to defaults(it) })
+    fun defaultsJson(): String = json.encodeToString(WebProvider.entries.filter { it.output != OutputStyle.API_KEY }.associate { it.id to defaults(it) })
 }

@@ -13,7 +13,9 @@ class SyntaxCheckTest {
     private fun ok(path: String, code: String) = assertEquals("$path temiz olmalı", emptyList<SyntaxCheck.Issue>(), SyntaxCheck.check(path, code))
     private fun bad(path: String, code: String) = assertTrue("$path uyarı vermeli", SyntaxCheck.check(path, code).isNotEmpty())
 
-    @Test fun balancedKotlinIsClean() = ok("A.kt", """
+    @Test fun balancedKotlinIsClean() = ok(
+        "A.kt",
+        """
         class A {
             fun f(x: Int): String {
                 val s = "bir ${'$'}{x + 1} { parantez" // yorumda ) var
@@ -21,7 +23,8 @@ class SyntaxCheckTest {
                 return s
             }
         }
-    """.trimIndent())
+        """.trimIndent(),
+    )
 
     @Test fun truncatedKotlinIsFlagged() {
         val issues = SyntaxCheck.check("A.kt", "class A {\n    fun f() {\n        println(1)\n")
@@ -33,21 +36,17 @@ class SyntaxCheckTest {
 
     @Test fun extraClosingIsFlagged() = bad("a.js", "function f() { return 1; }}")
 
-    @Test fun kotlinNestedTemplateQuotesAreHandled() =
-        ok("A.kt", "val x = \"a ${'$'}{map[\"k\"]} b\"\nval y = '\"'\n")
+    @Test fun kotlinNestedTemplateQuotesAreHandled() = ok("A.kt", "val x = \"a ${'$'}{map[\"k\"]} b\"\nval y = '\"'\n")
 
-    @Test fun dartSingleQuoteTemplateWithNestedQuotes() =
-        ok("a.dart", "final s = '\${m['a']} yok';\nvoid f() {}\n")
+    @Test fun dartSingleQuoteTemplateWithNestedQuotes() = ok("a.dart", "final s = '\${m['a']} yok';\nvoid f() {}\n")
 
-    @Test fun kotlinRawStringWithBracesIsSkipped() =
-        ok("A.kt", "val s = \"\"\"\n{ ( [ \n\"\"\"\nfun f() {}\n")
+    @Test fun kotlinRawStringWithBracesIsSkipped() = ok("A.kt", "val s = \"\"\"\n{ ( [ \n\"\"\"\nfun f() {}\n")
 
     @Test fun unterminatedBlockCommentIsFlagged() = bad("A.kt", "fun f() {}\n/* hiç kapanmıyor\n")
 
     @Test fun unterminatedStringIsFlagged() = bad("A.kt", "val s = \"kesik\nfun f() {}\n")
 
-    @Test fun jsTemplateLiteralWithBraces() =
-        ok("a.ts", "const s = `a \${f({x: 1})} b`;\nexport {};\n")
+    @Test fun jsTemplateLiteralWithBraces() = ok("a.ts", "const s = `a \${f({x: 1})} b`;\nexport {};\n")
 
     @Test fun pythonTripleQuotesAndHashComments() = ok("a.py", "def f():\n    \"\"\"doc ( \"\"\"\n    return [1, 2]  # ) yorum\n")
 

@@ -225,11 +225,13 @@ fun RunScreen(
                     style = KButtonStyle.Outline,
                     modifier = Modifier.weight(1f),
                 )
+
                 RunStatus.PAUSED -> KButton(
                     text = stringResource(R.string.run_resume),
                     onClick = { scope.launch { container.runScheduler.unpause(runId) } },
                     modifier = Modifier.weight(1f),
                 )
+
                 else -> Unit
             }
             if (status in CANCELLABLE) {
@@ -332,7 +334,9 @@ fun RunScreen(
                         accounts = accounts, container = container, onSave = saveSelected, onClose = { selectedId = null },
                         overlayDetail = true, runStatus = status, modifier = Modifier.fillMaxSize(),
                     )
+
                     1 -> RunFlowPanel(jobs, accounts, container, selectedId, onPick, Modifier.fillMaxSize())
+
                     else -> RunFilesPanel(runId, currentRun?.zipPath, container, Modifier.fillMaxSize())
                 }
             }
@@ -575,11 +579,13 @@ private fun NodeDetail(
             when {
                 text == null && liveText != null && job.state == JobState.RUNNING ->
                     LiveStreamView(liveText.orEmpty())
+
                 text == null -> Text(
                     stringResource(R.string.run_node_no_output),
                     style = MaterialTheme.typography.bodySmall,
                     color = k.muted,
                 )
+
                 formatted -> {
                     val segs = segments
                     if (segs == null) {
@@ -592,6 +598,7 @@ private fun NodeDetail(
                         OutputMarkdownView(segs)
                     }
                 }
+
                 else -> SelectionContainer {
                     LazyColumn(Modifier.fillMaxSize()) {
                         items(chunks.size) { i ->
@@ -659,7 +666,11 @@ private fun chunkLines(text: String, linesPerChunk: Int = 120): List<String> {
     text.lineSequence().forEach { line ->
         if (n > 0) sb.append('\n')
         sb.append(line)
-        if (++n >= linesPerChunk) { out += sb.toString(); sb.setLength(0); n = 0 }
+        if (++n >= linesPerChunk) {
+            out += sb.toString()
+            sb.setLength(0)
+            n = 0
+        }
     }
     if (n > 0) out += sb.toString()
     return out

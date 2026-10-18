@@ -39,6 +39,5 @@ object OutputValidator {
     }
 
     /** Yer tutucu içeren dosya yolları (yinelenmeden, sırayla). */
-    fun placeholderPaths(text: String): List<String> =
-        PlaceholderDetector.findInText(text).map { it.path }.distinct()
+    fun placeholderPaths(text: String): List<String> = PlaceholderDetector.findInText(text).map { it.path }.distinct()
 }

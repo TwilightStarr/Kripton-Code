@@ -29,7 +29,6 @@ class GitHubTokenStore(private val vault: KeyVault) {
         const val KEY_ID = "github-token"
 
         /** Yalnız biçim denetimi (uzunluk, boşluk yok, yazdırılabilir ASCII). Geçerlilik GitHub'da sınanır. */
-        fun isPlausible(token: String): Boolean =
-            token.length in 20..255 && token.all { it.code in 0x21..0x7E }
+        fun isPlausible(token: String): Boolean = token.length in 20..255 && token.all { it.code in 0x21..0x7E }
     }
 }

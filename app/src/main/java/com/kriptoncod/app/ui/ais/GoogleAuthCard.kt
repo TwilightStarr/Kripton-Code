@@ -54,8 +54,11 @@ fun GoogleAuthCard(
         modifier = modifier.fillMaxWidth(),
         accent = when (state) {
             is GoogleAuthCardState.Connected -> NodeAccent.Green
+
             is GoogleAuthCardState.Error,
-            is GoogleAuthCardState.NeedsReauth -> NodeAccent.Red
+            is GoogleAuthCardState.NeedsReauth,
+            -> NodeAccent.Red
+
             else -> NodeAccent.Blue
         },
     ) {
@@ -67,11 +70,15 @@ fun GoogleAuthCard(
                 when (state) {
                     is GoogleAuthCardState.Connected ->
                         Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = k.arrow)
+
                     is GoogleAuthCardState.Error,
-                    is GoogleAuthCardState.NeedsReauth ->
+                    is GoogleAuthCardState.NeedsReauth,
+                    ->
                         Icon(Icons.Filled.Warning, contentDescription = null, tint = k.danger)
+
                     is GoogleAuthCardState.Loading ->
                         KriptonLoader(size = 28.dp)
+
                     else -> Unit
                 }
                 Column(Modifier.weight(1f)) {
@@ -82,14 +89,19 @@ fun GoogleAuthCard(
                     val subtitle = when (state) {
                         is GoogleAuthCardState.Unavailable ->
                             stringResource((state as GoogleAuthCardState.Unavailable).reasonRes)
+
                         is GoogleAuthCardState.Connected ->
                             stringResource(R.string.google_auth_connected)
+
                         is GoogleAuthCardState.NeedsReauth ->
                             stringResource(R.string.google_auth_needs_reauth)
+
                         is GoogleAuthCardState.Error ->
                             stringResource((state as GoogleAuthCardState.Error).messageRes)
+
                         is GoogleAuthCardState.Disconnected ->
                             stringResource(R.string.google_auth_hint)
+
                         is GoogleAuthCardState.Loading ->
                             stringResource(R.string.google_auth_loading)
                     }
@@ -108,23 +120,27 @@ fun GoogleAuthCard(
                                 text = stringResource(R.string.google_auth_connect),
                                 onClick = { activity?.let { vm.signIn(it) } },
                             )
+
                         is GoogleAuthCardState.Connected ->
                             KButton(
                                 text = stringResource(R.string.google_auth_disconnect),
                                 onClick = { vm.signOut() },
                                 style = KButtonStyle.Outline,
                             )
+
                         is GoogleAuthCardState.NeedsReauth ->
                             KButton(
                                 text = stringResource(R.string.google_auth_reconnect),
                                 onClick = { activity?.let { vm.signIn(it) } },
                             )
+
                         is GoogleAuthCardState.Error ->
                             KButton(
                                 text = stringResource(R.string.google_auth_retry),
                                 onClick = { vm.silentRefresh() },
                                 style = KButtonStyle.Outline,
                             )
+
                         else -> Unit
                     }
                 }

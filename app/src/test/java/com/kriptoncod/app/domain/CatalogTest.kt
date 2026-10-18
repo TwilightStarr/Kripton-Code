@@ -34,8 +34,12 @@ class CatalogTest {
         fun e(p: String, t: String) = p to t.toByteArray()
         val c = CatalogParser.parseZip(
             listOf(
-                e("ui/anasayfa.md", "A"), e("ui/menu.txt", "B"), e("api/auth.md", "C"),
-                e("giris.md", "D"), e("__MACOSX/x.md", "yok"), e("ui/resim.png", "yok"),
+                e("ui/anasayfa.md", "A"),
+                e("ui/menu.txt", "B"),
+                e("api/auth.md", "C"),
+                e("giris.md", "D"),
+                e("__MACOSX/x.md", "yok"),
+                e("ui/resim.png", "yok"),
             ),
         )
         assertEquals(listOf("api", "ui", "genel").sorted(), c.map { it.name }.sorted())
@@ -74,8 +78,11 @@ class CatalogTest {
         fun n(id: Long, k: JobKind, cat: String?, w: Float) = GraphNodeUi(id, k, cat, JobState.PENDING, w, "$id")
         val r = GraphLayout.layout(
             listOf(
-                n(1, JobKind.PLAN, null, 1f), n(2, JobKind.WORK, "a", 0f), n(3, JobKind.WORK, "a", 1f),
-                n(4, JobKind.CATALOG_MERGE, "a", 0.5f), n(5, JobKind.FINAL_MERGE, null, 1f),
+                n(1, JobKind.PLAN, null, 1f),
+                n(2, JobKind.WORK, "a", 0f),
+                n(3, JobKind.WORK, "a", 1f),
+                n(4, JobKind.CATALOG_MERGE, "a", 0.5f),
+                n(5, JobKind.FINAL_MERGE, null, 1f),
             ),
         )
         val size = r.nodes.associate { it.node.id to it.size }

@@ -140,7 +140,10 @@ object WorkAssigner {
             var bestCost = Double.MAX_VALUE
             candidates.forEachIndexed { k, c ->
                 val cost = (load[k] + size) / (c.power.coerceAtLeast(1))
-                if (cost < bestCost) { bestCost = cost; best = k }
+                if (cost < bestCost) {
+                    bestCost = cost
+                    best = k
+                }
             }
             load[best] += size.toDouble()
             out[i] = candidates[best].accountId

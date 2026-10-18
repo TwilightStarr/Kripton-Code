@@ -30,8 +30,7 @@ class FinalAiAssembler(
 
         val doneJobs = runs.getJobs(runId).filter { it.state == JobState.DONE }
         val accCache = mutableMapOf<Long, AiAccount?>()
-        suspend fun authTypeOf(accountId: Long?) =
-            accountId?.let { id -> accCache.getOrPut(id) { accounts.get(id) }?.authType }
+        suspend fun authTypeOf(accountId: Long?) = accountId?.let { id -> accCache.getOrPut(id) { accounts.get(id) }?.authType }
         if (doneJobs.isEmpty() || doneJobs.any { authTypeOf(it.accountId) != AuthType.KIMI }) {
             return false
         }
@@ -46,10 +45,12 @@ class FinalAiAssembler(
         val credential = credentials.credentialFor(finalAccount) ?: return false
 
         val prompt = buildString {
-            appendLine("Aşağıdaki dosyalar bir AI (Kimi) tarafından üretildi. " +
-                "Eksikleri tamamla, çakışan/uyumsuz kısımları çöz, derlenir ve tutarlı " +
-                "tek bir paket hâline getir. Yalnızca nihai dosyaları " +
-                "```tam/dosya/yolu biçiminde kod bloklarıyla döndür; açıklama yazma.")
+            appendLine(
+                "Aşağıdaki dosyalar bir AI (Kimi) tarafından üretildi. " +
+                    "Eksikleri tamamla, çakışan/uyumsuz kısımları çöz, derlenir ve tutarlı " +
+                    "tek bir paket hâline getir. Yalnızca nihai dosyaları " +
+                    "```tam/dosya/yolu biçiminde kod bloklarıyla döndür; açıklama yazma.",
+            )
             appendLine()
             blocks.forEach { b ->
                 appendLine("### ${b.path}")

@@ -62,8 +62,7 @@ class AndroidKeystoreKeyVault(
 
     private fun fileFor(keyId: String) = File(vaultDir, keyId + EXT)
 
-    private suspend fun <T> withLock(block: () -> T): T =
-        mutex.withLock { withContext(dispatcher) { block() } }
+    private suspend fun <T> withLock(block: () -> T): T = mutex.withLock { withContext(dispatcher) { block() } }
 
     private companion object {
         const val EXT = ".blob"

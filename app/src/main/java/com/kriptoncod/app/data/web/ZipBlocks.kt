@@ -15,12 +15,10 @@ object ZipBlocks {
 
     data class Converted(val text: String, val skipped: List<String>)
 
-    fun isZip(bytes: ByteArray): Boolean =
-        bytes.size > 3 && bytes[0] == 0x50.toByte() && bytes[1] == 0x4B.toByte() &&
-            (bytes[2] == 3.toByte() || bytes[2] == 5.toByte())
+    fun isZip(bytes: ByteArray): Boolean = bytes.size > 3 && bytes[0] == 0x50.toByte() && bytes[1] == 0x4B.toByte() &&
+        (bytes[2] == 3.toByte() || bytes[2] == 5.toByte())
 
-    fun convert(file: WebFile): Converted =
-        if (isZip(file.bytes)) fromZip(file.bytes) else fromSingle(file.name, file.bytes)
+    fun convert(file: WebFile): Converted = if (isZip(file.bytes)) fromZip(file.bytes) else fromSingle(file.name, file.bytes)
 
     fun fromSingle(name: String, bytes: ByteArray): Converted {
         val safe = safePath(name) ?: return Converted("", listOf(name))

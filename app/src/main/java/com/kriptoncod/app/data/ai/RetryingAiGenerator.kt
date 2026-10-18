@@ -90,12 +90,15 @@ class RetryingAiGenerator(
             "[Not: Önceki yanıtta şu dosyalar yer tutucularla kısaltılmıştı: " +
                 OutputValidator.placeholderPaths(lastText).take(12).joinToString(", ") +
                 ". `...`, 'geri kalanı aynı' gibi ifadeler kullanma; her dosyayı baştan sona EKSİKSİZ yaz.]"
+
         problem.kind == Kind.TRUNCATED ->
             "[Not: Önceki yanıt uzunluk sınırında yarıda kesildi. Bu sefer gereksiz açıklamayı çıkar ve " +
                 "istenen tüm dosyaları EKSİKSİZ, her kod bloğu kapatılmış olarak ver.]"
+
         problem is Problem.Validation && problem.reason == OutputValidator.Problem.MISSING_CODE_BLOCKS ->
             "[Not: Önceki yanıtta ```tam/dosya/yolu biçiminde kod bloğu yoktu. Dosyaları bu biçimde " +
                 "kod bloklarıyla, açıklama yazmadan döndür.]"
+
         else ->
             "[Not: Önceki yanıt boş veya okunamaz geldi. Lütfen isteği eksiksiz biçimde yeniden yanıtla.]"
     }

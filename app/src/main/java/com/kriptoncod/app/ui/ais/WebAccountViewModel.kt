@@ -234,8 +234,11 @@ class WebAccountViewModel(
         if (webView == null) return
         viewModelScope.launch {
             val found = WebCookies.unquote(WebCookies.evalString(webView, WebScripts.FIND_API_KEY))
-            if (found.isBlank()) _state.update { it.copy(error = R.string.web_key_not_found) }
-            else _state.update { it.copy(geminiKey = found, error = null) }
+            if (found.isBlank()) {
+                _state.update { it.copy(error = R.string.web_key_not_found) }
+            } else {
+                _state.update { it.copy(geminiKey = found, error = null) }
+            }
         }
     }
 
@@ -264,6 +267,7 @@ class WebAccountViewModel(
                         pendingSession = null
                         _state.update { it.copy(step = WebStep.DONE, geminiKey = "") }
                     }
+
                     is ApiResult.Fail -> _state.update { it.copy(step = WebStep.KEY, error = R.string.web_key_rejected) }
                 }
             } catch (c: CancellationException) {

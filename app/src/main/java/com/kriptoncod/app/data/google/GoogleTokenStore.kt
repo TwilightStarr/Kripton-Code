@@ -31,8 +31,11 @@ class GoogleTokenStore(private val vault: KeyVault) {
         val raw = vault.get(keyId(accountId)) ?: return null
         return runCatching {
             val entry = Json.decodeFromString<TokenEntry>(raw)
-            if (System.currentTimeMillis() + bufferMs >= entry.expiresAtMs) null
-            else TokenInfo(entry.accessToken, entry.expiresAtMs)
+            if (System.currentTimeMillis() + bufferMs >= entry.expiresAtMs) {
+                null
+            } else {
+                TokenInfo(entry.accessToken, entry.expiresAtMs)
+            }
         }.getOrNull()
     }
 
@@ -40,8 +43,7 @@ class GoogleTokenStore(private val vault: KeyVault) {
         vault.delete(keyId(accountId))
     }
 
-    suspend fun hasToken(accountId: Long): Boolean =
-        vault.contains(keyId(accountId))
+    suspend fun hasToken(accountId: Long): Boolean = vault.contains(keyId(accountId))
 
     companion object {
         private const val BUFFER_MS = 5L * 60 * 1000 // 5 dakika güvenlik payı

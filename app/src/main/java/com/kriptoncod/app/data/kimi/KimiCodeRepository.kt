@@ -12,7 +12,10 @@ class KimiCodeRepository(private val root: File) {
     @Serializable
     data class StoredBlock(val path: String, val content: String)
 
-    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
 
     private fun runDir(runId: Long) = File(root, "kimi/$runId")
     private fun indexFile(runId: Long) = File(runDir(runId), "index.json")

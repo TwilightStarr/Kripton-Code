@@ -269,6 +269,7 @@ private fun UsageCard(accounts: List<AiAccount>, usage: List<AccountUsage>) {
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.tertiary,
                         )
+
                         account.status == AccountStatus.ERROR -> Text(
                             stringResource(R.string.home_usage_error),
                             style = MaterialTheme.typography.labelMedium,

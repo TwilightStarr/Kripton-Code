@@ -34,12 +34,13 @@ class RunScheduler(
     fun startCiLoop(runId: Long) {
         val request = OneTimeWorkRequestBuilder<CiLoopWorker>()
             .setInputData(workDataOf(CiLoopWorker.KEY_RUN_ID to runId))
-            .setConstraints(Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED).build(),
+            )
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
             .build()
-        workManager.enqueueUniqueWork(
-            WorkNames.ciLoop(runId), ExistingWorkPolicy.REPLACE, request)
+        workManager.enqueueUniqueWork(WorkNames.ciLoop(runId), ExistingWorkPolicy.REPLACE, request)
     }
 
     /**
@@ -72,11 +73,10 @@ class RunScheduler(
         workManager.cancelUniqueWork(WorkNames.ciLoop(runId))
     }
 
-    private fun request(runId: Long, delayMs: Long) =
-        OneTimeWorkRequestBuilder<PromptDispatchWorker>()
-            .setInputData(workDataOf(PromptDispatchWorker.KEY_RUN_ID to runId))
-            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
-            .setInitialDelay(delayMs.coerceAtLeast(0), TimeUnit.MILLISECONDS)
-            .build()
+    private fun request(runId: Long, delayMs: Long) = OneTimeWorkRequestBuilder<PromptDispatchWorker>()
+        .setInputData(workDataOf(PromptDispatchWorker.KEY_RUN_ID to runId))
+        .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+        .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+        .setInitialDelay(delayMs.coerceAtLeast(0), TimeUnit.MILLISECONDS)
+        .build()
 }

@@ -53,16 +53,21 @@ class RunRepository(
     suspend fun getJobs(runId: Long): List<Job> = jobs.getByRun(runId)
     suspend fun getJob(id: Long): Job? = jobs.get(id)
 
-    suspend fun createRun(repo: String? = null): Long =
-        runs.insert(RunRecord(createdAt = now(), status = RunStatus.PREPARING, repo = repo))
+    suspend fun createRun(repo: String? = null): Long = runs.insert(RunRecord(createdAt = now(), status = RunStatus.PREPARING, repo = repo))
 
     suspend fun enqueueJobs(runId: Long, seeds: List<JobSeed>): List<Long> {
         val t = now()
         return jobs.insertAll(
             seeds.map {
                 Job(
-                    runId = runId, promptId = it.promptId, accountId = it.accountId, updatedAt = t,
-                    kind = it.kind, catalog = it.catalog, title = it.title, body = it.body,
+                    runId = runId,
+                    promptId = it.promptId,
+                    accountId = it.accountId,
+                    updatedAt = t,
+                    kind = it.kind,
+                    catalog = it.catalog,
+                    title = it.title,
+                    body = it.body,
                 )
             },
         )

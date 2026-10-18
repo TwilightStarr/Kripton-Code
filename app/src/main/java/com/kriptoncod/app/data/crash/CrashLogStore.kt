@@ -48,8 +48,7 @@ class CrashLogStore(private val dir: File, private val keep: Int = DEFAULT_KEEP)
     }
 
     /** Zaman damgası dosya adından okunur (dosya sistemi saatine güvenilmez); okunamazsa değişiklik zamanı. */
-    private fun createdAtOf(f: File): Long =
-        f.name.removePrefix(PREFIX).substringBefore('-').toLongOrNull() ?: f.lastModified()
+    private fun createdAtOf(f: File): Long = f.name.removePrefix(PREFIX).substringBefore('-').toLongOrNull() ?: f.lastModified()
 
     companion object {
         const val DEFAULT_KEEP = 20

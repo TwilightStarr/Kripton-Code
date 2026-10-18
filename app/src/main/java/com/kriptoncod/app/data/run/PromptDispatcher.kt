@@ -57,11 +57,14 @@ class PromptDispatcher(
     private fun sinkFor(job: Job): StreamSink = live?.sinkFor(job.id) ?: StreamSink.NONE
 
     private suspend fun recordUsage(
-        account: AiAccount, job: Job, outcome: UsageOutcome, startedAt: Long, waitMs: Long? = null,
+        account: AiAccount,
+        job: Job,
+        outcome: UsageOutcome,
+        startedAt: Long,
+        waitMs: Long? = null,
     ) {
         usage?.record(account.id, job.id, outcome, (now() - startedAt).coerceAtLeast(0), waitMs)
     }
-
 
     /** İş başına akış yönergeleri (bkz. [FlowDirectivesParser]); iş kimlikleri benzersizdir. */
     private val directiveCache = ConcurrentHashMap<Long, FlowDirectives>()
@@ -143,10 +146,13 @@ class PromptDispatcher(
     /** WORK/PLAN hemen hazırdır; birleştirmeler bağımlı oldukları işler bitince (DONE/FAILED) hazır olur. */
     private suspend fun isReady(job: Job, all: List<Job>): Boolean = when (job.kind) {
         JobKind.PLAN -> true
+
         // WORK: `[[girdi: ...]]` ile çıktısı istenen önceki promptlar bitene kadar bekler.
         JobKind.WORK -> inputSources(job, directivesOf(job), all).all { it.isTerminal() }
+
         JobKind.CATALOG_MERGE ->
             all.filter { it.kind == JobKind.WORK && it.catalog == job.catalog }.all { it.isTerminal() }
+
         JobKind.FINAL_MERGE ->
             all.filter { it.kind == JobKind.WORK || it.kind == JobKind.CATALOG_MERGE }.all { it.isTerminal() }
     }
@@ -170,6 +176,7 @@ class PromptDispatcher(
                 all.filter { it.kind == JobKind.WORK && it.catalog == job.catalog && it.state == JobState.DONE }
                     .filter { directivesOf(it).share } // [[ilet: hayır]] düğümleri birleştirmeye gitmez
                     .map { (it.title ?: "Prompt #${it.id}") to it }
+
             JobKind.FINAL_MERGE -> all.filter { it.kind == JobKind.CATALOG_MERGE }.flatMap { m ->
                 if (m.state == JobState.DONE) {
                     listOf((m.catalog ?: "katalog") to m)
@@ -179,6 +186,7 @@ class PromptDispatcher(
                         .map { "${m.catalog}/${it.title ?: it.id}" to it }
                 }
             }
+
             else -> return null
         }
         if (sources.isEmpty()) return null
@@ -254,10 +262,12 @@ class PromptDispatcher(
         while (true) {
             val account = when (val pick = pickAccount(job, manual, tried)) {
                 is Pick.Use -> pick.account
+
                 is Pick.WaitUntil -> {
                     runs.waitJob(job.id)
                     return JobResult.Wait(pick.untilMs)
                 }
+
                 Pick.None -> {
                     if (manual) { // atanan hesap yok/kapalı: otomatik havuza geç
                         manual = false
@@ -308,7 +318,8 @@ class PromptDispatcher(
                 return JobResult.Done
             } catch (e: AiGenerationException) {
                 recordUsage(
-                    account, job,
+                    account,
+                    job,
                     when (e.kind) {
                         Kind.UNAUTHORIZED -> UsageOutcome.UNAUTHORIZED
                         Kind.RATE_LIMITED -> UsageOutcome.RATE_LIMITED
@@ -324,6 +335,7 @@ class PromptDispatcher(
                         accounts.markError(account.id)
                         manual = false
                     }
+
                     Kind.RATE_LIMITED -> {
                         val until = e.waitUntil(now())
                         accounts.markWaiting(account.id, until)
@@ -332,6 +344,7 @@ class PromptDispatcher(
                             return JobResult.Wait(until)
                         }
                     }
+
                     Kind.SERVER, Kind.NETWORK -> {
                         val attempts = runs.getJob(job.id)?.attempts ?: MAX_ATTEMPTS
                         if (attempts >= MAX_ATTEMPTS) {
@@ -341,6 +354,7 @@ class PromptDispatcher(
                         runs.requeueJob(job.id)
                         return JobResult.Wait(now() + RETRY_BASE_MS * attempts)
                     }
+
                     else -> {
                         runs.failJob(job.id)
                         return JobResult.Failed
@@ -383,7 +397,8 @@ class PromptDispatcher(
             }
         } catch (e: AiGenerationException) {
             recordUsage(
-                account, job,
+                account,
+                job,
                 when (e.kind) {
                     Kind.UNAUTHORIZED -> UsageOutcome.UNAUTHORIZED
                     Kind.RATE_LIMITED -> UsageOutcome.RATE_LIMITED
@@ -400,6 +415,7 @@ class PromptDispatcher(
                     runs.waitJob(job.id)
                     JobResult.Wait(until)
                 }
+
                 Kind.SERVER, Kind.NETWORK -> {
                     val attempts = runs.getJob(job.id)?.attempts ?: MAX_ATTEMPTS
                     if (attempts >= MAX_ATTEMPTS) {
@@ -410,6 +426,7 @@ class PromptDispatcher(
                         JobResult.Wait(now() + RETRY_BASE_MS * attempts)
                     }
                 }
+
                 else -> {
                     accounts.markError(account.id)
                     runs.failJob(job.id)
@@ -460,6 +477,7 @@ class PromptDispatcher(
 
     companion object {
         const val MAX_ATTEMPTS = 4
+
         /** Hiç kullanılabilir hesap yokken işin yeniden denenme aralığı. */
         const val NO_ACCOUNT_WAIT_MS = 10L * 60 * 1000
         const val RETRY_BASE_MS = 15_000L

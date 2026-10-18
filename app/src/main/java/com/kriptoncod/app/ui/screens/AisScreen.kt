@@ -150,6 +150,7 @@ private fun AisContent(
                     KriptonLoader()
                 }
             }
+
             state.accounts.isEmpty() && state.error == null -> item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
                 EmptyState(
                     icon = Icons.Filled.Face,
@@ -158,6 +159,7 @@ private fun AisContent(
                     action = { KButton(text = stringResource(R.string.ais_add), onClick = onAdd) },
                 )
             }
+
             else -> items(state.accounts, key = { it.id }) { account ->
                 AccountCard(account, onToggle, onEdit, onRequestDelete)
             }

@@ -22,6 +22,5 @@ class LocalCrashSender(private val store: CrashLogStore) : ReportSender {
  * Genel (public) ve parametresiz kurucu zorunludur.
  */
 class LocalCrashSenderFactory : ReportSenderFactory {
-    override fun create(context: Context, config: CoreConfiguration): ReportSender =
-        LocalCrashSender(CrashLogStore.default(context))
+    override fun create(context: Context, config: CoreConfiguration): ReportSender = LocalCrashSender(CrashLogStore.default(context))
 }

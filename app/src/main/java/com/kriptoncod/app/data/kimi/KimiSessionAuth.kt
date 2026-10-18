@@ -15,8 +15,7 @@ class KimiSessionAuth(
     override val type: AuthType = AuthType.KIMI
     override val isAvailable: Boolean = true
 
-    override fun authorize(request: Request.Builder, credential: String): Request.Builder =
-        request.header("Authorization", "Bearer $credential")
+    override fun authorize(request: Request.Builder, credential: String): Request.Builder = request.header("Authorization", "Bearer $credential")
 
     suspend fun loadToken(): String? = tokenStore.getValid(accountId)?.sessionToken
 
@@ -31,20 +30,22 @@ class KimiSessionAuth(
                 tokenStore.save(accountId, r.sessionToken, r.expiresAtMs, r.refreshToken ?: refreshToken)
                 KimiAuthState.Valid(r.sessionToken)
             }
+
             is KimiAuthResult.NeedsReauth -> KimiAuthState.NeedsReauth
+
             is KimiAuthResult.Error -> KimiAuthState.Error(r.message, r.cause)
         }
     }
 
-    suspend fun signIn(email: String, password: String): KimiAuthState {
-        return when (val r = authClient.login(loginUrl, email, password)) {
-            is KimiAuthResult.Success -> {
-                tokenStore.save(accountId, r.sessionToken, r.expiresAtMs, r.refreshToken)
-                KimiAuthState.Valid(r.sessionToken)
-            }
-            is KimiAuthResult.NeedsReauth -> KimiAuthState.NeedsReauth
-            is KimiAuthResult.Error -> KimiAuthState.Error(r.message, r.cause)
+    suspend fun signIn(email: String, password: String): KimiAuthState = when (val r = authClient.login(loginUrl, email, password)) {
+        is KimiAuthResult.Success -> {
+            tokenStore.save(accountId, r.sessionToken, r.expiresAtMs, r.refreshToken)
+            KimiAuthState.Valid(r.sessionToken)
         }
+
+        is KimiAuthResult.NeedsReauth -> KimiAuthState.NeedsReauth
+
+        is KimiAuthResult.Error -> KimiAuthState.Error(r.message, r.cause)
     }
 
     suspend fun signOut() {
@@ -55,8 +56,11 @@ class KimiSessionAuth(
 
     private fun refreshUrl(): String {
         val base = loginUrl.trimEnd('/')
-        return if (base.endsWith("/login")) base.substringBeforeLast("/login") + "/refresh"
-        else "$base/refresh"
+        return if (base.endsWith("/login")) {
+            base.substringBeforeLast("/login") + "/refresh"
+        } else {
+            "$base/refresh"
+        }
     }
 }
 

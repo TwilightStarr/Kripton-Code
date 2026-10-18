@@ -33,14 +33,11 @@ class RetryingAiGeneratorTest {
     )
 
     private val waits = mutableListOf<Int>()
-    private fun retrying(delegate: AiGenerator, attempts: Int = 3) =
-        RetryingAiGenerator(delegate, attempts, backoff = { waits += it })
+    private fun retrying(delegate: AiGenerator, attempts: Int = 3) = RetryingAiGenerator(delegate, attempts, backoff = { waits += it })
 
-    private fun gen(g: AiGenerator, prompt: String = "Yaz") =
-        runBlocking { g.generate(endpoint, "claude-sonnet-5-5", "k", prompt) }
+    private fun gen(g: AiGenerator, prompt: String = "Yaz") = runBlocking { g.generate(endpoint, "claude-sonnet-5-5", "k", prompt) }
 
-    private fun failure(block: () -> Unit): AiGenerationException =
-        runCatching(block).exceptionOrNull() as AiGenerationException
+    private fun failure(block: () -> Unit): AiGenerationException = runCatching(block).exceptionOrNull() as AiGenerationException
 
     @Test fun goodOutputIsReturnedWithoutRetry() {
         val s = Script("tamam")

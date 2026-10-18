@@ -80,13 +80,12 @@ object Normalizers {
      * o da yoksa [GenericNormalizer]'a düşer. (Proxy arkasında "claude" hesabı gemini modeli seçse bile
      * model kazanır.)
      */
-    fun forModel(modelId: String, hint: UpstreamProvider? = null): ProviderNormalizer =
-        when (UpstreamProvider.fromModelId(modelId) ?: hint ?: UpstreamProvider.OTHER) {
-            UpstreamProvider.CLAUDE -> ClaudeNormalizer
-            UpstreamProvider.GEMINI -> GeminiNormalizer
-            UpstreamProvider.OPENAI -> OpenAiNormalizer
-            UpstreamProvider.DEEPSEEK -> DeepSeekNormalizer
-            UpstreamProvider.KIMI -> KimiNormalizer
-            UpstreamProvider.OTHER -> GenericNormalizer
-        }
+    fun forModel(modelId: String, hint: UpstreamProvider? = null): ProviderNormalizer = when (UpstreamProvider.fromModelId(modelId) ?: hint ?: UpstreamProvider.OTHER) {
+        UpstreamProvider.CLAUDE -> ClaudeNormalizer
+        UpstreamProvider.GEMINI -> GeminiNormalizer
+        UpstreamProvider.OPENAI -> OpenAiNormalizer
+        UpstreamProvider.DEEPSEEK -> DeepSeekNormalizer
+        UpstreamProvider.KIMI -> KimiNormalizer
+        UpstreamProvider.OTHER -> GenericNormalizer
+    }
 }

@@ -45,7 +45,9 @@ private class FlakyPutVault(private val inner: FakeKeyVault) : KeyVault by inner
 
 private class FakeDiscover(var next: ApiResult<ModelRanking>) {
     @Volatile var calls = 0
+
     @Volatile var lastKey: String? = null
+
     @Volatile var lastEndpoint: ProviderEndpoint? = null
     suspend operator fun invoke(endpoint: ProviderEndpoint, key: String): ApiResult<ModelRanking> {
         calls++
@@ -83,11 +85,9 @@ class AccountEditorViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun addVm(): AccountEditorViewModel =
-        AccountEditorViewModel(null, repo, { e, k -> discover(e, k) }, { it.id })
+    private fun addVm(): AccountEditorViewModel = AccountEditorViewModel(null, repo, { e, k -> discover(e, k) }, { it.id })
 
-    private fun editVm(id: Long): AccountEditorViewModel =
-        AccountEditorViewModel(id, repo, { e, k -> discover(e, k) }, { it.id })
+    private fun editVm(id: Long): AccountEditorViewModel = AccountEditorViewModel(id, repo, { e, k -> discover(e, k) }, { it.id })
 
     private fun verifiedVm(provider: String = "groq", key: String = "gsk_abc123"): AccountEditorViewModel {
         val vm = addVm()
@@ -101,8 +101,12 @@ class AccountEditorViewModelTest {
     private fun seed(status: AccountStatus = AccountStatus.READY, model: String = "model-b"): Long = runBlocking {
         val id = repo.add(
             AiAccount(
-                providerId = "groq", displayName = "groq 1", authType = AuthType.API_KEY,
-                modelId = model, powerRank = 5, status = status,
+                providerId = "groq",
+                displayName = "groq 1",
+                authType = AuthType.API_KEY,
+                modelId = model,
+                powerRank = 5,
+                status = status,
             ),
             "stored-key",
         )
@@ -444,8 +448,12 @@ class AccountEditorViewModelTest {
         discover.next = ApiResult.Ok(proxyRanking())
         val id = repo.add(
             AiAccount(
-                providerId = "claude", displayName = "Arkadaşım", authType = AuthType.PROXY,
-                modelId = "gemini-3.8-flash", powerRank = 5, baseUrl = "http://10.0.0.5:8317/v1",
+                providerId = "claude",
+                displayName = "Arkadaşım",
+                authType = AuthType.PROXY,
+                modelId = "gemini-3.8-flash",
+                powerRank = 5,
+                baseUrl = "http://10.0.0.5:8317/v1",
             ),
             "stored-proxy-key",
         )
@@ -467,5 +475,4 @@ class AccountEditorViewModelTest {
     }
 }
 
-private suspend fun AiAccountRepository.observeAllOnce(): List<AiAccount> =
-    observeAll().first()
+private suspend fun AiAccountRepository.observeAllOnce(): List<AiAccount> = observeAll().first()

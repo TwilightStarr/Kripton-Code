@@ -108,7 +108,10 @@ fun PromptsScreen(onOpenSet: (Long) -> Unit, onRunStarted: (Long) -> Unit = {}) 
             launch = { repo -> container.runLauncher.launchCatalogs(cats, repo) },
             hasAccounts = accounts.isNotEmpty(),
             onDismiss = { zipCatalogs = null },
-            onStarted = { id -> zipCatalogs = null; onRunStarted(id) },
+            onStarted = { id ->
+                zipCatalogs = null
+                onRunStarted(id)
+            },
         )
     }
     PromptsContent(
@@ -173,6 +176,7 @@ private fun PromptsContent(
                     KriptonLoader()
                 }
             }
+
             state.sets.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) {
                 EmptyState(
                     icon = Icons.Filled.Edit,
@@ -186,6 +190,7 @@ private fun PromptsContent(
                     },
                 )
             }
+
             else -> items(state.sets, key = { it.id }) { set ->
                 SetCard(set = set, onOpen = { onOpenSet(set.id) }, onDelete = { onRequestDelete(set.id) })
             }
@@ -210,7 +215,10 @@ private fun PromptsContent(
             },
             confirmButton = {
                 TextButton(
-                    onClick = { onCreate(name); showCreate = false },
+                    onClick = {
+                        onCreate(name)
+                        showCreate = false
+                    },
                     enabled = name.isNotBlank(),
                 ) { Text(stringResource(R.string.action_create)) }
             },

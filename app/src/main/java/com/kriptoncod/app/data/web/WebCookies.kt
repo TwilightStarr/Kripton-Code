@@ -63,7 +63,10 @@ object WebUserAgent {
 
 object WebCookies {
 
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
 
     /** Çerezleri ve sayfa depolarını siler (hesap değişiminde önceki hesabın izi kalmasın). */
     suspend fun clearAll() = withContext(Dispatchers.Main) {

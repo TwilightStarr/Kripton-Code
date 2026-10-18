@@ -53,10 +53,16 @@ class RepositoryTest {
         runs = RunRepository(db, outputs, history) { clock }
     }
 
-    @After fun tearDown() { db.close() }
+    @After fun tearDown() {
+        db.close()
+    }
 
     private fun acc(name: String = "A") = AiAccount(
-        providerId = "openai", displayName = name, authType = AuthType.API_KEY, modelId = "m", powerRank = 1,
+        providerId = "openai",
+        displayName = name,
+        authType = AuthType.API_KEY,
+        modelId = "m",
+        powerRank = 1,
     )
 
     private fun file(rel: String) = File(tmp.root, rel)
@@ -77,7 +83,8 @@ class RepositoryTest {
         }
         val repo = AiAccountRepository(db.aiAccountDao(), failing)
         try {
-            repo.add(acc(), "s"); throw AssertionError("hata bekleniyordu")
+            repo.add(acc(), "s")
+            throw AssertionError("hata bekleniyordu")
         } catch (_: IllegalStateException) {
         }
         assertTrue(db.aiAccountDao().allIds().isEmpty())
@@ -195,7 +202,8 @@ class RepositoryTest {
         val run = runs.createRun()
         val job = runs.enqueueJobs(run, listOf(JobSeed(1, null))).single()
         runs.startJob(job)
-        outputs.startPartial(run, job); outputs.appendPartial(run, job, "yarım yamalak")
+        outputs.startPartial(run, job)
+        outputs.appendPartial(run, job, "yarım yamalak")
 
         val s = runs.recover()
 
@@ -210,8 +218,8 @@ class RepositoryTest {
         val run = runs.createRun()
         val ids = runs.enqueueJobs(run, listOf(JobSeed(1, null), JobSeed(2, null), JobSeed(3, null)))
         ids.forEach { runs.completeJob(it, "içerik") }
-        file("outputs/$run/${ids[0]}.txt").delete()          // kayıp
-        file("outputs/$run/${ids[1]}.txt").writeText("")     // boş/bozuk
+        file("outputs/$run/${ids[0]}.txt").delete() // kayıp
+        file("outputs/$run/${ids[1]}.txt").writeText("") // boş/bozuk
         // ids[2] sağlam
 
         val s = runs.recover()
@@ -311,10 +319,10 @@ class RepositoryTest {
         )
         runs.completeJob(ok, "t")
         runs.failJob(failed)
-        runs.setRunStatus(runId, RunStatus.RUNNING)       // dağıtım sürüyor: izin yok
+        runs.setRunStatus(runId, RunStatus.RUNNING) // dağıtım sürüyor: izin yok
         assertNull(runs.prepareRetry(failed))
         runs.setRunStatus(runId, RunStatus.FAILED)
-        assertNull(runs.prepareRetry(ok))                   // FAILED olmayan düğüm
+        assertNull(runs.prepareRetry(ok)) // FAILED olmayan düğüm
         assertEquals(runId, runs.prepareRetry(failed))
     }
 }

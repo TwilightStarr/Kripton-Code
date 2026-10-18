@@ -35,7 +35,9 @@ object PlaceholderDetector {
                 if (line.length > 140) return@forEachIndexed
                 val hit = when {
                     ELLIPSIS_ONLY.matches(line) && !(ext == "py" && line.trim() == "...") -> true
+
                     STUB.containsMatchIn(line) -> true
+
                     else -> {
                         val c = COMMENT_LINE.matchEntire(line)?.groupValues?.get(1)
                         c != null && c.length <= 100 && PHRASES.containsMatchIn(c)

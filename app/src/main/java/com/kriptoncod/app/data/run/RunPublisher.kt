@@ -19,8 +19,7 @@ class RunPublisher(
 ) {
 
     /** Bu run GitHub'a gönderilmeli mi: repo seçilmiş ve token tanımlı. */
-    suspend fun shouldPublish(runId: Long): Boolean =
-        runs.getRun(runId)?.repo != null && tokens.get() != null
+    suspend fun shouldPublish(runId: Long): Boolean = runs.getRun(runId)?.repo != null && tokens.get() != null
 
     /**
      * Dosyaları gönderir. Başarılıysa true; her türlü hatada (token, ağ, izin, boş zip) false.

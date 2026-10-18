@@ -20,9 +20,13 @@ class ModelServiceTest {
             .build(),
     )
 
-    @Before fun setUp() { server = MockWebServer().apply { start() } }
+    @Before fun setUp() {
+        server = MockWebServer().apply { start() }
+    }
 
-    @After fun tearDown() { runCatching { server.shutdown() } }
+    @After fun tearDown() {
+        runCatching { server.shutdown() }
+    }
 
     private fun endpoint(validationPath: String = "models"): ProviderEndpoint {
         val base = server.url("/v1")
@@ -36,8 +40,7 @@ class ModelServiceTest {
         )
     }
 
-    private fun json(body: String, code: Int = 200) =
-        MockResponse().setResponseCode(code).setHeader("Content-Type", "application/json").setBody(body)
+    private fun json(body: String, code: Int = 200) = MockResponse().setResponseCode(code).setHeader("Content-Type", "application/json").setBody(body)
 
     private fun fail(r: ApiResult<*>): ApiResult.Fail = r as ApiResult.Fail
 

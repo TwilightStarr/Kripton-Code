@@ -248,6 +248,7 @@ class AccountEditorViewModel(
                     failVerify(EditorError(parsed.error.messageRes, null))
                     return
                 }
+
                 is ProxyUrlResult.Valid -> endpoint = ProxyProvider.endpoint(parsed.baseUrl.toString())
             }
         } else {

@@ -59,21 +59,23 @@ fun EmailAuthCard(
     // Form alanları yalnız Disconnected / NeedsReauth / Error durumunda gösterilir
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
-    val showForm = state is EmailAuthCardState.Disconnected
-        || state is EmailAuthCardState.NeedsReauth
-        || state is EmailAuthCardState.Error
+    val showForm = state is EmailAuthCardState.Disconnected ||
+        state is EmailAuthCardState.NeedsReauth ||
+        state is EmailAuthCardState.Error
 
     NodeCard(
         modifier = modifier.fillMaxWidth(),
         accent = when (state) {
-            is EmailAuthCardState.Connected  -> NodeAccent.Green
+            is EmailAuthCardState.Connected -> NodeAccent.Green
+
             is EmailAuthCardState.Error,
-            is EmailAuthCardState.NeedsReauth -> NodeAccent.Red
+            is EmailAuthCardState.NeedsReauth,
+            -> NodeAccent.Red
+
             else -> NodeAccent.Blue
         },
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-
             // Başlık + durum simgesi
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -82,11 +84,15 @@ fun EmailAuthCard(
                 when (state) {
                     is EmailAuthCardState.Connected ->
                         Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = k.arrow)
+
                     is EmailAuthCardState.Error,
-                    is EmailAuthCardState.NeedsReauth ->
+                    is EmailAuthCardState.NeedsReauth,
+                    ->
                         Icon(Icons.Filled.Warning, contentDescription = null, tint = k.danger)
+
                     is EmailAuthCardState.Loading ->
                         KriptonLoader(size = 28.dp)
+
                     else -> Unit
                 }
                 Column(Modifier.weight(1f)) {
@@ -95,11 +101,11 @@ fun EmailAuthCard(
                         style = MaterialTheme.typography.titleMedium,
                     )
                     val subtitle = when (state) {
-                        is EmailAuthCardState.Connected    -> stringResource(R.string.email_auth_connected)
-                        is EmailAuthCardState.NeedsReauth  -> stringResource(R.string.email_auth_needs_reauth)
-                        is EmailAuthCardState.Error        -> stringResource(R.string.email_auth_sign_in_failed)
+                        is EmailAuthCardState.Connected -> stringResource(R.string.email_auth_connected)
+                        is EmailAuthCardState.NeedsReauth -> stringResource(R.string.email_auth_needs_reauth)
+                        is EmailAuthCardState.Error -> stringResource(R.string.email_auth_sign_in_failed)
                         is EmailAuthCardState.Disconnected -> stringResource(R.string.email_auth_hint)
-                        is EmailAuthCardState.Loading      -> stringResource(R.string.email_auth_loading)
+                        is EmailAuthCardState.Loading -> stringResource(R.string.email_auth_loading)
                     }
                     Text(subtitle, style = MaterialTheme.typography.bodySmall, color = k.muted)
                 }
@@ -147,12 +153,14 @@ fun EmailAuthCard(
                     when (state) {
                         is EmailAuthCardState.Disconnected,
                         is EmailAuthCardState.NeedsReauth,
-                        is EmailAuthCardState.Error ->
+                        is EmailAuthCardState.Error,
+                        ->
                             KButton(
                                 text = stringResource(R.string.email_auth_connect),
                                 onClick = { vm.signIn(email, password) },
                                 enabled = email.isNotBlank() && password.isNotBlank(),
                             )
+
                         is EmailAuthCardState.Connected ->
                             KButton(
                                 text = stringResource(R.string.email_auth_disconnect),
@@ -163,6 +171,7 @@ fun EmailAuthCard(
                                 },
                                 style = KButtonStyle.Outline,
                             )
+
                         else -> Unit
                     }
                 }

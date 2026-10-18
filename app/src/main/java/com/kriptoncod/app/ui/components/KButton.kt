@@ -29,9 +29,23 @@ fun KButton(
     val content: Color
     val border: Color
     when (style) {
-        KButtonStyle.Primary -> { container = scheme.primary; content = scheme.onPrimary; border = scheme.primary }
-        KButtonStyle.Outline -> { container = Color.Transparent; content = scheme.primary; border = k.nodeBorder }
-        KButtonStyle.Danger -> { container = Color.Transparent; content = k.danger; border = k.danger }
+        KButtonStyle.Primary -> {
+            container = scheme.primary
+            content = scheme.onPrimary
+            border = scheme.primary
+        }
+
+        KButtonStyle.Outline -> {
+            container = Color.Transparent
+            content = scheme.primary
+            border = k.nodeBorder
+        }
+
+        KButtonStyle.Danger -> {
+            container = Color.Transparent
+            content = k.danger
+            border = k.danger
+        }
     }
     Button(
         onClick = onClick,

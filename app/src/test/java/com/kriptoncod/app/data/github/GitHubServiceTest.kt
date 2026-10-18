@@ -26,10 +26,11 @@ class GitHubServiceTest {
         )
     }
 
-    @After fun tearDown() { runCatching { server.shutdown() } }
+    @After fun tearDown() {
+        runCatching { server.shutdown() }
+    }
 
-    private fun json(body: String, code: Int = 200) =
-        MockResponse().setResponseCode(code).setHeader("Content-Type", "application/json").setBody(body)
+    private fun json(body: String, code: Int = 200) = MockResponse().setResponseCode(code).setHeader("Content-Type", "application/json").setBody(body)
 
     private fun <T> ok(r: ApiResult<T>): T = (r as ApiResult.Ok).value
 
@@ -144,7 +145,10 @@ class GitHubServiceTest {
 
         val sha = ok(
             service.commitFiles(
-                token, "me/app", "kriptoncod/run-7", "Run 7",
+                token,
+                "me/app",
+                "kriptoncod/run-7",
+                "Run 7",
                 listOf(GitHubFile("out/a.txt", "hello"), GitHubFile(VerifyWorkflow.PATH, VerifyWorkflow.YAML)),
             ),
         )
@@ -191,8 +195,7 @@ class GitHubServiceTest {
 
     private fun runsJson(vararg runs: String) = """{"total_count":${runs.size},"workflow_runs":[${runs.joinToString(",")}]}"""
 
-    private fun run(status: String, conclusion: String?, sha: String = "c2") =
-        """{"id":99,"status":"$status","conclusion":${conclusion?.let { "\"$it\"" } ?: "null"},"head_sha":"$sha","html_url":"https://github.com/me/app/actions/runs/99"}"""
+    private fun run(status: String, conclusion: String?, sha: String = "c2") = """{"id":99,"status":"$status","conclusion":${conclusion?.let { "\"$it\"" } ?: "null"},"head_sha":"$sha","html_url":"https://github.com/me/app/actions/runs/99"}"""
 
     @Test fun awaitRunWaitsForRunToAppearAndComplete() = runBlocking {
         server.enqueue(json(runsJson()))

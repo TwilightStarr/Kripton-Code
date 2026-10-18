@@ -4,10 +4,10 @@ package com.kriptoncod.app.domain
 enum class ThemePreference(val key: String) {
     BLACK("black"),
     GRAPHITE("graphite"),
-    SAGE("sage");
+    SAGE("sage"),
+    ;
 
     companion object {
-        fun fromKey(key: String?): ThemePreference =
-            entries.firstOrNull { it.key == key } ?: BLACK
+        fun fromKey(key: String?): ThemePreference = entries.firstOrNull { it.key == key } ?: BLACK
     }
 }

@@ -31,15 +31,20 @@ class EmailTokenStore(private val vault: KeyVault) {
         val raw = vault.get(keyId(accountId)) ?: return null
         return runCatching {
             val entry = Json.decodeFromString<TokenEntry>(raw)
-            if (System.currentTimeMillis() + bufferMs >= entry.expiresAtMs) null
-            else EmailTokenInfo(entry.sessionToken, entry.expiresAtMs)
+            if (System.currentTimeMillis() + bufferMs >= entry.expiresAtMs) {
+                null
+            } else {
+                EmailTokenInfo(entry.sessionToken, entry.expiresAtMs)
+            }
         }.getOrNull()
     }
 
     /** Token var mı (süresi dolmuş olsa bile). */
     suspend fun hasToken(accountId: Long): Boolean = vault.contains(keyId(accountId))
 
-    suspend fun clear(accountId: Long) { vault.delete(keyId(accountId)) }
+    suspend fun clear(accountId: Long) {
+        vault.delete(keyId(accountId))
+    }
 
     companion object {
         private const val BUFFER_MS = 5L * 60 * 1000 // 5 dakika güvenlik payı

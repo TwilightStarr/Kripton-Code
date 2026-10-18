@@ -17,18 +17,23 @@ import org.robolectric.RobolectricTestRunner
 class UsageDaoTest {
     private lateinit var db: KriptonDatabase
 
-    @Before fun setUp() { db = inMemoryDb() }
-    @After fun tearDown() { db.close() }
+    @Before fun setUp() {
+        db = inMemoryDb()
+    }
+
+    @After fun tearDown() {
+        db.close()
+    }
 
     private suspend fun account(name: String) = db.aiAccountDao().insert(
         AiAccount(providerId = "openai", displayName = name, authType = AuthType.API_KEY, modelId = "m", powerRank = 1),
     )
 
-    private fun ev(acc: Long, at: Long, o: UsageOutcome, wait: Long? = null) =
-        UsageEvent(accountId = acc, at = at, outcome = o, waitMs = wait)
+    private fun ev(acc: Long, at: Long, o: UsageOutcome, wait: Long? = null) = UsageEvent(accountId = acc, at = at, outcome = o, waitMs = wait)
 
     @Test fun summaryCountsPerAccountWithinWindow() = runBlocking {
-        val a = account("A"); val b = account("B")
+        val a = account("A")
+        val b = account("B")
         val dao = db.usageEventDao()
         dao.insert(ev(a, 100, UsageOutcome.SUCCESS))
         dao.insert(ev(a, 200, UsageOutcome.SUCCESS))

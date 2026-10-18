@@ -150,8 +150,11 @@ fun SettingsScreen(
                     color = k.muted,
                 )
                 Text(
-                    if (crashCount == 0) stringResource(R.string.settings_crash_none)
-                    else stringResource(R.string.settings_crash_count, crashCount),
+                    if (crashCount == 0) {
+                        stringResource(R.string.settings_crash_none)
+                    } else {
+                        stringResource(R.string.settings_crash_count, crashCount)
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 if (crashCount > 0) {

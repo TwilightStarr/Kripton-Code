@@ -55,8 +55,7 @@ class WebSessionGenerator(
         }
     }
 
-    private fun clean(policy: WebOutputPolicy, text: String): String =
-        OutputCleaner.clean(text, policy.aggressiveThinking, policy.specialTokens, policy.toolSections)
+    private fun clean(policy: WebOutputPolicy, text: String): String = OutputCleaner.clean(text, policy.aggressiveThinking, policy.specialTokens, policy.toolSections)
 
     private suspend fun plainText(session: WebChatSession, policy: WebOutputPolicy, prompt: String): String {
         val reply = turn(session, prompt)
@@ -175,14 +174,16 @@ class WebSessionGenerator(
                 }
                 return reply
             }
+
             WebReply.Status.RATE_LIMITED -> throw limited(reply.limitText)
+
             WebReply.Status.NEEDS_LOGIN -> throw AiGenerationException(Kind.UNAUTHORIZED)
+
             WebReply.Status.TIMEOUT, WebReply.Status.ERROR -> throw AiGenerationException(Kind.NETWORK)
         }
     }
 
-    private fun limited(text: String?): AiGenerationException =
-        AiGenerationException(Kind.RATE_LIMITED, retryAfterMs = LimitParser.waitMs(text, now()))
+    private fun limited(text: String?): AiGenerationException = AiGenerationException(Kind.RATE_LIMITED, retryAfterMs = LimitParser.waitMs(text, now()))
 
     private companion object {
         const val SHORT_LIMIT_TEXT = 400

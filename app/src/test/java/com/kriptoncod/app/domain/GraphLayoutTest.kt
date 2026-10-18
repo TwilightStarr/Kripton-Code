@@ -6,13 +6,11 @@ import org.junit.Test
 import kotlin.math.hypot
 
 class GraphLayoutTest {
-    private fun n(id: Long, kind: JobKind, cat: String? = null, w: Float = 0.5f) =
-        GraphNodeUi(id, kind, cat, JobState.PENDING, w, "$id")
+    private fun n(id: Long, kind: JobKind, cat: String? = null, w: Float = 0.5f) = GraphNodeUi(id, kind, cat, JobState.PENDING, w, "$id")
 
-    private fun manyWork(count: Int): List<GraphNodeUi> =
-        listOf(n(1, JobKind.PLAN, w = 1f)) +
-            (0 until count).map { n(10L + it, JobKind.WORK, "a") } +
-            listOf(n(900, JobKind.CATALOG_MERGE, "a"), n(901, JobKind.FINAL_MERGE, w = 1f))
+    private fun manyWork(count: Int): List<GraphNodeUi> = listOf(n(1, JobKind.PLAN, w = 1f)) +
+        (0 until count).map { n(10L + it, JobKind.WORK, "a") } +
+        listOf(n(900, JobKind.CATALOG_MERGE, "a"), n(901, JobKind.FINAL_MERGE, w = 1f))
 
     @Test fun emptyGraphHasNoSize() {
         val r = GraphLayout.layout(emptyList())
@@ -37,11 +35,13 @@ class GraphLayoutTest {
             assertTrue(p.x - p.size / 2f >= 0f && p.x + p.size / 2f <= r.width)
             assertTrue(p.y - p.size / 2f >= 0f && p.y + p.size / 2f <= r.height)
         }
-        for (i in r.nodes.indices) for (j in i + 1 until r.nodes.size) {
-            val a = r.nodes[i]
-            val b = r.nodes[j]
-            val dist = hypot(a.x - b.x, a.y - b.y)
-            assertTrue("düğümler çakışıyor", dist >= (a.size + b.size) / 2f)
+        for (i in r.nodes.indices) {
+            for (j in i + 1 until r.nodes.size) {
+                val a = r.nodes[i]
+                val b = r.nodes[j]
+                val dist = hypot(a.x - b.x, a.y - b.y)
+                assertTrue("düğümler çakışıyor", dist >= (a.size + b.size) / 2f)
+            }
         }
     }
 

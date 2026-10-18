@@ -30,12 +30,16 @@ object FlowDirectivesParser {
         var idx = 0
         while (idx < lines.size) {
             val line = lines[idx]
-            if (line.isBlank()) { idx++; continue }
+            if (line.isBlank()) {
+                idx++
+                continue
+            }
             val m = LINE.matchEntire(line) ?: break
             val value = m.groupValues[2]
             when (m.groupValues[1].lowercase()) {
                 "girdi", "input" ->
                     value.split(',').map { it.trim() }.filter { it.isNotEmpty() }.forEach { inputs += it }
+
                 else -> if (value.trim().lowercase() in NO) share = false
             }
             idx++

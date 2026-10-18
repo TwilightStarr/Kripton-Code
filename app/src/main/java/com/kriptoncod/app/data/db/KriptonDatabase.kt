@@ -33,9 +33,8 @@ abstract class KriptonDatabase : RoomDatabase() {
         const val VERSION = 5
         const val NAME = "kriptoncod.db"
 
-        fun build(context: Context): KriptonDatabase =
-            Room.databaseBuilder(context.applicationContext, KriptonDatabase::class.java, NAME)
-                .addMigrations(*Migrations.ALL)
-                .build()
+        fun build(context: Context): KriptonDatabase = Room.databaseBuilder(context.applicationContext, KriptonDatabase::class.java, NAME)
+            .addMigrations(*Migrations.ALL)
+            .build()
     }
 }

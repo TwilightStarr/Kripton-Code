@@ -24,11 +24,20 @@ import org.robolectric.RobolectricTestRunner
 class DaoTest {
     private lateinit var db: KriptonDatabase
 
-    @Before fun setUp() { db = inMemoryDb() }
-    @After fun tearDown() { db.close() }
+    @Before fun setUp() {
+        db = inMemoryDb()
+    }
+
+    @After fun tearDown() {
+        db.close()
+    }
 
     private fun account(name: String = "A", rank: Int = 1) = AiAccount(
-        providerId = "openai", displayName = name, authType = AuthType.API_KEY, modelId = "m1", powerRank = rank,
+        providerId = "openai",
+        displayName = name,
+        authType = AuthType.API_KEY,
+        modelId = "m1",
+        powerRank = rank,
     )
 
     @Test fun accountCrudAndFlow() = runBlocking {

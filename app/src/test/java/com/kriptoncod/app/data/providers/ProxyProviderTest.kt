@@ -11,11 +11,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ProxyProviderTest {
-    private fun valid(raw: String): String =
-        (ProxyProvider.parseBaseUrl(raw) as ProxyUrlResult.Valid).baseUrl.toString()
+    private fun valid(raw: String): String = (ProxyProvider.parseBaseUrl(raw) as ProxyUrlResult.Valid).baseUrl.toString()
 
-    private fun invalid(raw: String): ProxyUrlError =
-        (ProxyProvider.parseBaseUrl(raw) as ProxyUrlResult.Invalid).error
+    private fun invalid(raw: String): ProxyUrlError = (ProxyProvider.parseBaseUrl(raw) as ProxyUrlResult.Invalid).error
 
     // ---- taban adres normalleştirme
 
@@ -103,7 +101,12 @@ class ProxyProviderTest {
     // ---- hesap → uç nokta
 
     private fun account(auth: AuthType, provider: String, baseUrl: String? = null) = AiAccount(
-        providerId = provider, displayName = "h", authType = auth, modelId = "m", powerRank = 1, baseUrl = baseUrl,
+        providerId = provider,
+        displayName = "h",
+        authType = auth,
+        modelId = "m",
+        powerRank = 1,
+        baseUrl = baseUrl,
     )
 
     @Test fun proxyAccountUsesItsOwnBaseUrlAndUpstreamProvider() {

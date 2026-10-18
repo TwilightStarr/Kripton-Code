@@ -62,8 +62,7 @@ class AiAccountRepository(
         dao.setStatus(id, AccountStatus.ERROR, null)
     }
 
-    suspend fun releaseExpiredWaits(): Int =
-        dao.releaseExpiredWaits(now(), AccountStatus.WAITING, AccountStatus.READY)
+    suspend fun releaseExpiredWaits(): Int = dao.releaseExpiredWaits(now(), AccountStatus.WAITING, AccountStatus.READY)
 
     /** Hesabı olmayan (yetim) kasa kayıtlarını siler; silinen sayısını döndürür. */
     suspend fun purgeOrphanSecrets(): Int {

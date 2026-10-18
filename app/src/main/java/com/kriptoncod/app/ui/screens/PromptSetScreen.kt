@@ -155,6 +155,7 @@ private fun PromptSetContent(
                     KriptonLoader()
                 }
             }
+
             state.prompts.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) {
                 EmptyState(
                     icon = Icons.Filled.Edit,
@@ -163,6 +164,7 @@ private fun PromptSetContent(
                     action = { KButton(text = stringResource(R.string.prompts_add_prompt), onClick = onAddPrompt) },
                 )
             }
+
             else -> {
                 item(key = "run", span = { GridItemSpan(maxLineSpan) }) {
                     KButton(
@@ -252,7 +254,10 @@ private fun PromptSetContent(
             dismissButton = {
                 Row {
                     if (row.assignment != null) {
-                        TextButton(onClick = { onUnassign(row.item.id); assignTarget = null }) {
+                        TextButton(onClick = {
+                            onUnassign(row.item.id)
+                            assignTarget = null
+                        }) {
                             Text(
                                 stringResource(R.string.prompts_unassign),
                                 color = KriptonTheme.colors.danger,
@@ -326,8 +331,11 @@ private fun PromptRowCard(
                         )
                         KBadge(
                             text = stringResource(
-                                if (assignment.mode == AssignmentMode.AUTO) R.string.assignment_auto
-                                else R.string.assignment_manual
+                                if (assignment.mode == AssignmentMode.AUTO) {
+                                    R.string.assignment_auto
+                                } else {
+                                    R.string.assignment_manual
+                                },
                             ),
                             accent = NodeAccent.Blue,
                         )
@@ -339,16 +347,22 @@ private fun PromptRowCard(
                     Icon(
                         Icons.Filled.KeyboardArrowUp,
                         contentDescription = stringResource(R.string.prompts_move_up),
-                        tint = if (isFirst) KriptonTheme.colors.muted.copy(alpha = 0.4f)
-                        else MaterialTheme.colorScheme.primary,
+                        tint = if (isFirst) {
+                            KriptonTheme.colors.muted.copy(alpha = 0.4f)
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
                     )
                 }
                 IconButton(onClick = onMoveDown, enabled = !isLast) {
                     Icon(
                         Icons.Filled.KeyboardArrowDown,
                         contentDescription = stringResource(R.string.prompts_move_down),
-                        tint = if (isLast) KriptonTheme.colors.muted.copy(alpha = 0.4f)
-                        else MaterialTheme.colorScheme.primary,
+                        tint = if (isLast) {
+                            KriptonTheme.colors.muted.copy(alpha = 0.4f)
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
                     )
                 }
             }
@@ -359,7 +373,7 @@ private fun PromptRowCard(
         ) {
             KButton(
                 text = stringResource(
-                    if (assignment == null) R.string.prompts_assign else R.string.prompts_reassign
+                    if (assignment == null) R.string.prompts_assign else R.string.prompts_reassign,
                 ),
                 onClick = onAssign,
                 style = KButtonStyle.Outline,

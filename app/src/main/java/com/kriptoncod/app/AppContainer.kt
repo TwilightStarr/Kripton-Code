@@ -76,6 +76,7 @@ class AppContainer(context: Context) {
     val liveOutput: LiveOutput by lazy { LiveOutput() }
 
     // --- AI üretimi ---
+
     /** Normalizer'lı üretici; eksik/bozuk çıktıda aynı hesapla otomatik yeniden dener. */
     val aiGenerator: AiGenerator by lazy { RetryingAiGenerator(OpenAiCompatibleGenerator()) }
 
@@ -86,12 +87,14 @@ class AppContainer(context: Context) {
     // --- Google Auth ---
     val googleAuthSettings: GoogleAuthSettings by lazy { GoogleAuthSettings(appContext) }
     val googleTokenStore: GoogleTokenStore by lazy { GoogleTokenStore(keyVault) }
+
     /** İstemci kimliği her çağrıda ayarlardan okunur; Ayarlar'da değişince yeniden başlatmak gerekmez. */
     val googleAuthClient: GoogleAuthClient by lazy {
         RealGoogleAuthClient { googleAuthSettings.clientIdFlow.first() }
     }
 
     // --- Email Auth ---
+
     /** Session token kasası; Google ile aynı KeyVault'u paylaşır, key prefix farklıdır. */
     val emailTokenStore: EmailTokenStore by lazy { EmailTokenStore(keyVault) }
 
@@ -99,6 +102,7 @@ class AppContainer(context: Context) {
     val emailAuthClient: EmailAuthClient by lazy { RealEmailAuthClient() }
 
     // --- Kimi Auth ---
+
     /** Kimi oturum token kasası; key prefix `kimi-token-` (Email/Google'dan ayrık). */
     val kimiTokenStore: KimiTokenStore by lazy { KimiTokenStore(keyVault) }
 
@@ -109,6 +113,7 @@ class AppContainer(context: Context) {
     val kimiCodeRepository: KimiCodeRepository by lazy { KimiCodeRepository(appContext.filesDir) }
 
     // --- Web oturumu (e-posta ile giriş, API anahtarsız) ---
+
     /** Hesap başına çerez/oturum kasası (KeyVault, `web-session-<id>`). */
     val webSessionStore: WebSessionStore by lazy { WebSessionStore(keyVault) }
     val webChatDriver: WebChatDriver by lazy {
@@ -134,12 +139,15 @@ class AppContainer(context: Context) {
                     runFinalizer.finalize(runId) is RunFinalizer.Result.Success
                 when {
                     !packaged -> RunStatus.FAILED
+
                     !runPublisher.shouldPublish(runId) -> RunStatus.DONE
+
                     // Repo seçilmiş: dalı gönder, ardından CI sonucunu izle.
                     runPublisher.publish(runId) -> {
                         runScheduler.startCiLoop(runId)
                         RunStatus.CI_WAITING
                     }
+
                     else -> RunStatus.FAILED
                 }
             },

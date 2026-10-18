@@ -40,7 +40,10 @@ class HistoryStore(
 ) {
     private val dir = File(root, "history")
     private val mutex = Mutex()
-    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
 
     private fun file(runId: Long) = File(dir, "$runId.json")
 

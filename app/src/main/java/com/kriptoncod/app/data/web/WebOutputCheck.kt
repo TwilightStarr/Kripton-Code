@@ -57,13 +57,13 @@ object WebOutputCheck {
         return candidate.length >= old.length || candidate.length * 10 >= old.length * 6
     }
 
-    private fun placeholderCount(content: String) =
-        PlaceholderDetector.find(listOf(CodeBlockParser.Block("x.kt", content))).size
+    private fun placeholderCount(content: String) = PlaceholderDetector.find(listOf(CodeBlockParser.Block("x.kt", content))).size
 
     fun repairPrompt(i: Inspection): String = when {
         i.noBlocks ->
             "Your last reply had no file blocks. Return EVERY file again, each as its own fenced code block whose info " +
                 "string is the full relative file path (for example ```src/main/App.kt). Complete files only, no explanations."
+
         else ->
             "These files were shortened with placeholders (\"...\", \"rest of the code\"): " +
                 i.placeholderFiles.take(12).joinToString(", ") +

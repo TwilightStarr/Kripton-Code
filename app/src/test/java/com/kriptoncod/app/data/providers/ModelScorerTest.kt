@@ -12,8 +12,13 @@ class ModelScorerTest {
 
     @Test fun nonChatModelsAreExcluded() {
         listOf(
-            "whisper-large-v3", "text-embedding-004", "gemini-2.5-flash-image", "playai-tts",
-            "llama-guard-4-12b", "gemini-2.0-flash-live", "models/imagen-3",
+            "whisper-large-v3",
+            "text-embedding-004",
+            "gemini-2.5-flash-image",
+            "playai-tts",
+            "llama-guard-4-12b",
+            "gemini-2.0-flash-live",
+            "models/imagen-3",
         ).forEach { assertNull(it, ModelScorer.score(m(it))) }
     }
 

@@ -31,10 +31,9 @@ object ContinuationMerger {
         return acc
     }
 
-    private fun startsWithFence(s: String): Boolean =
-        s.lineSequence().firstOrNull { it.isNotBlank() }?.trimStart()?.let {
-            it.startsWith("```") || it.startsWith("~~~")
-        } ?: false
+    private fun startsWithFence(s: String): Boolean = s.lineSequence().firstOrNull { it.isNotBlank() }?.trimStart()?.let {
+        it.startsWith("```") || it.startsWith("~~~")
+    } ?: false
 
     private fun closingFence(acc: String): String {
         // Açık çitin uzunluğunu bul: son açılış satırı.
@@ -49,7 +48,9 @@ object ContinuationMerger {
             if (run < 3) continue
             val info = t.drop(run).trim()
             if (!open && !(c == '`' && '`' in info)) {
-                open = true; len = run; ch = c
+                open = true
+                len = run
+                ch = c
             } else if (open && c == ch && run >= len && info.isEmpty()) {
                 open = false
             }

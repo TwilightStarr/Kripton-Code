@@ -93,7 +93,9 @@ private fun FlowItem(job: Job, accountName: String?, container: AppContainer, se
         health = if (job.state == JobState.DONE) {
             val text = container.runRepository.readOutput(job.id)
             text?.let { withContext(Dispatchers.Default) { analyzeOutput(it) } }
-        } else null
+        } else {
+            null
+        }
     }
     val h = health
     val accent = when {
@@ -146,8 +148,12 @@ internal fun RunFilesPanel(runId: Long, zipPath: String?, container: AppContaine
     val k = KriptonTheme.colors
     var entries by remember(runId, zipPath) { mutableStateOf<List<Pair<String, Int>>?>(null) }
     LaunchedEffect(runId, zipPath) {
-        entries = if (zipPath == null) null else withContext(Dispatchers.IO) {
-            container.runRepository.readZipFiles(runId).map { it.first to it.second.size }.sortedBy { it.first }
+        entries = if (zipPath == null) {
+            null
+        } else {
+            withContext(Dispatchers.IO) {
+                container.runRepository.readZipFiles(runId).map { it.first to it.second.size }.sortedBy { it.first }
+            }
         }
     }
     val list = entries

@@ -45,25 +45,35 @@ class PromptDispatchWorker(context: Context, params: WorkerParameters) : Corouti
                     container.runScheduler.resume(runId, outcome.delayMs)
                     if (notify && outcome.delayMs >= LONG_WAIT_MS) {
                         RunNotifier.event(
-                            ctx, runId, RunNotifier.KIND_WAITING,
+                            ctx,
+                            runId,
+                            RunNotifier.KIND_WAITING,
                             ctx.getString(R.string.notif_waiting_title),
                             ctx.getString(R.string.notif_waiting_text),
                         )
                     }
                 }
+
                 is DispatchOutcome.Finished -> if (notify) {
                     if (outcome.status == RunStatus.DONE) {
                         RunNotifier.event(
-                            ctx, runId, RunNotifier.KIND_DONE,
-                            ctx.getString(R.string.notif_done_title), ctx.getString(R.string.notif_done_text, runId),
+                            ctx,
+                            runId,
+                            RunNotifier.KIND_DONE,
+                            ctx.getString(R.string.notif_done_title),
+                            ctx.getString(R.string.notif_done_text, runId),
                         )
                     } else if (outcome.status == RunStatus.FAILED) {
                         RunNotifier.event(
-                            ctx, runId, RunNotifier.KIND_FAILED,
-                            ctx.getString(R.string.notif_failed_title), ctx.getString(R.string.notif_failed_text, runId),
+                            ctx,
+                            runId,
+                            RunNotifier.KIND_FAILED,
+                            ctx.getString(R.string.notif_failed_title),
+                            ctx.getString(R.string.notif_failed_text, runId),
                         )
                     }
                 }
+
                 is DispatchOutcome.Cancelled -> Unit
             }
             RunWidgetUpdater.refresh(ctx)
@@ -80,8 +90,11 @@ class PromptDispatchWorker(context: Context, params: WorkerParameters) : Corouti
                 }
                 if (notify) {
                     RunNotifier.event(
-                        ctx, runId, RunNotifier.KIND_FAILED,
-                        ctx.getString(R.string.notif_failed_title), ctx.getString(R.string.notif_crashed_text, runId),
+                        ctx,
+                        runId,
+                        RunNotifier.KIND_FAILED,
+                        ctx.getString(R.string.notif_failed_title),
+                        ctx.getString(R.string.notif_crashed_text, runId),
                     )
                 }
                 Result.failure()

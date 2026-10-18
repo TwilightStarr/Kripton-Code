@@ -199,6 +199,7 @@ private fun AccountEditorContent(
                         item { SectionTitle(R.string.step_key_alternative) }
                         item { KeySection(state, provider, onKeyChange, onPaste, onVerify) }
                     }
+
                     provider.supportsEmailAuth -> {
                         // Claude / ChatGPT: e-posta/şifre giriş kartı
                         item(key = "email-auth-card") {
@@ -212,6 +213,7 @@ private fun AccountEditorContent(
                         item { SectionTitle(R.string.step_key_alternative) }
                         item { KeySection(state, provider, onKeyChange, onPaste, onVerify) }
                     }
+
                     provider.supportsKimiAuth -> {
                         // Kimi: e-posta/şifre oturum kartı; kodlar sırayla Kimi'den istenir
                         item(key = "kimi-auth-card") {
@@ -225,6 +227,7 @@ private fun AccountEditorContent(
                         item { SectionTitle(R.string.step_key_alternative) }
                         item { KeySection(state, provider, onKeyChange, onPaste, onVerify) }
                     }
+
                     else -> {
                         // Diğer sağlayıcılar: yalnız API anahtarı
                         item(key = "api-key-only-info") {
@@ -437,10 +440,10 @@ private fun ModelRow(model: ModelOption, selected: Boolean, onClick: () -> Unit)
                         KBadge(stringResource(R.string.model_recommended), accent = NodeAccent.Green)
                     }
                     when (model.pricing) {
-                        Pricing.FREE      -> KBadge(stringResource(R.string.model_free), accent = NodeAccent.Green)
+                        Pricing.FREE -> KBadge(stringResource(R.string.model_free), accent = NodeAccent.Green)
                         Pricing.FREE_TIER -> KBadge(stringResource(R.string.model_free_tier))
-                        Pricing.PAID      -> KBadge(stringResource(R.string.model_paid))
-                        Pricing.UNKNOWN   -> Unit
+                        Pricing.PAID -> KBadge(stringResource(R.string.model_paid))
+                        Pricing.UNKNOWN -> Unit
                     }
                 }
             }

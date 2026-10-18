@@ -36,14 +36,17 @@ object CiLogParser {
                     val m = KOTLIN.find(line)!!
                     errors += CiError(m.groupValues[1], m.groupValues[2].toInt(), m.groupValues[3])
                 }
+
                 JAVA.matches(line) -> {
                     val m = JAVA.find(line)!!
                     errors += CiError(m.groupValues[1], m.groupValues[2].toInt(), m.groupValues[3])
                 }
+
                 ACTIONS.matches(line) -> {
                     val m = ACTIONS.find(line)!!
                     errors += CiError("", -1, m.groupValues[1])
                 }
+
                 GENERIC.containsMatchIn(line) && line.length > 10 -> {
                     errors += CiError("", -1, line)
                 }

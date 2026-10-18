@@ -15,31 +15,28 @@ object WebScripts {
     const val POLL = "(function(){ if(!window.__kr) return 'LOST'; return window.__kr.done ? JSON.stringify(window.__kr.result) : ''; })()"
 
     /** localStorage'tan saklanacak anahtarları JSON nesnesi olarak döndürür. */
-    fun readLocalStorage(keys: List<String>): String =
-        "(function(){var o={};" + json.encodeToString(keys) +
-            ".forEach(function(k){try{var v=localStorage.getItem(k);if(v!==null)o[k]=v;}catch(e){}});return JSON.stringify(o);})()"
+    fun readLocalStorage(keys: List<String>): String = "(function(){var o={};" + json.encodeToString(keys) +
+        ".forEach(function(k){try{var v=localStorage.getItem(k);if(v!==null)o[k]=v;}catch(e){}});return JSON.stringify(o);})()"
 
-    fun writeLocalStorage(values: Map<String, String>): String =
-        "(function(){var d=" + json.encodeToString(values) +
-            ";for(var k in d){try{localStorage.setItem(k,d[k]);}catch(e){}}return 'ok';})()"
+    fun writeLocalStorage(values: Map<String, String>): String = "(function(){var d=" + json.encodeToString(values) +
+        ";for(var k in d){try{localStorage.setItem(k,d[k]);}catch(e){}}return 'ok';})()"
 
     /**
      * E-postadaki doğrulama kodunu sayfadaki kod alanına yazar (tek alan ya da basamak başına kutu).
      * Yalnız kullanıcı düğmeye bastığında çalışır; e-posta/şifre alanlarına dokunmaz. [code] yalnız rakamdır.
      */
-    fun fillCode(code: String): String =
-        "(function(code){" +
-            "var ins=Array.prototype.slice.call(document.querySelectorAll('input')).filter(function(e){" +
-            "var r=e.getBoundingClientRect();" +
-            "return r.width>0&&r.height>0&&!e.disabled&&!e.readOnly&&['hidden','checkbox','radio','submit','button','password','email'].indexOf(e.type)<0;});" +
-            "function setVal(e,v){var d=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');" +
-            "d.set.call(e,v);e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));}" +
-            "var boxes=ins.filter(function(e){return e.maxLength===1;});" +
-            "if(boxes.length>=code.length){for(var i=0;i<code.length;i++){boxes[i].focus();setVal(boxes[i],code.charAt(i));}return 'ok';}" +
-            "var single=ins.filter(function(e){return !(e.maxLength>0&&e.maxLength<code.length);});" +
-            "var t=(document.activeElement&&ins.indexOf(document.activeElement)>=0)?document.activeElement:(single[0]||null);" +
-            "if(t){t.focus();setVal(t,code);return 'ok';}" +
-            "return 'none';})(" + json.encodeToString(code) + ")"
+    fun fillCode(code: String): String = "(function(code){" +
+        "var ins=Array.prototype.slice.call(document.querySelectorAll('input')).filter(function(e){" +
+        "var r=e.getBoundingClientRect();" +
+        "return r.width>0&&r.height>0&&!e.disabled&&!e.readOnly&&['hidden','checkbox','radio','submit','button','password','email'].indexOf(e.type)<0;});" +
+        "function setVal(e,v){var d=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');" +
+        "d.set.call(e,v);e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));}" +
+        "var boxes=ins.filter(function(e){return e.maxLength===1;});" +
+        "if(boxes.length>=code.length){for(var i=0;i<code.length;i++){boxes[i].focus();setVal(boxes[i],code.charAt(i));}return 'ok';}" +
+        "var single=ins.filter(function(e){return !(e.maxLength>0&&e.maxLength<code.length);});" +
+        "var t=(document.activeElement&&ins.indexOf(document.activeElement)>=0)?document.activeElement:(single[0]||null);" +
+        "if(t){t.focus();setVal(t,code);return 'ok';}" +
+        "return 'none';})(" + json.encodeToString(code) + ")"
 
     /** AI Studio sayfa metninde API anahtarı arar. */
     const val FIND_API_KEY =

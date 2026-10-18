@@ -21,15 +21,21 @@ private fun zipOf(vararg entries: Pair<String, ByteArray>): ByteArray {
     val bos = ByteArrayOutputStream()
     ZipOutputStream(bos).use { z ->
         for ((n, b) in entries) {
-            z.putNextEntry(ZipEntry(n)); z.write(b); z.closeEntry()
+            z.putNextEntry(ZipEntry(n))
+            z.write(b)
+            z.closeEntry()
         }
     }
     return bos.toByteArray()
 }
 
 private fun account(provider: WebProvider, id: Long = 1) = AiAccount(
-    id = id, providerId = provider.id, displayName = "t", authType = AuthType.WEB_SESSION,
-    modelId = "web", powerRank = provider.powerRank,
+    id = id,
+    providerId = provider.id,
+    displayName = "t",
+    authType = AuthType.WEB_SESSION,
+    modelId = "web",
+    powerRank = provider.powerRank,
 )
 
 class LimitParserTest {
@@ -151,11 +157,14 @@ class WebPacerTest {
     @Test fun enforcesGapPerAccount() = runBlocking {
         var t = 1_000L
         val slept = mutableListOf<Long>()
-        val pacer = WebPacer(minGapMs = 20_000, jitterMs = 0, now = { t }, sleep = { slept += it; t += it })
-        pacer.await(1)            // ilk gönderim: bekleme yok
+        val pacer = WebPacer(minGapMs = 20_000, jitterMs = 0, now = { t }, sleep = {
+            slept += it
+            t += it
+        })
+        pacer.await(1) // ilk gönderim: bekleme yok
         t += 5_000
-        pacer.await(1)            // 5 sn geçti -> 15 sn daha
-        pacer.await(2)            // başka hesap: bekleme yok
+        pacer.await(1) // 5 sn geçti -> 15 sn daha
+        pacer.await(2) // başka hesap: bekleme yok
         assertEquals(listOf(15_000L), slept)
     }
 }
@@ -163,9 +172,14 @@ class WebPacerTest {
 private class FakeSession(private val replies: ArrayDeque<WebReply>, private val files: Map<String, WebFile> = emptyMap()) : WebChatSession {
     val sent = mutableListOf<String>()
     var closed = false
-    override suspend fun send(prompt: String): WebReply { sent += prompt; return replies.removeFirst() }
+    override suspend fun send(prompt: String): WebReply {
+        sent += prompt
+        return replies.removeFirst()
+    }
     override suspend fun download(url: String): WebFile? = files[url]
-    override suspend fun close() { closed = true }
+    override suspend fun close() {
+        closed = true
+    }
 }
 
 private class FakeDriver(val session: FakeSession? = null, val error: Throwable? = null) : WebChatDriver {
@@ -175,11 +189,9 @@ private class FakeDriver(val session: FakeSession? = null, val error: Throwable?
     }
 }
 
-private fun gen(driver: WebChatDriver, max: Int = 3) =
-    WebSessionGenerator(driver, WebPacer(minGapMs = 0, jitterMs = 0), now = { 0L }, maxContinues = max)
+private fun gen(driver: WebChatDriver, max: Int = 3) = WebSessionGenerator(driver, WebPacer(minGapMs = 0, jitterMs = 0), now = { 0L }, maxContinues = max)
 
-private fun ok(text: String, files: List<String> = emptyList(), truncated: Boolean = false) =
-    WebReply(WebReply.Status.OK, text, files, truncated = truncated)
+private fun ok(text: String, files: List<String> = emptyList(), truncated: Boolean = false) = WebReply(WebReply.Status.OK, text, files, truncated = truncated)
 
 class WebSessionGeneratorTest {
 
@@ -238,7 +250,8 @@ class WebSessionGeneratorTest {
     @Test fun limitMessageInAnswerBodyIsDetected() = runBlocking {
         val s = FakeSession(ArrayDeque(listOf(ok("You've reached your usage limit. Try again in 45 minutes."))))
         try {
-            gen(FakeDriver(s)).generate(account(WebProvider.CHATGPT), "yaz"); fail()
+            gen(FakeDriver(s)).generate(account(WebProvider.CHATGPT), "yaz")
+            fail()
         } catch (e: AiGenerationException) {
             assertEquals(Kind.RATE_LIMITED, e.kind)
         }
@@ -247,7 +260,12 @@ class WebSessionGeneratorTest {
     @Test fun statusMapping() = runBlocking {
         suspend fun kindFor(r: WebReply): Kind {
             val s = FakeSession(ArrayDeque(listOf(r)))
-            try { gen(FakeDriver(s)).generate(account(WebProvider.CLAUDE), "x"); fail() } catch (e: AiGenerationException) { return e.kind }
+            try {
+                gen(FakeDriver(s)).generate(account(WebProvider.CLAUDE), "x")
+                fail()
+            } catch (e: AiGenerationException) {
+                return e.kind
+            }
             error("unreachable")
         }
         assertEquals(Kind.UNAUTHORIZED, kindFor(WebReply(WebReply.Status.NEEDS_LOGIN)))
@@ -257,7 +275,8 @@ class WebSessionGeneratorTest {
 
     @Test fun missingSessionFromDriverPropagates() = runBlocking {
         try {
-            gen(FakeDriver(error = AiGenerationException(Kind.UNAUTHORIZED))).generate(account(WebProvider.KIMI), "x"); fail()
+            gen(FakeDriver(error = AiGenerationException(Kind.UNAUTHORIZED))).generate(account(WebProvider.KIMI), "x")
+            fail()
         } catch (e: AiGenerationException) {
             assertEquals(Kind.UNAUTHORIZED, e.kind)
         }
@@ -272,7 +291,8 @@ class WebSessionGeneratorTest {
 
     @Test fun geminiNeverUsesTheWebChat() = runBlocking {
         try {
-            gen(FakeDriver(FakeSession(ArrayDeque()))).generate(account(WebProvider.GEMINI), "x"); fail()
+            gen(FakeDriver(FakeSession(ArrayDeque()))).generate(account(WebProvider.GEMINI), "x")
+            fail()
         } catch (e: AiGenerationException) {
             assertEquals(Kind.BAD_REQUEST, e.kind)
         }
@@ -282,10 +302,14 @@ class WebSessionGeneratorTest {
 class WebSessionStoreTest {
     private class MemVault : com.kriptoncod.app.data.vault.KeyVault {
         val m = mutableMapOf<String, String>()
-        override suspend fun put(keyId: String, secret: String) { m[keyId] = secret }
+        override suspend fun put(keyId: String, secret: String) {
+            m[keyId] = secret
+        }
         override suspend fun get(keyId: String) = m[keyId]
         override suspend fun contains(keyId: String) = keyId in m
-        override suspend fun delete(keyId: String) { m.remove(keyId) }
+        override suspend fun delete(keyId: String) {
+            m.remove(keyId)
+        }
         override suspend fun listIds() = m.keys.sorted()
     }
 

@@ -32,13 +32,24 @@ fun NodeCard(
     val inner: @Composable () -> Unit = { Column(Modifier.padding(16.dp), content = content) }
     if (onClick != null) {
         Surface(
-            onClick = onClick, modifier = modifier, shape = shape, color = fill, border = stroke,
-            tonalElevation = 0.dp, shadowElevation = 0.dp, content = inner,
+            onClick = onClick,
+            modifier = modifier,
+            shape = shape,
+            color = fill,
+            border = stroke,
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp,
+            content = inner,
         )
     } else {
         Surface(
-            modifier = modifier, shape = shape, color = fill, border = stroke,
-            tonalElevation = 0.dp, shadowElevation = 0.dp, content = inner,
+            modifier = modifier,
+            shape = shape,
+            color = fill,
+            border = stroke,
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp,
+            content = inner,
         )
     }
 }

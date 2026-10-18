@@ -38,15 +38,17 @@ sealed interface ApiResult<out T> {
 /** Sağlayıcıdan model listesi çekme, anahtar doğrulama ve öneri üretme. Anahtar loglanmaz. */
 class ModelService(
     private val client: OkHttpClient = defaultClient(),
-    private val json: Json = Json { ignoreUnknownKeys = true; coerceInputValues = true },
+    private val json: Json = Json {
+        ignoreUnknownKeys = true
+        coerceInputValues = true
+    },
 ) {
 
     /** Anahtarı doğrulama isteği atar (kota harcamaz). 429 → anahtar geçerli olabilir ama sınır dolu. */
-    suspend fun validate(endpoint: ProviderEndpoint, apiKey: String): ApiResult<Unit> =
-        when (val r = get(endpoint.validationUrl, endpoint.authMethod, apiKey)) {
-            is ApiResult.Ok -> ApiResult.Ok(Unit)
-            is ApiResult.Fail -> r
-        }
+    suspend fun validate(endpoint: ProviderEndpoint, apiKey: String): ApiResult<Unit> = when (val r = get(endpoint.validationUrl, endpoint.authMethod, apiKey)) {
+        is ApiResult.Ok -> ApiResult.Ok(Unit)
+        is ApiResult.Fail -> r
+    }
 
     suspend fun listModels(endpoint: ProviderEndpoint, apiKey: String): ApiResult<List<RemoteModel>> {
         val body = when (val r = get(endpoint.modelsUrl, endpoint.authMethod, apiKey)) {

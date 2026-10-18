@@ -44,8 +44,12 @@ class LiveOutput(
 
     private inner class Sink(private val jobId: Long) : StreamSink {
         @Volatile var closed = false
-        override fun append(delta: String) { if (!closed) this@LiveOutput.append(jobId, delta) }
-        override fun reset() { if (!closed) this@LiveOutput.reset(jobId) }
+        override fun append(delta: String) {
+            if (!closed) this@LiveOutput.append(jobId, delta)
+        }
+        override fun reset() {
+            if (!closed) this@LiveOutput.reset(jobId)
+        }
     }
 
     private fun append(jobId: Long, delta: String) {

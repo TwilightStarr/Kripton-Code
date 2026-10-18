@@ -36,7 +36,12 @@ interface ProviderNormalizer {
 /** OpenAI biçimli `choices[0]` nesnesini [RawChoice]'a çevirir; beklenmeyen alanları yok sayar. */
 object ChoiceReader {
     private val THINKING_TYPES = setOf(
-        "thinking", "redacted_thinking", "reasoning", "reasoning_text", "thought", "summary_text",
+        "thinking",
+        "redacted_thinking",
+        "reasoning",
+        "reasoning_text",
+        "thought",
+        "summary_text",
     )
     private val TEXT_TYPES = setOf("text", "output_text")
     private val TOOL_TYPES = setOf("tool_use", "tool_call", "function_call")
@@ -50,8 +55,11 @@ object ChoiceReader {
         fun addContent(content: JsonElement?) {
             when (content) {
                 null, JsonNull -> Unit
+
                 is JsonPrimitive -> content.contentOrNull?.let { visible.append(it) }
+
                 is JsonObject -> addPart(content, visible, reasoning)?.let { tools = tools || it }
+
                 is JsonArray -> content.forEach { part ->
                     val obj = part as? JsonObject ?: return@forEach
                     addPart(obj, visible, reasoning)?.let { tools = tools || it }
@@ -90,14 +98,17 @@ object ChoiceReader {
         fun str(key: String) = (part[key] as? JsonPrimitive)?.contentOrNull
         return when {
             type in TOOL_TYPES -> true
+
             type in THINKING_TYPES || isThought -> {
                 (str("thinking") ?: str("reasoning") ?: str("text"))?.let { reasoning.append(it) }
                 null
             }
+
             type == null || type in TEXT_TYPES -> {
                 str("text")?.let { visible.append(it) }
                 null
             }
+
             else -> null // image, refusal vb.: yok sayılır
         }
     }

@@ -33,22 +33,17 @@ class ProxyGenerationTest {
         runCatching { other.shutdown() }
     }
 
-    private fun endpoint(s: MockWebServer, upstream: UpstreamProvider) =
-        ProxyProvider.endpoint("http://127.0.0.1:${s.port}", upstream)!!
+    private fun endpoint(s: MockWebServer, upstream: UpstreamProvider) = ProxyProvider.endpoint("http://127.0.0.1:${s.port}", upstream)!!
 
-    private fun json(body: String, code: Int = 200) =
-        MockResponse().setResponseCode(code).setHeader("Content-Type", "application/json").setBody(body)
+    private fun json(body: String, code: Int = 200) = MockResponse().setResponseCode(code).setHeader("Content-Type", "application/json").setBody(body)
 
-    private fun reply(message: String, finish: String = "stop") =
-        json("""{"choices":[{"index":0,"message":$message,"finish_reason":"$finish"}]}""")
+    private fun reply(message: String, finish: String = "stop") = json("""{"choices":[{"index":0,"message":$message,"finish_reason":"$finish"}]}""")
 
     private fun plain(content: String, finish: String = "stop") = reply("""{"role":"assistant","content":"$content"}""", finish)
 
-    private fun generate(s: MockWebServer, upstream: UpstreamProvider, model: String, key: String = "proxy-key") =
-        runBlocking { generator.generate(endpoint(s, upstream), model, key, "Yaz") }
+    private fun generate(s: MockWebServer, upstream: UpstreamProvider, model: String, key: String = "proxy-key") = runBlocking { generator.generate(endpoint(s, upstream), model, key, "Yaz") }
 
-    private fun failure(block: () -> Unit): AiGenerationException =
-        runCatching(block).exceptionOrNull() as AiGenerationException
+    private fun failure(block: () -> Unit): AiGenerationException = runCatching(block).exceptionOrNull() as AiGenerationException
 
     @Test fun sendsOpenAiRequestToProxyWithBearerKey() {
         server.enqueue(plain("merhaba"))

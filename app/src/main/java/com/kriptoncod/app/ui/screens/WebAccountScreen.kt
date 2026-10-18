@@ -105,13 +105,18 @@ fun WebAccountScreen(accountId: Long?, onClose: () -> Unit, onUseApiKey: () -> U
         }
         when (state.step) {
             WebStep.PICK -> PickStep(state, vm, onClose, onUseApiKey)
+
             WebStep.TOKEN -> TokenStep(state, vm)
+
             WebStep.WARNING -> WarningStep(state, vm, onClose)
+
             WebStep.LOGIN, WebStep.KEY -> BrowserStep(state, vm, onClose)
+
             WebStep.SAVING -> Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 KriptonLoader()
                 Text(stringResource(R.string.web_saving), style = MaterialTheme.typography.bodyMedium)
             }
+
             WebStep.DONE -> Unit
         }
     }
@@ -243,8 +248,13 @@ private fun ColumnScope.BrowserStep(state: WebAccountState, vm: WebAccountViewMo
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
             stringResource(
-                if (keyStep) R.string.web_key_title
-                else if (state.relogin) R.string.web_relogin_title else R.string.web_title,
+                if (keyStep) {
+                    R.string.web_key_title
+                } else if (state.relogin) {
+                    R.string.web_relogin_title
+                } else {
+                    R.string.web_title
+                },
             ),
             style = MaterialTheme.typography.titleMedium,
             maxLines = 1,
@@ -368,7 +378,14 @@ private fun ColumnScope.BrowserStep(state: WebAccountState, vm: WebAccountViewMo
         )
     }
     DisposableEffect(Unit) {
-        onDispose { holder?.let { runCatching { it.stopLoading(); it.destroy() } } }
+        onDispose {
+            holder?.let {
+                runCatching {
+                    it.stopLoading()
+                    it.destroy()
+                }
+            }
+        }
     }
 }
 

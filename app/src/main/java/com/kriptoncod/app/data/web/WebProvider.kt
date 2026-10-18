@@ -87,8 +87,7 @@ enum class WebProvider(
     }
 }
 
-private fun WebSession.hasCookie(match: (String) -> Boolean): Boolean =
-    cookies.values.any { header -> CookieText.parse(header).any { (name, value) -> value.isNotEmpty() && match(name) } }
+private fun WebSession.hasCookie(match: (String) -> Boolean): Boolean = cookies.values.any { header -> CookieText.parse(header).any { (name, value) -> value.isNotEmpty() && match(name) } }
 
 /** Sağlayıcının çıktı verme biçimi; çıktı adaptörünü ve istem ekini belirler. */
 enum class OutputStyle {

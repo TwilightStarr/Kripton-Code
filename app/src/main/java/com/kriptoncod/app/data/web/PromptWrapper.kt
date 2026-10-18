@@ -24,6 +24,7 @@ object PromptWrapper {
             "$prompt\n\n---\nDeliver ALL files together as a single downloadable .zip archive " +
                 "(create the file, do not just describe it). Keep the folder structure with full relative paths. " +
                 "Write complete files only."
+
         Mode.CODE_BLOCKS ->
             if (provider.output == OutputStyle.LONG_CODE_BLOCK) {
                 "$prompt\n\n---\n$BLOCK_RULES If the answer is long, keep going until every file is finished; " +
@@ -34,7 +35,6 @@ object PromptWrapper {
     }
 
     /** Kesilen yanıtı sürdürmek için gönderilen mesaj. */
-    fun continuation(): String =
-        "Continue exactly where you stopped. Do not repeat finished files. If you were in the middle of a file, " +
-            "restart that file with the same ```path fence and write it complete, then finish the remaining files."
+    fun continuation(): String = "Continue exactly where you stopped. Do not repeat finished files. If you were in the middle of a file, " +
+        "restart that file with the same ```path fence and write it complete, then finish the remaining files."
 }

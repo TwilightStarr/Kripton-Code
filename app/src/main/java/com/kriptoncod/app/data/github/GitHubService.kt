@@ -42,16 +42,18 @@ import okhttp3.Response
 class GitHubService(
     private val client: OkHttpClient = defaultClient(),
     private val apiBase: HttpUrl = "https://api.github.com/".toHttpUrl(),
-    private val json: Json = Json { ignoreUnknownKeys = true; coerceInputValues = true },
+    private val json: Json = Json {
+        ignoreUnknownKeys = true
+        coerceInputValues = true
+    },
 ) {
 
     // ------------------------------------------------------------------ kullanıcı / repo
 
     /** Token'ı doğrular (`GET /user`). */
-    suspend fun validateToken(token: String): ApiResult<GitHubUser> =
-        execute(token, "GET", url("user"))
-            .flatMap { decode<UserDto>(it) }
-            .map { GitHubUser(it.login) }
+    suspend fun validateToken(token: String): ApiResult<GitHubUser> = execute(token, "GET", url("user"))
+        .flatMap { decode<UserDto>(it) }
+        .map { GitHubUser(it.login) }
 
     /** Yazma izni olan, arşivlenmemiş repoları günceller sırayla listeler (tüm sayfalar). */
     suspend fun listRepos(token: String): ApiResult<List<GitHubRepo>> {
@@ -92,7 +94,9 @@ class GitHubService(
      * Dal zaten varsa (422) hata değil: mevcut ucun SHA'sı döner (yeniden deneme güvenli).
      */
     suspend fun createBranch(token: String, repo: String, branch: String, baseBranch: String): ApiResult<String> {
-        requireRepo(repo); requireBranch(branch); requireBranch(baseBranch)
+        requireRepo(repo)
+        requireBranch(branch)
+        requireBranch(baseBranch)
         val baseSha = branchSha(token, repo, baseBranch).getOrElse { return it }
         val body = buildJsonObject {
             put("ref", "refs/heads/$branch")
@@ -115,7 +119,8 @@ class GitHubService(
         message: String,
         files: List<GitHubFile>,
     ): ApiResult<String> {
-        requireRepo(repo); requireBranch(branch)
+        requireRepo(repo)
+        requireBranch(branch)
         require(files.isNotEmpty()) { "Commit için dosya yok" }
         require(files.all { isSafePath(it.path) }) { "Geçersiz dosya yolu" }
         require(files.map { it.path }.toSet().size == files.size) { "Yinelenen dosya yolu" }
@@ -179,7 +184,8 @@ class GitHubService(
 
     /** [headSha] commit'i için [branch] üzerindeki en yeni workflow run; henüz yoksa `Ok(null)`. */
     suspend fun findRun(token: String, repo: String, branch: String, headSha: String): ApiResult<GitHubRun?> {
-        requireRepo(repo); requireBranch(branch)
+        requireRepo(repo)
+        requireBranch(branch)
         val u = url(
             "repos/$repo/actions/runs",
             "branch" to branch,
@@ -212,6 +218,7 @@ class GitHubService(
             while (outcome == null) {
                 when (val r = findRun(token, repo, branch, headSha)) {
                     is ApiResult.Fail -> outcome = RunWait.Failed(r)
+
                     is ApiResult.Ok -> r.value?.let { run ->
                         last = run
                         if (run.isCompleted) outcome = RunWait.Completed(run)
@@ -242,16 +249,18 @@ class GitHubService(
         // Kimlik bilgisi olmadan: geçici adres imzalıdır.
         val download = Request.Builder().url(target).header("User-Agent", USER_AGENT).get().build()
         val second = send(download, MAX_LOG_BYTES).getOrElse { return it }
-        return if (second.code in 200..299) ApiResult.Ok(second.body)
-        else ApiResult.Fail(ApiError.BAD_RESPONSE, second.code)
+        return if (second.code in 200..299) {
+            ApiResult.Ok(second.body)
+        } else {
+            ApiResult.Fail(ApiError.BAD_RESPONSE, second.code)
+        }
     }
 
     // ------------------------------------------------------------------ iç yardımcılar
 
-    suspend fun branchSha(token: String, repo: String, branch: String): ApiResult<String> =
-        execute(token, "GET", url("repos/$repo/git/ref/heads/$branch"))
-            .flatMap { decode<RefDto>(it) }
-            .map { it.obj.sha }
+    suspend fun branchSha(token: String, repo: String, branch: String): ApiResult<String> = execute(token, "GET", url("repos/$repo/git/ref/heads/$branch"))
+        .flatMap { decode<RefDto>(it) }
+        .map { it.obj.sha }
 
     private class Reply(
         val code: Int,
@@ -261,10 +270,9 @@ class GitHubService(
         val requestUrl: HttpUrl,
     )
 
-    private fun url(path: String, vararg query: Pair<String, String>): HttpUrl =
-        apiBase.newBuilder().addPathSegments(path).apply {
-            query.forEach { (k, v) -> addQueryParameter(k, v) }
-        }.build()
+    private fun url(path: String, vararg query: Pair<String, String>): HttpUrl = apiBase.newBuilder().addPathSegments(path).apply {
+        query.forEach { (k, v) -> addQueryParameter(k, v) }
+    }.build()
 
     /** Başlıkta geçersiz karakter varsa null (token kırpılmış hâliyle sınanır). */
     private fun buildRequest(token: String, method: String, url: HttpUrl, body: JsonObject?): Request? {
@@ -312,15 +320,21 @@ class GitHubService(
         val c = r.code
         return when {
             c in 200..399 -> ApiResult.Ok(r)
+
             c == 401 -> ApiResult.Fail(ApiError.INVALID_KEY, c)
+
             c == 429 -> ApiResult.Fail(ApiError.RATE_LIMITED, c)
+
             c == 403 -> {
                 val limited = r.rateRemaining == "0" ||
                     r.body.toString(Charsets.UTF_8).lowercase().contains("rate limit")
                 ApiResult.Fail(if (limited) ApiError.RATE_LIMITED else ApiError.INVALID_KEY, c)
             }
+
             c == 404 -> ApiResult.Fail(ApiError.NOT_FOUND, c)
+
             c >= 500 -> ApiResult.Fail(ApiError.SERVER, c)
+
             else -> ApiResult.Fail(ApiError.BAD_RESPONSE, c)
         }
     }
@@ -388,14 +402,12 @@ class GitHubService(
 
         internal fun isSafeRepo(repo: String): Boolean = REPO_REGEX.matches(repo)
 
-        internal fun isSafeBranch(branch: String): Boolean =
-            BRANCH_REGEX.matches(branch) && ".." !in branch && "//" !in branch &&
-                !branch.startsWith("/") && !branch.endsWith("/") && !branch.endsWith(".lock")
+        internal fun isSafeBranch(branch: String): Boolean = BRANCH_REGEX.matches(branch) && ".." !in branch && "//" !in branch &&
+            !branch.startsWith("/") && !branch.endsWith("/") && !branch.endsWith(".lock")
 
-        internal fun isSafePath(path: String): Boolean =
-            path.isNotEmpty() && path.length <= 240 && !path.startsWith("/") && '\\' !in path &&
-                path.none { it.code < 0x20 } &&
-                path.split('/').none { it.isEmpty() || it == "." || it == ".." }
+        internal fun isSafePath(path: String): Boolean = path.isNotEmpty() && path.length <= 240 && !path.startsWith("/") && '\\' !in path &&
+            path.none { it.code < 0x20 } &&
+            path.split('/').none { it.isEmpty() || it == "." || it == ".." }
 
         private fun requireRepo(repo: String) = require(isSafeRepo(repo)) { "Geçersiz repo adı" }
 

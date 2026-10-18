@@ -54,12 +54,18 @@ class ProxyDispatchTest {
         runs = RunRepository(db, OutputStore(tmp.root), HistoryStore(tmp.root)) { 1_000L }
     }
 
-    @After fun tearDown() { db.close() }
+    @After fun tearDown() {
+        db.close()
+    }
 
     private suspend fun proxyAccount(name: String, url: String, key: String, model: String): Long = accounts.add(
         AiAccount(
-            providerId = "claude", displayName = name, authType = AuthType.PROXY,
-            modelId = model, powerRank = 5, baseUrl = url,
+            providerId = "claude",
+            displayName = name,
+            authType = AuthType.PROXY,
+            modelId = model,
+            powerRank = 5,
+            baseUrl = url,
         ),
         key,
     )
@@ -73,7 +79,12 @@ class ProxyDispatchTest {
     }
 
     private fun dispatcher(gen: AiGenerator) = PromptDispatcher(
-        runs, prompts, accounts, credentials, gen, now = { 1_000L },
+        runs,
+        prompts,
+        accounts,
+        credentials,
+        gen,
+        now = { 1_000L },
     )
 
     /** Üretimdeki VaultCredentialProvider ile aynı kural: API_KEY/PROXY anahtarı KeyVault'tan gelir. */

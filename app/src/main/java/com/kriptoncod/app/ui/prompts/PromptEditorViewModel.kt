@@ -41,8 +41,11 @@ class PromptEditorViewModel(
                 }
                 _state.update {
                     // Prompt bulunamadıysa (silinmiş) ekranı kapat.
-                    if (item == null) it.copy(loading = false, saved = true)
-                    else it.copy(loading = false, title = item.title, body = item.body)
+                    if (item == null) {
+                        it.copy(loading = false, saved = true)
+                    } else {
+                        it.copy(loading = false, title = item.title, body = item.body)
+                    }
                 }
             }
         }
@@ -63,8 +66,11 @@ class PromptEditorViewModel(
         viewModelScope.launch {
             try {
                 val title = s.title.trim()
-                if (promptId == null) repository.addItem(setId, title, s.body)
-                else repository.updateItem(promptId, title, s.body)
+                if (promptId == null) {
+                    repository.addItem(setId, title, s.body)
+                } else {
+                    repository.updateItem(promptId, title, s.body)
+                }
                 _state.update { it.copy(saving = false, saved = true) }
             } catch (c: CancellationException) {
                 throw c

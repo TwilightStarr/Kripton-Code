@@ -65,8 +65,10 @@ class KimiAuthViewModel(
                         }
                         _state.value = KimiAuthCardState.Connected
                     }
+
                     is KimiAuthState.NeedsReauth ->
                         _state.value = KimiAuthCardState.NeedsReauth
+
                     is KimiAuthState.Error ->
                         _state.value = KimiAuthCardState.Error(R.string.kimi_auth_sign_in_failed)
                 }
@@ -84,10 +86,12 @@ class KimiAuthViewModel(
             _state.value = KimiAuthCardState.Loading
             _state.value = when (kimiAuth(id).silentRefreshIfNeeded()) {
                 is KimiAuthState.Valid -> KimiAuthCardState.Connected
+
                 is KimiAuthState.NeedsReauth -> {
                     repository.markError(id)
                     KimiAuthCardState.NeedsReauth
                 }
+
                 is KimiAuthState.Error ->
                     KimiAuthCardState.Error(R.string.kimi_auth_refresh_failed)
             }
@@ -108,8 +112,7 @@ class KimiAuthViewModel(
         }
     }
 
-    private fun kimiAuth(id: Long) =
-        KimiSessionAuth(tokenStore, authClient, id, loginUrl, revokeUrl)
+    private fun kimiAuth(id: Long) = KimiSessionAuth(tokenStore, authClient, id, loginUrl, revokeUrl)
 
     class Factory(
         private val accountId: Long?,
@@ -120,9 +123,13 @@ class KimiAuthViewModel(
         private val repository: AiAccountRepository,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            KimiAuthViewModel(
-                accountId, tokenStore, authClient, loginUrl, revokeUrl, repository,
-            ) as T
+        override fun <T : ViewModel> create(modelClass: Class<T>): T = KimiAuthViewModel(
+            accountId,
+            tokenStore,
+            authClient,
+            loginUrl,
+            revokeUrl,
+            repository,
+        ) as T
     }
 }
