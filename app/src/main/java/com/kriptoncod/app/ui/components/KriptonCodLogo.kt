@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.input.pointer.pointerInput
@@ -150,28 +151,23 @@ fun KriptonCodLogo(
                 loop.snapTo(0f)
                 lap++
             }
-
             LogoMood.Idle -> while (true) {
                 loop.animateTo(1f, tween(IDLE_MS, easing = LinearEasing))
                 loop.snapTo(0f)
                 lap++
             }
-
             LogoMood.Waiting -> while (true) {
                 loop.animateTo(1f, tween(WAITING_MS, easing = LinearEasing))
                 loop.snapTo(0f)
             }
-
             LogoMood.Success -> {
                 once.snapTo(0f)
                 once.animateTo(1f, tween(SUCCESS_MS, easing = LinearEasing))
             }
-
             LogoMood.Error -> {
                 once.snapTo(0f)
                 once.animateTo(1f, tween(ERROR_MS, easing = LinearEasing))
             }
-
             LogoMood.Intro -> {
                 once.snapTo(0f)
                 once.animateTo(1f, tween(INTRO_MS, easing = LinearEasing))
@@ -229,27 +225,20 @@ fun KriptonCodLogo(
                     drawRest(g, color, if (mood == LogoMood.Error) errorColor else color)
                 } else if (activeEgg != null) {
                     drawEgg(activeEgg, g, color, egg.progress.value)
-                } else {
-                    when (mood) {
-                        LogoMood.Idle -> drawIdle(g, color, p, blink = lap % 3 == 2, lookX = egg.lookX, lookY = egg.lookY)
-
-                        LogoMood.Working -> when (variantFor(lap)) {
-                            LogoAnimation.Orbit -> drawOrbit(g, color, p)
-                            LogoAnimation.Ripple -> drawRipple(g, color, p)
-                            LogoAnimation.Trace -> drawTrace(g, color, p)
-                            LogoAnimation.Twin -> drawTwin(g, color, p)
-                            LogoAnimation.Pulse -> drawPulse(g, color, p)
-                            LogoAnimation.Scan -> drawScan(g, color, p, loop = true)
-                        }
-
-                        LogoMood.Waiting -> drawWaiting(g, color, p)
-
-                        LogoMood.Success -> drawSuccess(g, color, q)
-
-                        LogoMood.Error -> drawError(g, color, errorColor, q)
-
-                        LogoMood.Intro -> drawIntro(g, color, q)
+                } else when (mood) {
+                    LogoMood.Idle -> drawIdle(g, color, p, blink = lap % 3 == 2, lookX = egg.lookX, lookY = egg.lookY)
+                    LogoMood.Working -> when (variantFor(lap)) {
+                        LogoAnimation.Orbit -> drawOrbit(g, color, p)
+                        LogoAnimation.Ripple -> drawRipple(g, color, p)
+                        LogoAnimation.Trace -> drawTrace(g, color, p)
+                        LogoAnimation.Twin -> drawTwin(g, color, p)
+                        LogoAnimation.Pulse -> drawPulse(g, color, p)
+                        LogoAnimation.Scan -> drawScan(g, color, p, loop = true)
                     }
+                    LogoMood.Waiting -> drawWaiting(g, color, p)
+                    LogoMood.Success -> drawSuccess(g, color, q)
+                    LogoMood.Error -> drawError(g, color, errorColor, q)
+                    LogoMood.Intro -> drawIntro(g, color, q)
                 }
             }
         }
@@ -389,7 +378,8 @@ private fun DrawScope.drawTwin(g: LogoGeometry, color: Color, p: Float) {
     dot(g, g.position(other), color, scale = 0.85f, halo = 0.15f)
 }
 
-private fun beat(p: Float, from: Float, to: Float): Float = if (p < from || p > to) 0f else sin(PI.toFloat() * (p - from) / (to - from))
+private fun beat(p: Float, from: Float, to: Float): Float =
+    if (p < from || p > to) 0f else sin(PI.toFloat() * (p - from) / (to - from))
 
 /** Kalp atışı: iki vuruş; çizgi kalınlaşır, nokta şişer, halka yayılır. */
 private fun DrawScope.drawPulse(g: LogoGeometry, color: Color, p: Float) {
@@ -519,9 +509,7 @@ private fun DrawScope.drawIntro(g: LogoGeometry, color: Color, q: Float) {
     arc(g, g.cStart, end, color)
     when {
         q < 0.6f -> dot(g, g.position(end), color, halo = 0.25f)
-
         q < 0.8f -> dot(g, g.position(lerpF(g.cEnd, g.length, smooth((q - 0.6f) / 0.2f))), color, halo = 0.2f)
-
         else -> {
             val t = (q - 0.8f) / 0.2f
             ring(g, g.rest, color, radiusUnits = 5f + 18f * t, alpha = 0.6f * (1f - t), widthUnits = 2.2f)

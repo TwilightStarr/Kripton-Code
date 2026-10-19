@@ -290,12 +290,10 @@ private fun DrawScope.drawFx(c: FxController) {
         val col = p.color.copy(alpha = p.color.alpha * a)
         when (p.shape) {
             SHAPE_DOT -> drawCircle(col, radius = p.size * (1f - 0.4f * t), center = Offset(p.x, p.y))
-
             SHAPE_SPARK -> {
                 val tail = Offset(p.x - p.vx * 0.045f, p.y - p.vy * 0.045f)
                 drawLine(col, Offset(p.x, p.y), tail, strokeWidth = p.size * 0.5f, cap = StrokeCap.Round)
             }
-
             else -> {
                 val r = p.size * (1f - 0.3f * t)
                 c.scratch.reset()
@@ -316,24 +314,25 @@ private fun DrawScope.drawFx(c: FxController) {
  * Her dokunuşta (kaydırma değil) dokunulan noktadan küçük, hızlı sönen bir halka yayar. Olayları tüketmez;
  * düğmeler ve listeler olduğu gibi çalışır.
  */
-fun Modifier.tapRipples(controller: FxController, color: Color, enabled: Boolean): Modifier = if (!enabled) {
-    this
-} else {
-    pointerInput(controller, color) {
-        awaitEachGesture {
-            val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-            val slop = viewConfiguration.touchSlop
-            var moved = false
-            while (true) {
-                val event = awaitPointerEvent(PointerEventPass.Final)
-                val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                if ((change.position - down.position).getDistance() > slop) moved = true
-                if (change.changedToUpIgnoreConsumed()) {
-                    if (!moved) controller.ripple(down.position, color)
-                    break
+fun Modifier.tapRipples(controller: FxController, color: Color, enabled: Boolean): Modifier =
+    if (!enabled) {
+        this
+    } else {
+        pointerInput(controller, color) {
+            awaitEachGesture {
+                val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                val slop = viewConfiguration.touchSlop
+                var moved = false
+                while (true) {
+                    val event = awaitPointerEvent(PointerEventPass.Final)
+                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                    if ((change.position - down.position).getDistance() > slop) moved = true
+                    if (change.changedToUpIgnoreConsumed()) {
+                        if (!moved) controller.ripple(down.position, color)
+                        break
+                    }
+                    if (!change.pressed) break
                 }
-                if (!change.pressed) break
             }
         }
     }
-}

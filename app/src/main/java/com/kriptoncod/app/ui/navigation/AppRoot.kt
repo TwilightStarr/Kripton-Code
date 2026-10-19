@@ -150,13 +150,11 @@ fun AppRoot(
                             )
                         }
                     }
-
                     RunStatus.FAILED -> {
                         flashColor = kColors.danger
                         flashKey++
                         if (ready) fx.pulse(Offset(rootSize.width / 2f, rootSize.height * 0.18f), kColors.danger)
                     }
-
                     else -> Unit
                 }
             }
@@ -417,35 +415,41 @@ private const val SLIDE_FRACTION = 14
 
 private fun tabIndex(route: String?): Int = Route.entries.indexOfFirst { it.path == route }
 
-private fun enterFor(from: Int, to: Int): EnterTransition = if (from >= 0 && to >= 0 && from != to) {
-    val dir = if (to > from) 1 else -1
-    fadeIn(tween(300, delayMillis = 60)) +
-        slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { dir * it / 9 } +
-        scaleIn(tween(380, easing = FastOutSlowInEasing), initialScale = 0.96f)
-} else {
-    forwardIn()
-}
+private fun enterFor(from: Int, to: Int): EnterTransition =
+    if (from >= 0 && to >= 0 && from != to) {
+        val dir = if (to > from) 1 else -1
+        fadeIn(tween(300, delayMillis = 60)) +
+            slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { dir * it / 9 } +
+            scaleIn(tween(380, easing = FastOutSlowInEasing), initialScale = 0.96f)
+    } else {
+        forwardIn()
+    }
 
-private fun exitFor(from: Int, to: Int): ExitTransition = if (from >= 0 && to >= 0 && from != to) {
-    val dir = if (to > from) 1 else -1
-    fadeOut(tween(160)) + slideOutHorizontally(tween(300, easing = FastOutSlowInEasing)) { -dir * it / 12 }
-} else {
-    forwardOut()
-}
+private fun exitFor(from: Int, to: Int): ExitTransition =
+    if (from >= 0 && to >= 0 && from != to) {
+        val dir = if (to > from) 1 else -1
+        fadeOut(tween(160)) + slideOutHorizontally(tween(300, easing = FastOutSlowInEasing)) { -dir * it / 12 }
+    } else {
+        forwardOut()
+    }
 
-private fun forwardIn(): EnterTransition = fadeIn(tween(320, delayMillis = 80)) +
-    slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { it / SLIDE_FRACTION } +
-    scaleIn(tween(380, easing = FastOutSlowInEasing), initialScale = 0.95f)
+private fun forwardIn(): EnterTransition =
+    fadeIn(tween(320, delayMillis = 80)) +
+        slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { it / SLIDE_FRACTION } +
+        scaleIn(tween(380, easing = FastOutSlowInEasing), initialScale = 0.95f)
 
-private fun forwardOut(): ExitTransition = fadeOut(tween(140)) + scaleOut(tween(300, easing = FastOutSlowInEasing), targetScale = 0.97f)
+private fun forwardOut(): ExitTransition =
+    fadeOut(tween(140)) + scaleOut(tween(300, easing = FastOutSlowInEasing), targetScale = 0.97f)
 
-private fun backIn(): EnterTransition = fadeIn(tween(320, delayMillis = 80)) +
-    slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { -it / SLIDE_FRACTION } +
-    scaleIn(tween(380, easing = FastOutSlowInEasing), initialScale = 0.97f)
+private fun backIn(): EnterTransition =
+    fadeIn(tween(320, delayMillis = 80)) +
+        slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { -it / SLIDE_FRACTION } +
+        scaleIn(tween(380, easing = FastOutSlowInEasing), initialScale = 0.97f)
 
-private fun backOut(): ExitTransition = fadeOut(tween(140)) +
-    slideOutHorizontally(tween(260, easing = FastOutSlowInEasing)) { it / SLIDE_FRACTION } +
-    scaleOut(tween(260, easing = FastOutSlowInEasing), targetScale = 0.94f)
+private fun backOut(): ExitTransition =
+    fadeOut(tween(140)) +
+        slideOutHorizontally(tween(260, easing = FastOutSlowInEasing)) { it / SLIDE_FRACTION } +
+        scaleOut(tween(260, easing = FastOutSlowInEasing), targetScale = 0.94f)
 
 private fun NavHostController.navigateTo(route: Route) {
     navigate(route.path) {
