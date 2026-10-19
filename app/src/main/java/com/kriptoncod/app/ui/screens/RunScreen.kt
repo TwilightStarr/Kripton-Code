@@ -74,6 +74,7 @@ import com.kriptoncod.app.ui.components.OutputMarkdown
 import com.kriptoncod.app.ui.components.OutputMarkdownView
 import com.kriptoncod.app.ui.components.RunGraph
 import com.kriptoncod.app.ui.theme.KriptonTheme
+import com.kriptoncod.app.ui.theme.isInProgress
 import com.kriptoncod.app.ui.theme.logoMood
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -683,7 +684,7 @@ internal fun kindLabel(kind: JobKind): String = stringResource(kind.labelRes())
 
 @Composable
 private fun RunStatusBadge(status: RunStatus) {
-    KBadge(text = stringResource(status.labelRes()), accent = runStatusAccent(status))
+    KBadge(text = stringResource(status.labelRes()), accent = runStatusAccent(status), live = status.isInProgress())
 }
 
 internal fun runStatusAccent(status: RunStatus): NodeAccent = when (status) {
@@ -699,5 +700,5 @@ internal fun JobStateBadge(state: JobState) {
         JobState.FAILED -> NodeAccent.Red
         else -> NodeAccent.Blue
     }
-    KBadge(text = stringResource(state.labelRes()), accent = accent)
+    KBadge(text = stringResource(state.labelRes()), accent = accent, live = state == JobState.RUNNING)
 }

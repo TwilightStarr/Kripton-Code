@@ -259,7 +259,11 @@
 
     <!-- Settings: animations -->
     <string name="settings_animations">Animations</string>
-    <string name="settings_animations_hint">Logo animation, loading indicators, and screen transitions. If turned off, nothing moves. If Android\'s \"remove animations\" setting is on, animations are treated as off regardless of this switch.</string>
+    <string name="settings_animations_hint">Logo, loading indicators, screen transitions, card entrances, press effects, and counters. If turned off, nothing moves (the two switches below are disabled too). If Android\'s \"remove animations\" setting is on, animations are treated as off regardless of this switch.</string>
+    <string name="settings_effects">Background and touch effects</string>
+    <string name="settings_effects_hint">A slowly drifting glow in the background (brighter while a run is active), touch ripples, intro sparkles, and a celebration effect when a run finishes. Purely visual.</string>
+    <string name="settings_eggs">Logo surprises</string>
+    <string name="settings_eggs_hint">Tapping the logo, tapping it quickly several times, long-pressing, or dragging sideways plays hidden motions. They give no reward and are just for fun. Discover them yourself.</string>
 
     <!-- Node output / retry -->
     <string name="node_view_formatted">Formatted</string>

@@ -60,6 +60,7 @@ import com.kriptoncod.app.ui.components.NodeCard
 import com.kriptoncod.app.ui.prompts.PromptsUiState
 import com.kriptoncod.app.ui.prompts.PromptsViewModel
 import com.kriptoncod.app.ui.prompts.rememberPromptsViewModelFactory
+import com.kriptoncod.app.ui.theme.appear
 import com.kriptoncod.app.ui.theme.KriptonTheme
 
 @Composable
@@ -249,7 +250,7 @@ private fun PromptsContent(
 
 @Composable
 private fun SetCard(set: PromptSet, onOpen: () -> Unit, onDelete: () -> Unit) {
-    NodeCard(modifier = Modifier.fillMaxWidth(), onClick = onOpen) {
+    NodeCard(modifier = Modifier.fillMaxWidth().appear(), onClick = onOpen) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Column(Modifier.weight(1f)) {
                 Text(set.name, style = MaterialTheme.typography.titleMedium)

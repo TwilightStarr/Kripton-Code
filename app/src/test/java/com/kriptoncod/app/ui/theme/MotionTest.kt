@@ -32,6 +32,12 @@ class MotionTest {
         assertEquals(variantFor(0), variantFor(LogoAnimation.entries.size * 2))
     }
 
+    @Test fun newVariantsExistWithPositiveLaps() {
+        assertTrue(LogoAnimation.entries.size >= 6)
+        LogoAnimation.entries.forEach { assertTrue(it.name, it.lapMs > 0) }
+        assertTrue(LogoAnimation.entries.containsAll(listOf(LogoAnimation.Twin, LogoAnimation.Pulse, LogoAnimation.Scan)))
+    }
+
     @Test fun traceStartsAndEndsWhole() {
         val a = 10f
         val b = 90f

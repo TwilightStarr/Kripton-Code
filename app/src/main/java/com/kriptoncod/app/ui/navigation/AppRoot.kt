@@ -7,12 +7,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
-import com.kriptoncod.app.ui.components.KriptonCodLogo
-import com.kriptoncod.app.ui.components.LogoMood
 import kotlinx.coroutines.delay
 import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.Box
@@ -33,11 +33,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -74,7 +79,17 @@ import com.kriptoncod.app.ui.adaptive.LocalWindowClass
 import com.kriptoncod.app.ui.adaptive.WindowClass
 import com.kriptoncod.app.ui.adaptive.rememberWindowClass
 import com.kriptoncod.app.ui.theme.KriptonTheme
+import com.kriptoncod.app.domain.RunStatus
+import com.kriptoncod.app.ui.fx.AuraBackdrop
+import com.kriptoncod.app.ui.fx.FxController
+import com.kriptoncod.app.ui.fx.FxHost
+import com.kriptoncod.app.ui.fx.FxKind
+import com.kriptoncod.app.ui.fx.IntroSplash
+import com.kriptoncod.app.ui.fx.LocalFx
+import com.kriptoncod.app.ui.fx.tapRipples
 import com.kriptoncod.app.ui.theme.LocalAnimationsEnabled
+import com.kriptoncod.app.ui.theme.LocalEffectsEnabled
+import com.kriptoncod.app.ui.theme.popOnSelect
 import com.kriptoncod.app.ui.theme.LocalAppBusy
 import com.kriptoncod.app.ui.theme.isInProgress
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -108,6 +123,44 @@ fun AppRoot(
     val runs by container.runRepository.observeRuns().collectAsStateWithLifecycle(initialValue = emptyList())
     val busy = runs.any { it.status.isInProgress() }
     val animationsOn = LocalAnimationsEnabled.current
+    val effectsOn = LocalEffectsEnabled.current
+    val kColors = KriptonTheme.colors
+
+    // Efekt katmanı: tuval, dokunma dalgaları ve çalışma sonu kutlaması/uyarısı.
+    val fx = remember { FxController() }
+    var rootSize by remember { mutableStateOf(IntSize.Zero) }
+    var flashKey by remember { mutableIntStateOf(0) }
+    var flashColor by remember { mutableStateOf(Color.Transparent) }
+    val statusMemory = remember { mutableMapOf<Long, RunStatus>() }
+    LaunchedEffect(runs) {
+        for (r in runs) {
+            val before = statusMemory[r.id]
+            // Yalnız "sürüyordu → bitti" geçişi tetikler; uygulama açılışında geçmiş çalışmalar oynatmaz.
+            if (before != null && before.isInProgress() && !r.status.isInProgress()) {
+                val ready = effectsOn && rootSize != IntSize.Zero
+                when (r.status) {
+                    RunStatus.DONE -> {
+                        flashColor = kColors.arrow
+                        flashKey++
+                        if (ready) {
+                            fx.burst(
+                                Offset(rootSize.width / 2f, rootSize.height * 0.88f),
+                                FxKind.Fountain,
+                                listOf(kColors.arrow, scheme.primary),
+                            )
+                        }
+                    }
+                    RunStatus.FAILED -> {
+                        flashColor = kColors.danger
+                        flashKey++
+                        if (ready) fx.pulse(Offset(rootSize.width / 2f, rootSize.height * 0.18f), kColors.danger)
+                    }
+                    else -> Unit
+                }
+            }
+            statusMemory[r.id] = r.status
+        }
+    }
 
     // Açılış: logo bir kez çizilir, sonra uygulamaya kaybolarak geçilir (animasyonlar kapalıysa atlanır).
     var showIntro by rememberSaveable { mutableStateOf(true) }
@@ -118,8 +171,13 @@ fun AppRoot(
         }
     }
 
-    CompositionLocalProvider(LocalWindowClass provides windowClass, LocalAppBusy provides busy) {
-        Box(Modifier.fillMaxSize()) {
+    CompositionLocalProvider(LocalWindowClass provides windowClass, LocalAppBusy provides busy, LocalFx provides fx) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .onSizeChanged { rootSize = it }
+                .tapRipples(fx, scheme.primary, effectsOn),
+        ) {
             Scaffold(
                 containerColor = scheme.background,
                 bottomBar = {
@@ -132,7 +190,7 @@ fun AppRoot(
                                     NavigationBarItem(
                                         selected = selected,
                                         onClick = { navController.navigateTo(route) },
-                                        icon = { Icon(route.icon, contentDescription = null) },
+                                        icon = { Icon(route.icon, contentDescription = null, modifier = Modifier.popOnSelect(selected)) },
                                         label = {
                                             Text(stringResource(route.label), maxLines = 1, overflow = TextOverflow.Ellipsis)
                                         },
@@ -160,13 +218,27 @@ fun AppRoot(
                         )
                     }
                     Box(Modifier.weight(1f).fillMaxHeight()) {
+                        AuraBackdrop(busy = busy, flashKey = flashKey, flashColor = flashColor)
                         NavHost(
                             navController = navController,
                             startDestination = Route.Home.path,
                             modifier = Modifier.fillMaxSize(),
                             // Animasyonlar kapalıyken ekran geçişleri anında olur.
-                            enterTransition = { if (animationsOn) forwardIn() else EnterTransition.None },
-                            exitTransition = { if (animationsOn) forwardOut() else ExitTransition.None },
+                            // Sekmeler arası: yön sekme sırasına göre; alt ekranlar: ileri/geri kayma + hafif ölçek.
+                            enterTransition = {
+                                if (animationsOn) {
+                                    enterFor(tabIndex(initialState.destination.route), tabIndex(targetState.destination.route))
+                                } else {
+                                    EnterTransition.None
+                                }
+                            },
+                            exitTransition = {
+                                if (animationsOn) {
+                                    exitFor(tabIndex(initialState.destination.route), tabIndex(targetState.destination.route))
+                                } else {
+                                    ExitTransition.None
+                                }
+                            },
                             popEnterTransition = { if (animationsOn) backIn() else EnterTransition.None },
                             popExitTransition = { if (animationsOn) backOut() else ExitTransition.None },
                         ) {
@@ -325,11 +397,15 @@ fun AppRoot(
                     }
                 }
             }
-            AnimatedVisibility(visible = showIntro && animationsOn, enter = EnterTransition.None, exit = fadeOut(tween(350))) {
-                Box(Modifier.fillMaxSize().background(scheme.background), contentAlignment = Alignment.Center) {
-                    KriptonCodLogo(logoSize = 96.dp, mood = LogoMood.Intro)
-                }
+            AnimatedVisibility(
+                visible = showIntro && animationsOn,
+                enter = EnterTransition.None,
+                exit = fadeOut(tween(420)) + scaleOut(tween(520, easing = FastOutSlowInEasing), targetScale = 1.12f),
+            ) {
+                IntroSplash()
             }
+            // En üstte: parçacık / şok dalgası katmanı (dokunmayı engellemez).
+            if (animationsOn) FxHost(fx)
         }
     }
 }
@@ -337,13 +413,43 @@ fun AppRoot(
 // Ekran geçişleri: ileri giderken içerik hafifçe sağdan kayarak belirir, geri dönerken tersi; eski ekran hızla solar.
 private const val SLIDE_FRACTION = 14
 
-private fun forwardIn(): EnterTransition = fadeIn(tween(320, delayMillis = 80)) + slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { it / SLIDE_FRACTION }
+private fun tabIndex(route: String?): Int = Route.entries.indexOfFirst { it.path == route }
 
-private fun forwardOut(): ExitTransition = fadeOut(tween(140))
+private fun enterFor(from: Int, to: Int): EnterTransition =
+    if (from >= 0 && to >= 0 && from != to) {
+        val dir = if (to > from) 1 else -1
+        fadeIn(tween(300, delayMillis = 60)) +
+            slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { dir * it / 9 } +
+            scaleIn(tween(380, easing = FastOutSlowInEasing), initialScale = 0.96f)
+    } else {
+        forwardIn()
+    }
 
-private fun backIn(): EnterTransition = fadeIn(tween(320, delayMillis = 80)) + slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { -it / SLIDE_FRACTION }
+private fun exitFor(from: Int, to: Int): ExitTransition =
+    if (from >= 0 && to >= 0 && from != to) {
+        val dir = if (to > from) 1 else -1
+        fadeOut(tween(160)) + slideOutHorizontally(tween(300, easing = FastOutSlowInEasing)) { -dir * it / 12 }
+    } else {
+        forwardOut()
+    }
 
-private fun backOut(): ExitTransition = fadeOut(tween(140)) + slideOutHorizontally(tween(260, easing = FastOutSlowInEasing)) { it / SLIDE_FRACTION }
+private fun forwardIn(): EnterTransition =
+    fadeIn(tween(320, delayMillis = 80)) +
+        slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { it / SLIDE_FRACTION } +
+        scaleIn(tween(380, easing = FastOutSlowInEasing), initialScale = 0.95f)
+
+private fun forwardOut(): ExitTransition =
+    fadeOut(tween(140)) + scaleOut(tween(300, easing = FastOutSlowInEasing), targetScale = 0.97f)
+
+private fun backIn(): EnterTransition =
+    fadeIn(tween(320, delayMillis = 80)) +
+        slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { -it / SLIDE_FRACTION } +
+        scaleIn(tween(380, easing = FastOutSlowInEasing), initialScale = 0.97f)
+
+private fun backOut(): ExitTransition =
+    fadeOut(tween(140)) +
+        slideOutHorizontally(tween(260, easing = FastOutSlowInEasing)) { it / SLIDE_FRACTION } +
+        scaleOut(tween(260, easing = FastOutSlowInEasing), targetScale = 0.94f)
 
 private fun NavHostController.navigateTo(route: Route) {
     navigate(route.path) {

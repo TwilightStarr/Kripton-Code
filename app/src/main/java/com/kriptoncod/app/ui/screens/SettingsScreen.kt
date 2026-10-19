@@ -121,6 +121,36 @@ fun SettingsScreen(
             }
         }
 
+        // Alt anahtarlar: yalnız ana anahtar açıkken anlamlıdır.
+        val effects by store.effectsFlow.collectAsStateWithLifecycle(initialValue = true)
+        NodeCard(modifier = Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(stringResource(R.string.settings_effects), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.settings_effects_hint), style = MaterialTheme.typography.bodySmall, color = k.muted)
+                }
+                Switch(
+                    checked = effects && animations,
+                    enabled = animations,
+                    onCheckedChange = { on -> scope.launch { store.setEffects(on) } },
+                )
+            }
+        }
+        val eggs by store.eggsFlow.collectAsStateWithLifecycle(initialValue = true)
+        NodeCard(modifier = Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(stringResource(R.string.settings_eggs), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.settings_eggs_hint), style = MaterialTheme.typography.bodySmall, color = k.muted)
+                }
+                Switch(
+                    checked = eggs && animations,
+                    enabled = animations,
+                    onCheckedChange = { on -> scope.launch { store.setEggs(on) } },
+                )
+            }
+        }
+
         // Bildirimler: çalışma kapalıyken de arka planda sürer; olaylar için bildirim istenirse gönderilir.
         NodeCard(modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {

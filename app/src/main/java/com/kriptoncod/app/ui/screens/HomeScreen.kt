@@ -25,7 +25,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -44,7 +51,9 @@ import com.kriptoncod.app.ui.components.KButton
 import com.kriptoncod.app.ui.components.KButtonStyle
 import com.kriptoncod.app.ui.components.KriptonCodLogo
 import com.kriptoncod.app.ui.components.LogoMood
+import com.kriptoncod.app.ui.theme.animatedCount
 import com.kriptoncod.app.ui.theme.appear
+import com.kriptoncod.app.ui.theme.LocalAnimationsEnabled
 import com.kriptoncod.app.ui.components.NodeAccent
 import com.kriptoncod.app.ui.components.NodeCard
 import com.kriptoncod.app.ui.navigation.Route
@@ -93,6 +102,7 @@ fun HomeScreen(
         KriptonCodLogo(
             logoSize = if (wide) 160.dp else 120.dp,
             mood = if (LocalAppBusy.current) LogoMood.Working else LogoMood.Idle,
+            interactive = true,
         )
         Text(stringResource(R.string.home_title), style = MaterialTheme.typography.headlineMedium)
         Text(
@@ -104,7 +114,7 @@ fun HomeScreen(
     }
     val banner: @Composable () -> Unit = {
         activeRun?.let { r ->
-            NodeCard(modifier = Modifier.fillMaxWidth().appear(1), accent = NodeAccent.Green, onClick = { onOpenRun(r.id) }) {
+            NodeCard(modifier = Modifier.fillMaxWidth().appear(1), accent = NodeAccent.Green, live = true, onClick = { onOpenRun(r.id) }) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Column(Modifier.weight(1f)) {
                         Text(stringResource(R.string.home_active_run), style = MaterialTheme.typography.titleSmall)
@@ -291,7 +301,7 @@ private fun UsageCard(accounts: List<AiAccount>, usage: List<AccountUsage>) {
 private fun StatCard(value: Int, label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     NodeCard(modifier = modifier, onClick = onClick) {
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(value.toString(), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
+            Text(animatedCount(value).toString(), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
             Text(
                 label,
                 style = MaterialTheme.typography.bodySmall,
@@ -303,21 +313,38 @@ private fun StatCard(value: Int, label: String, onClick: () -> Unit, modifier: M
     }
 }
 
-/** Numaralı (veya tamamlanmışsa tik işaretli) adım satırı. */
+/** Numaralı (veya tamamlanmışsa tik işaretli) adım satırı. Tamamlanınca renk geçer ve tik yaylanarak belirir. */
 @Composable
 private fun StepRow(index: Int, title: String, hint: String, done: Boolean) {
     val k = KriptonTheme.colors
+    val animated = LocalAnimationsEnabled.current
+    val colorSpec = if (animated) tween<Color>(260) else snap<Color>()
+    val fill by animateColorAsState(if (done) k.arrowFill else Color.Transparent, colorSpec, label = "stepFill")
+    val edge by animateColorAsState(if (done) k.arrow else k.nodeBorder, colorSpec, label = "stepEdge")
+    val check by animateFloatAsState(
+        targetValue = if (done) 1f else 0f,
+        animationSpec = if (animated) spring<Float>(dampingRatio = 0.45f, stiffness = Spring.StiffnessMedium) else snap<Float>(),
+        label = "stepCheck",
+    )
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(
             modifier = Modifier
                 .size(28.dp)
                 .clip(CircleShape)
-                .background(if (done) k.arrowFill else Color.Transparent)
-                .border(1.5.dp, if (done) k.arrow else k.nodeBorder, CircleShape),
+                .background(fill)
+                .border(1.5.dp, edge, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             if (done) {
-                Icon(Icons.Filled.Check, contentDescription = null, tint = k.arrow, modifier = Modifier.size(16.dp))
+                Icon(
+                    Icons.Filled.Check,
+                    contentDescription = null,
+                    tint = k.arrow,
+                    modifier = Modifier.size(16.dp).graphicsLayer {
+                        scaleX = check
+                        scaleY = check
+                    },
+                )
             } else {
                 Text(index.toString(), style = MaterialTheme.typography.labelLarge, color = k.muted)
             }
