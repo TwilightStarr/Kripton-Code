@@ -61,6 +61,7 @@ private fun ThemeSpec.toColorScheme() = (if (isDark) darkColorScheme() else ligh
 private fun ThemeSpec.animated(animate: Boolean): ThemeSpec {
     if (!animate) return this
     val spec = tween<Color>(durationMillis = 350)
+
     @Composable fun Color.a() = animateColorAsState(this, spec, label = "theme").value
     return ThemeSpec(
         isDark = isDark,

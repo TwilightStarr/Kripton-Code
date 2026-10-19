@@ -337,16 +337,13 @@ fun AppRoot(
 // Ekran geçişleri: ileri giderken içerik hafifçe sağdan kayarak belirir, geri dönerken tersi; eski ekran hızla solar.
 private const val SLIDE_FRACTION = 14
 
-private fun forwardIn(): EnterTransition =
-    fadeIn(tween(320, delayMillis = 80)) + slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { it / SLIDE_FRACTION }
+private fun forwardIn(): EnterTransition = fadeIn(tween(320, delayMillis = 80)) + slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { it / SLIDE_FRACTION }
 
 private fun forwardOut(): ExitTransition = fadeOut(tween(140))
 
-private fun backIn(): EnterTransition =
-    fadeIn(tween(320, delayMillis = 80)) + slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { -it / SLIDE_FRACTION }
+private fun backIn(): EnterTransition = fadeIn(tween(320, delayMillis = 80)) + slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { -it / SLIDE_FRACTION }
 
-private fun backOut(): ExitTransition =
-    fadeOut(tween(140)) + slideOutHorizontally(tween(260, easing = FastOutSlowInEasing)) { it / SLIDE_FRACTION }
+private fun backOut(): ExitTransition = fadeOut(tween(140)) + slideOutHorizontally(tween(260, easing = FastOutSlowInEasing)) { it / SLIDE_FRACTION }
 
 private fun NavHostController.navigateTo(route: Route) {
     navigate(route.path) {
