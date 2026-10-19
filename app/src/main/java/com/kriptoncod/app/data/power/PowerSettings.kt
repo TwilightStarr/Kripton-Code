@@ -18,17 +18,20 @@ enum class Oem { XIAOMI, HUAWEI, OPPO, VIVO, SAMSUNG, ONEPLUS, ASUS, OTHER }
  */
 object PowerSettings {
 
-    fun isIgnoringBatteryOptimizations(context: Context): Boolean = (context.getSystemService(Context.POWER_SERVICE) as? PowerManager)
-        ?.isIgnoringBatteryOptimizations(context.packageName) == true
+    fun isIgnoringBatteryOptimizations(context: Context): Boolean =
+        (context.getSystemService(Context.POWER_SERVICE) as? PowerManager)
+            ?.isIgnoringBatteryOptimizations(context.packageName) == true
 
     /** Doğrudan "bu uygulamayı kısıtlama" iletişim kutusu (REQUEST_IGNORE_BATTERY_OPTIMIZATIONS izni gerekir). */
-    fun requestIntent(context: Context): Intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${context.packageName}"))
+    fun requestIntent(context: Context): Intent =
+        Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${context.packageName}"))
 
     /** Tüm uygulamaların pil optimizasyonu listesi. */
     fun listIntent(): Intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
 
     /** Uygulama ayrıntıları (pil/otomatik başlatma için son çare). */
-    fun detailsIntent(context: Context): Intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))
+    fun detailsIntent(context: Context): Intent =
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))
 
     fun detectOem(manufacturer: String?, brand: String? = null): Oem {
         val id = "${manufacturer.orEmpty()} ${brand.orEmpty()}".lowercase()
@@ -50,34 +53,27 @@ object PowerSettings {
             ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity"),
             ComponentName("com.miui.powerkeeper", "com.miui.powerkeeper.ui.HiddenAppsConfigActivity"),
         )
-
         Oem.HUAWEI -> listOf(
             ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"),
             ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.optimize.process.ProtectActivity"),
         )
-
         Oem.OPPO -> listOf(
             ComponentName("com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity"),
             ComponentName("com.oppo.safe", "com.oppo.safe.permission.startup.StartupAppListActivity"),
         )
-
         Oem.VIVO -> listOf(
             ComponentName("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity"),
             ComponentName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity"),
         )
-
         Oem.SAMSUNG -> listOf(
             ComponentName("com.samsung.android.lool", "com.samsung.android.sm.battery.ui.BatteryActivity"),
         )
-
         Oem.ONEPLUS -> listOf(
             ComponentName("com.oneplus.security", "com.oneplus.security.chainlaunch.view.ChainLaunchAppListActivity"),
         )
-
         Oem.ASUS -> listOf(
             ComponentName("com.asus.mobilemanager", "com.asus.mobilemanager.autostart.AutoStartActivity"),
         )
-
         Oem.OTHER -> emptyList()
     }
 
