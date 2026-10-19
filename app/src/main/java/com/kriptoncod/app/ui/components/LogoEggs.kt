@@ -74,12 +74,11 @@ internal const val TAP_CHAIN_MS = 650L
 private const val MAX_LOOK_UNITS = 11f
 
 /** Zincirdeki [count]. dokunuşa karşılık gelen sürpriz. İlk dokunuşta [calmIndex] sakin üçlüde seçer. */
-internal fun eggForTap(count: Int, calmIndex: Int): LogoEgg =
-    if (count <= 1) {
-        CALM_EGGS[calmIndex.mod(CALM_EGGS.size)]
-    } else {
-        CHAIN_EGGS[(count - 2).coerceAtMost(CHAIN_EGGS.size - 1)]
-    }
+internal fun eggForTap(count: Int, calmIndex: Int): LogoEgg = if (count <= 1) {
+    CALM_EGGS[calmIndex.mod(CALM_EGGS.size)]
+} else {
+    CHAIN_EGGS[(count - 2).coerceAtMost(CHAIN_EGGS.size - 1)]
+}
 
 /** Bir logonun sürpriz durumu: oynayan hareket, ilerlemesi, dokunma zinciri ve sürükleme "bakışı". */
 @Stable
