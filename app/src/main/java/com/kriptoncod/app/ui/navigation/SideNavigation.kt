@@ -28,7 +28,6 @@ import com.kriptoncod.app.R
 import com.kriptoncod.app.ui.components.KriptonCodLogo
 import com.kriptoncod.app.ui.theme.KriptonTheme
 import com.kriptoncod.app.ui.theme.LocalAppBusy
-import com.kriptoncod.app.ui.theme.popOnSelect
 
 /**
  * Tablet gezinmesi (alt çubuğun yerine): orta genişlikte dar ray, geniş ekranda etiketli kalıcı çekmece.
@@ -53,7 +52,7 @@ fun SideNavigation(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    KriptonCodLogo(logoSize = 40.dp, busy = LocalAppBusy.current, interactive = true)
+                    KriptonCodLogo(logoSize = 40.dp, busy = LocalAppBusy.current)
                     Text(
                         stringResource(R.string.app_name),
                         style = MaterialTheme.typography.titleLarge,
@@ -66,7 +65,7 @@ fun SideNavigation(
                         label = { Text(stringResource(route.label), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                         selected = isSelected(route),
                         onClick = { onNavigate(route) },
-                        icon = { Icon(route.icon, contentDescription = null, modifier = Modifier.popOnSelect(isSelected(route))) },
+                        icon = { Icon(route.icon, contentDescription = null) },
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
                         colors = NavigationDrawerItemDefaults.colors(
                             selectedContainerColor = k.nodeFill,
@@ -84,7 +83,7 @@ fun SideNavigation(
                 containerColor = scheme.surface,
                 header = {
                     Spacer(Modifier.height(8.dp))
-                    KriptonCodLogo(logoSize = 40.dp, busy = LocalAppBusy.current, interactive = true)
+                    KriptonCodLogo(logoSize = 40.dp, busy = LocalAppBusy.current)
                     Spacer(Modifier.height(8.dp))
                 },
             ) {
@@ -92,7 +91,7 @@ fun SideNavigation(
                     NavigationRailItem(
                         selected = isSelected(route),
                         onClick = { onNavigate(route) },
-                        icon = { Icon(route.icon, contentDescription = null, modifier = Modifier.popOnSelect(isSelected(route))) },
+                        icon = { Icon(route.icon, contentDescription = null) },
                         label = { Text(stringResource(route.label), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                         alwaysShowLabel = true,
                         colors = NavigationRailItemDefaults.colors(

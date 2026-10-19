@@ -17,8 +17,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kriptoncod.app.ui.navigation.AppRoot
 import com.kriptoncod.app.ui.theme.KriptonCodTheme
 import com.kriptoncod.app.ui.theme.LocalAnimationsEnabled
-import com.kriptoncod.app.ui.theme.LocalEffectsEnabled
-import com.kriptoncod.app.ui.theme.LocalEggsEnabled
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -38,22 +36,14 @@ class MainActivity : ComponentActivity() {
         // İlk karede tema yanıp sönmesin diye tek seferlik, küçük bir okuma.
         val initial = runBlocking { store.preference.first() }
         val initialAnimations = runBlocking { store.animationsFlow.first() }
-        val initialEffects = runBlocking { store.effectsFlow.first() }
-        val initialEggs = runBlocking { store.eggsFlow.first() }
         setContent {
             val preference by store.preference.collectAsStateWithLifecycle(initialValue = initial)
             val animationsPref by store.animationsFlow.collectAsStateWithLifecycle(initialValue = initialAnimations)
-            val effectsPref by store.effectsFlow.collectAsStateWithLifecycle(initialValue = initialEffects)
-            val eggsPref by store.eggsFlow.collectAsStateWithLifecycle(initialValue = initialEggs)
             // Sistemde "animasyonları kaldır" açıksa uygulama da animasyon oynatmaz.
             val animationsOn = animationsPref && ValueAnimator.areAnimatorsEnabled()
             val scope = rememberCoroutineScope()
             KriptonCodTheme(preference = preference, animate = animationsOn) {
-                CompositionLocalProvider(
-                    LocalAnimationsEnabled provides animationsOn,
-                    LocalEffectsEnabled provides (animationsOn && effectsPref),
-                    LocalEggsEnabled provides (animationsOn && eggsPref),
-                ) {
+                CompositionLocalProvider(LocalAnimationsEnabled provides animationsOn) {
                     AppRoot(
                         themePreference = preference,
                         onThemeChange = { scope.launch { store.set(it) } },

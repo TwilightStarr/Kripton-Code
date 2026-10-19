@@ -17,7 +17,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.kriptoncod.app.ui.theme.KriptonTheme
 import com.kriptoncod.app.ui.theme.appear
-import com.kriptoncod.app.ui.theme.floating
 
 @Composable
 fun EmptyState(
@@ -33,7 +32,7 @@ fun EmptyState(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.floating())
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             Text(title, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
             Text(
                 message,

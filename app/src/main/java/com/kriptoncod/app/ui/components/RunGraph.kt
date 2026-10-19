@@ -324,14 +324,11 @@ private fun Modifier.pulseRing(active: Boolean, color: Color): Modifier {
         label = "nodePulsePhase",
     )
     return drawBehind {
-        // İki halka yarım tur arayla yayılır: nabız daha sürekli ve canlı görünür.
-        for (offset in floatArrayOf(0f, 0.5f)) {
-            val t = (phase.value + offset) % 1f
-            drawCircle(
-                color = color.copy(alpha = 0.55f * (1f - t)),
-                radius = size.minDimension / 2f + 14.dp.toPx() * t,
-                style = Stroke(width = 2.dp.toPx()),
-            )
-        }
+        val t = phase.value
+        drawCircle(
+            color = color.copy(alpha = 0.55f * (1f - t)),
+            radius = size.minDimension / 2f + 14.dp.toPx() * t,
+            style = Stroke(width = 2.dp.toPx()),
+        )
     }
 }

@@ -239,7 +239,7 @@ private fun AccountCard(
     }
 
     NodeCard(
-        modifier = Modifier.fillMaxWidth().appear().alpha(if (account.enabled) 1f else 0.7f),
+        modifier = Modifier.fillMaxWidth().alpha(if (account.enabled) 1f else 0.7f),
         accent = if (account.status == AccountStatus.ERROR && account.enabled) NodeAccent.Red else NodeAccent.Blue,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {

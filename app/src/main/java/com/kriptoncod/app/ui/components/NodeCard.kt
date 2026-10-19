@@ -12,18 +12,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.kriptoncod.app.ui.theme.KriptonTheme
-import com.kriptoncod.app.ui.theme.cometBorder
 import com.kriptoncod.app.ui.theme.pressScale
 
 enum class NodeAccent { Blue, Green, Red }
 
-/** Akış düğümü görünümlü kart: 1.5dp kenarlık, gölge yok. [live] true ise kenarında bir ışık dolanır (sürmekte olan iş). */
+/** Akış düğümü görünümlü kart: 1.5dp kenarlık, gölge yok. */
 @Composable
 fun NodeCard(
     modifier: Modifier = Modifier,
     accent: NodeAccent = NodeAccent.Blue,
     onClick: (() -> Unit)? = null,
-    live: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val k = KriptonTheme.colors
@@ -33,14 +31,13 @@ fun NodeCard(
         NodeAccent.Red -> k.dangerFill to k.danger
     }
     val shape = RoundedCornerShape(16.dp)
-    val glow = modifier.cometBorder(active = live, color = border, cornerRadius = 16.dp)
     val stroke = BorderStroke(1.5.dp, border)
     val inner: @Composable () -> Unit = { Column(Modifier.padding(16.dp), content = content) }
     if (onClick != null) {
         val interaction = remember { MutableInteractionSource() }
         Surface(
             onClick = onClick,
-            modifier = glow.pressScale(interaction),
+            modifier = modifier.pressScale(interaction),
             interactionSource = interaction,
             shape = shape,
             color = fill,
@@ -51,7 +48,7 @@ fun NodeCard(
         )
     } else {
         Surface(
-            modifier = glow,
+            modifier = modifier,
             shape = shape,
             color = fill,
             border = stroke,

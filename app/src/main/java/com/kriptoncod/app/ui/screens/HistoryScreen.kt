@@ -34,8 +34,6 @@ import com.kriptoncod.app.ui.components.KBadge
 import com.kriptoncod.app.ui.labelRes
 import com.kriptoncod.app.ui.components.NodeCard
 import com.kriptoncod.app.ui.theme.KriptonTheme
-import com.kriptoncod.app.ui.theme.appear
-import com.kriptoncod.app.ui.theme.isInProgress
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -79,7 +77,7 @@ fun HistoryScreen(onOpenRun: (Long) -> Unit) {
 @Composable
 private fun RunHistoryRow(run: RunRecord, onClick: () -> Unit) {
     val k = KriptonTheme.colors
-    NodeCard(modifier = Modifier.fillMaxWidth().appear(), live = run.status.isInProgress(), onClick = onClick) {
+    NodeCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Row(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -112,5 +110,5 @@ private fun RunHistoryRow(run: RunRecord, onClick: () -> Unit) {
 
 @Composable
 internal fun HistoryStatusBadge(status: RunStatus) {
-    KBadge(text = stringResource(status.labelRes()), accent = runStatusAccent(status), live = status.isInProgress())
+    KBadge(text = stringResource(status.labelRes()), accent = runStatusAccent(status))
 }

@@ -58,24 +58,6 @@ class ThemeStore(private val context: Context) {
         context.settingsDataStore.edit { it[ANIMATIONS] = value }
     }
 
-    // ---- Arka plan aurası + dokunma dalgaları + kutlama efektleri (varsayılan açık; ana anahtar kapalıysa etkisiz) ----
-    val effectsFlow: Flow<Boolean> = context.settingsDataStore.data
-        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
-        .map { it[EFFECTS] ?: true }
-
-    suspend fun setEffects(value: Boolean) {
-        context.settingsDataStore.edit { it[EFFECTS] = value }
-    }
-
-    // ---- Logo sürprizleri / easter egg (varsayılan açık; ana anahtar kapalıysa etkisiz) ----
-    val eggsFlow: Flow<Boolean> = context.settingsDataStore.data
-        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
-        .map { it[EGGS] ?: true }
-
-    suspend fun setEggs(value: Boolean) {
-        context.settingsDataStore.edit { it[EGGS] = value }
-    }
-
     // ---- Web hesabı "hesap kapatılabilir" uyarısı (bir kez onaylanır) ----
     val webWarningAccepted: Flow<Boolean> = context.settingsDataStore.data
         .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
@@ -88,8 +70,6 @@ class ThemeStore(private val context: Context) {
     private companion object {
         val WEB_WARNING_ACCEPTED = booleanPreferencesKey("web_warning_accepted")
         val ANIMATIONS = booleanPreferencesKey("animations")
-        val EFFECTS = booleanPreferencesKey("animation_effects")
-        val EGGS = booleanPreferencesKey("animation_eggs")
         val NOTIFY = booleanPreferencesKey("notify_events")
         const val SCHEMA_VERSION = 1
         const val DEFAULT_CI_ATTEMPTS = 3

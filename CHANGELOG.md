@@ -5,14 +5,6 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
-### Eklendi (animasyon katmanı genişletildi)
-- **Efekt katmanı** (`ui/fx`): ekranın üstünde dokunmayı engellemeyen tek tuval; altıgen kıymıklar, kıvılcımlar ve şok dalgaları. Kare döngüsü yalnız parçacık varken çalışır.
-- **Logo sürprizleri** (yalnızca görsel, kazanç yok): tek dokunuş (Boop/Göz kırpma/Zıplama), hızlı art arda dokunuş zinciri (Dönüş, Arıza, Yankı, Konfeti, Üçleme, Süpernova), uzun basma (hologram taraması), yatay sürükleme (nokta parmağı izler, yaylanarak döner). Ana ekran ve yan menü logosunda.
-- Logoda yeni çalışma çeşitleri (İkiz yörünge, Kalp atışı, Tarama) ve boştayken arada göz kırpma.
-- Arka plan aurası (çalışma sürerken parlar, bitince yeşil/kırmızı dalga), dokunma dalgaları, çalışma başarıyla bitince kutlama fışkırması.
-- Zenginleştirilmiş açılış (ışık, parıltı, uygulama adı), sekme yönüne duyarlı ekran geçişleri + ölçek, yaylanan kart girişleri, gezinme simgesi zıplaması, çip renk geçişi, sayaç yükselmesi, adım tiki yaylanması, canlı rozet noktası, sürmekte olan çalışma kartında dolanan kenar ışığı, boş durum simgesi süzülmesi.
-- **Ayarlar**: "Arka plan ve dokunma efektleri" ve "Logo sürprizleri" anahtarları (ana "Animasyonlar" anahtarı kapalıyken devre dışı). Sistemin "animasyonları kaldır" ayarı hâlâ geçerli.
-
 ### Değişti (tema)
 - Tema seçenekleri yalnızca **Sistem / Koyu / Açık**. Eski kayıtlar (siyah, grafit, adaçayı) Koyu'ya, bilinmeyen değer Sistem'e düşer. Tema değişimi renk geçişiyle animasyonludur. Açılış ekranı koyu kalır (`values-night` yalnızca pencere zemini için, `values-night-v31` açılış temasını koyu tutar).
 

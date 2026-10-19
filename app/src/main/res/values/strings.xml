@@ -259,11 +259,7 @@
 
     <!-- Ayarlar: animasyonlar -->
     <string name="settings_animations">Animasyonlar</string>
-    <string name="settings_animations_hint">Logo, yükleme göstergeleri, ekran geçişleri, kart girişleri, basma efektleri ve sayaçlar. Kapatırsan hiçbir şey hareket etmez (alttaki iki anahtar da devre dışı kalır). Android\'in \"animasyonları kaldır\" ayarı açıksa bu anahtardan bağımsız olarak kapalı sayılır.</string>
-    <string name="settings_effects">Arka plan ve dokunma efektleri</string>
-    <string name="settings_effects_hint">Arka planda yavaşça süzülen ışık (çalışma sürerken parlar), dokunma dalgaları, açılış parıltıları ve çalışma bitince kutlama efekti. Yalnızca görseldir.</string>
-    <string name="settings_eggs">Logo sürprizleri</string>
-    <string name="settings_eggs_hint">Logoya dokunmak, art arda hızlıca dokunmak, basılı tutmak veya yatay sürüklemek gizli hareketler oynatır. Hiçbir kazanç sağlamaz, yalnızca eğlencedir. Kendin keşfet.</string>
+    <string name="settings_animations_hint">Logo animasyonu, yükleme göstergeleri ve ekran geçişleri. Kapatırsan hiçbir şey hareket etmez. Android\'in \"animasyonları kaldır\" ayarı açıksa bu anahtardan bağımsız olarak kapalı sayılır.</string>
 
     <!-- Düğüm çıktısı / yeniden deneme -->
     <string name="node_view_formatted">Biçimli</string>
