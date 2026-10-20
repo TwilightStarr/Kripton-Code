@@ -8,10 +8,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
@@ -37,9 +34,9 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * Logonun "ruh hâli": uygulamanın o anki durumunu hareketle anlatır.
- *  - [Idle]: dinlenme; düğüm noktasından yavaşça yayılan bir "ping".
- *  - [Working]: iş sürüyor; [LogoAnimation] çeşitleri sırayla döner (yörünge, dalga, çizgi).
+ * Logonun "ruh hâli": uygulamanın o anki durumunu sade bir hareketle anlatır.
+ *  - [Idle]: dinlenme; hareketsiz.
+ *  - [Working]: iş sürüyor; soluk altıgen üzerinde kuyruklu bir nokta dolanır.
  *  - [Waiting]: duraklatıldı / kota bekleniyor; sönük çizgi ve yavaşça yanıp sönen nokta.
  *  - [Success]: tek seferlik; nokta yaylanarak sıçrar ve halka yayılır.
  *  - [Error]: tek seferlik sarsıntı; nokta hata renginde kalır.
@@ -47,23 +44,10 @@ import kotlin.math.sin
  */
 enum class LogoMood { Idle, Working, Waiting, Success, Error, Intro }
 
-/** [LogoMood.Working] sırasında dönüşümlü oynayan çeşitler. */
-enum class LogoAnimation(val lapMs: Int) {
-    /** Noktanın arkasında kuyruk bırakarak altıgenin çevresinde dolanması (kuyruklu yıldız). */
-    Orbit(2600),
+/** Halka yarıçapı (yarım çizgi kalınlığı dahil) bu değeri aşmaz: düğümün sağında 16.5 birim boşluk var. */
+private const val MAX_RING = 15f
 
-    /** Düğüm noktasından dışa doğru yayılan halkalar (radar). */
-    Ripple(2400),
-
-    /** Çizginin kendini silip yeniden çizmesi; nokta ucunda gider. */
-    Trace(3400),
-}
-
-/** Her çeşit [LAPS_PER_VARIANT] tur oynar, sonra sıradakine geçilir. */
-private const val LAPS_PER_VARIANT = 2
-internal fun variantFor(lap: Int): LogoAnimation = LogoAnimation.entries[(lap / LAPS_PER_VARIANT).mod(LogoAnimation.entries.size)]
-
-private const val IDLE_MS = 3600
+private const val ORBIT_MS = 2600
 private const val WAITING_MS = 2600
 private const val SUCCESS_MS = 1000
 private const val ERROR_MS = 650
@@ -89,10 +73,9 @@ fun KriptonCodLogo(
     val description = stringResource(R.string.logo_description)
     val animationsOn = LocalAnimationsEnabled.current
 
-    // loop: 0..1 tekrarlayan tur ilerlemesi (Working/Idle/Waiting). once: 0..1 tek seferlik (Success/Error/Intro).
+    // loop: 0..1 tekrarlayan tur ilerlemesi (Working/Waiting). once: 0..1 tek seferlik (Success/Error/Intro).
     val loop = remember { Animatable(0f) }
     val once = remember { Animatable(1f) }
-    var lap by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(mood, animationsOn) {
         if (!animationsOn) {
@@ -105,15 +88,11 @@ fun KriptonCodLogo(
         loop.snapTo(0f)
         when (mood) {
             LogoMood.Working -> while (true) {
-                loop.animateTo(1f, tween(variantFor(lap).lapMs, easing = LinearEasing))
+                loop.animateTo(1f, tween(ORBIT_MS, easing = LinearEasing))
                 loop.snapTo(0f)
-                lap++
             }
 
-            LogoMood.Idle -> while (true) {
-                loop.animateTo(1f, tween(IDLE_MS, easing = LinearEasing))
-                loop.snapTo(0f)
-            }
+            LogoMood.Idle -> Unit
 
             LogoMood.Waiting -> while (true) {
                 loop.animateTo(1f, tween(WAITING_MS, easing = LinearEasing))
@@ -150,13 +129,9 @@ fun KriptonCodLogo(
                     drawRest(g, color, if (mood == LogoMood.Error) errorColor else color)
                 } else {
                     when (mood) {
-                        LogoMood.Idle -> drawIdle(g, color, p)
+                        LogoMood.Idle -> drawRest(g, color, color)
 
-                        LogoMood.Working -> when (variantFor(lap)) {
-                            LogoAnimation.Orbit -> drawOrbit(g, color, p)
-                            LogoAnimation.Ripple -> drawRipple(g, color, p)
-                            LogoAnimation.Trace -> drawTrace(g, color, p)
-                        }
+                        LogoMood.Working -> drawOrbit(g, color, p)
 
                         LogoMood.Waiting -> drawWaiting(g, color, p)
 
@@ -176,10 +151,13 @@ fun KriptonCodLogo(
 // Geometri
 // ---------------------------------------------------------------------------------------------------------------
 
-/** 108x108'lik başlatıcı ikonun ortadaki 22..86 penceresi (64 birim) tuvale ölçeklenir. */
+/**
+ * 108x108'lik başlatıcı ikonun ortadaki 15..93 penceresi (78 birim) tuvale ölçeklenir. Pencere, altıgenin çevresinde
+ * halkalara pay bırakır: düğüm noktasından en yakın kenara [MAX_RING] birim kalır, halkalar kutudan taşmaz.
+ */
 private class LogoGeometry(size: Size) {
-    val k = size.minDimension / 64f
-    private fun pt(x: Float, y: Float) = Offset((x - 22f) * k, (y - 22f) * k)
+    val k = size.minDimension / 78f
+    private fun pt(x: Float, y: Float) = Offset((x - 15f) * k, (y - 15f) * k)
 
     /** Düğüm noktasının dinlenme konumu (sağ kenarın ortası). */
     val rest = pt(76.5f, 54f)
@@ -241,7 +219,8 @@ private fun DrawScope.dot(g: LogoGeometry, at: Offset, color: Color, scale: Floa
 
 private fun DrawScope.ring(g: LogoGeometry, at: Offset, color: Color, radiusUnits: Float, alpha: Float, widthUnits: Float = 1.6f) {
     if (alpha <= 0f) return
-    drawCircle(color.copy(alpha = color.alpha * alpha), radius = radiusUnits * g.k, center = at, style = Stroke(width = widthUnits * g.k))
+    val r = radiusUnits.coerceAtMost(MAX_RING - widthUnits / 2f)
+    drawCircle(color.copy(alpha = color.alpha * alpha), radius = r * g.k, center = at, style = Stroke(width = widthUnits * g.k))
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -251,14 +230,6 @@ private fun DrawScope.ring(g: LogoGeometry, at: Offset, color: Color, radiusUnit
 private fun DrawScope.drawRest(g: LogoGeometry, color: Color, dotColor: Color) {
     fullC(g, color)
     dot(g, g.rest, dotColor)
-}
-
-/** Dinlenme: nokta yerinde, ondan yavaşça yayılıp sönen tek halka. */
-private fun DrawScope.drawIdle(g: LogoGeometry, color: Color, p: Float) {
-    fullC(g, color)
-    val e = 1f - (1f - p) * (1f - p)
-    ring(g, g.rest, color, radiusUnits = 5f + 11f * e, alpha = 0.32f * (1f - p) * (1f - p))
-    dot(g, g.rest, color, scale = 1f + 0.08f * sin(PI.toFloat() * p))
 }
 
 /** Yörünge: soluk altıgen üzerinde, kuyruğu parlayan bir nokta dolanır. */
@@ -276,40 +247,6 @@ private fun DrawScope.drawOrbit(g: LogoGeometry, color: Color, p: Float) {
     dot(g, g.position(head), color, scale = 1.05f, halo = 0.2f)
 }
 
-/** Dalga: çizgi sabit, düğüm noktasından ard arda iki halka yayılır. */
-private fun DrawScope.drawRipple(g: LogoGeometry, color: Color, p: Float) {
-    fullC(g, color)
-    for (i in 0..1) {
-        val q = (p + i * 0.5f) % 1f
-        val e = 1f - (1f - q) * (1f - q)
-        val fade = 1f - q
-        ring(g, g.rest, color, radiusUnits = 5f + 17f * e, alpha = 0.6f * fade * fade, widthUnits = 2f)
-    }
-    dot(g, g.rest, color, scale = 1f + 0.14f * sin(4f * PI.toFloat() * p).coerceAtLeast(0f))
-}
-
-/** Çizgi çizimi: [from] çizginin görünen başlangıcı, [dot] noktanın altıgen üzerindeki mesafesi. */
-internal class TraceFrame(val from: Float, val dot: Float)
-
-/**
- * [p] 0..1 turunu çizgi durumuna çevirir (mesafeler [a, b] = C çizgisinin başı/sonu):
- * 0-5% nokta C'nin başına gider, 5-40% çizgi baştan silinir, 40-80% sondan geriye çizilir,
- * 80-95% nokta dinlenme konumuna döner, kalanı bekler. p=0 ve p=1'de logo tamdır.
- */
-internal fun traceFrame(p: Float, a: Float, b: Float): TraceFrame = when {
-    p < 0.05f -> TraceFrame(a, lerpF(0f, a, smooth(p / 0.05f)))
-    p < 0.40f -> lerpF(a, b, smooth((p - 0.05f) / 0.35f)).let { TraceFrame(it, it) }
-    p < 0.80f -> lerpF(b, a, smooth((p - 0.40f) / 0.40f)).let { TraceFrame(it, it) }
-    p < 0.95f -> TraceFrame(a, lerpF(a, 0f, smooth((p - 0.80f) / 0.15f)))
-    else -> TraceFrame(a, 0f)
-}
-
-private fun DrawScope.drawTrace(g: LogoGeometry, color: Color, p: Float) {
-    val f = traceFrame(p, g.cStart, g.cEnd)
-    arc(g, f.from, g.cEnd, color)
-    dot(g, g.position(f.dot), color, halo = 0.18f)
-}
-
 /** Bekleme: sönük çizgi, yavaşça "nefes alan" nokta. */
 private fun DrawScope.drawWaiting(g: LogoGeometry, color: Color, p: Float) {
     arc(g, g.cStart, g.cEnd, color.copy(alpha = color.alpha * 0.5f))
@@ -322,7 +259,7 @@ private fun DrawScope.drawSuccess(g: LogoGeometry, color: Color, q: Float) {
     fullC(g, color)
     val burst = ((q - 0.1f) / 0.9f).coerceIn(0f, 1f)
     val e = 1f - (1f - burst) * (1f - burst)
-    ring(g, g.rest, color, radiusUnits = 5f + 24f * e, alpha = 0.7f * (1f - burst), widthUnits = 2.4f)
+    ring(g, g.rest, color, radiusUnits = 5f + 9.5f * e, alpha = 0.7f * (1f - burst), widthUnits = 2.4f)
     val pop = 1f + 0.6f * sin(PI.toFloat() * (q * 1.7f).coerceAtMost(1f)) * (1f - q)
     dot(g, g.rest, color, scale = pop, halo = 0.25f * (1f - q))
 }
@@ -349,7 +286,7 @@ private fun DrawScope.drawIntro(g: LogoGeometry, color: Color, q: Float) {
 
         else -> {
             val t = (q - 0.8f) / 0.2f
-            ring(g, g.rest, color, radiusUnits = 5f + 18f * t, alpha = 0.6f * (1f - t), widthUnits = 2.2f)
+            ring(g, g.rest, color, radiusUnits = 5f + 9.5f * t, alpha = 0.6f * (1f - t), widthUnits = 2.2f)
             dot(g, g.rest, color, scale = 1f + 0.5f * sin(PI.toFloat() * t.coerceIn(0f, 1f)) * (1f - t))
         }
     }

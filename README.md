@@ -23,7 +23,7 @@ Android için kod odaklı, çoklu-AI üretim aracı. Büyük bir işi ayrıntıl
 - **Yerel çökme günlüğü (ACRA):** Çökme ayrıntısı yalnızca cihazda saklanır, ağa hiçbir şey gönderilmez; Ayarlar'dan paylaşılabilir/silinebilir.
 - **Kalite araçları:** CI'da ktlint (şimdilik yalnız rapor), debug derlemede LeakCanary, Dependabot ile haftalık bağımlılık güncellemesi.
 - **Tema:** Sistem / açık / koyu.
-- **Animasyonlar:** Durum anlatan logo (boşta, çalışıyor, bekliyor, başarı, hata, açılış; çalışırken yörünge/dalga/çizgi çeşitleri sırayla döner), ekran geçişleri, kademeli belirme, basma efekti, çalışan düğümde nabız halkası. Ayarlar'dan kapatılabilir.
+- **Animasyonlar:** Durum anlatan logo (boşta, çalışıyor, bekliyor, başarı, hata, açılış), ekran geçişleri, kademeli belirme, basma efekti, çalışan düğümde nabız halkası. Ayarlar'dan kapatılabilir.
 - **Pil kısıtlaması:** Ayarlar'da durum gösterilir; Android'in "kısıtlama yok" izni ve Xiaomi/Huawei/Oppo/Vivo/Samsung gibi cihazların kendi otomatik başlatma ekranları açılabilir.
 - **Güvenlik:** Anahtarlar ve token'lar Android Keystore ile AES-GCM şifrelenerek yalnızca cihazda tutulur; yedekleme kapalıdır.
 

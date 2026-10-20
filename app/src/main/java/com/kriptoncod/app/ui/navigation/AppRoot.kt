@@ -2,7 +2,9 @@ package com.kriptoncod.app.ui.navigation
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -337,13 +339,13 @@ fun AppRoot(
 // Ekran geçişleri: ileri giderken içerik hafifçe sağdan kayarak belirir, geri dönerken tersi; eski ekran hızla solar.
 private const val SLIDE_FRACTION = 14
 
-private fun forwardIn(): EnterTransition = fadeIn(tween(320, delayMillis = 80)) + slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { it / SLIDE_FRACTION }
+private fun forwardIn(): EnterTransition = fadeIn(tween(220, delayMillis = 90, easing = LinearOutSlowInEasing)) + slideInHorizontally(tween(340, easing = FastOutSlowInEasing)) { it / SLIDE_FRACTION }
 
-private fun forwardOut(): ExitTransition = fadeOut(tween(140))
+private fun forwardOut(): ExitTransition = fadeOut(tween(90, easing = FastOutLinearInEasing))
 
-private fun backIn(): EnterTransition = fadeIn(tween(320, delayMillis = 80)) + slideInHorizontally(tween(380, easing = FastOutSlowInEasing)) { -it / SLIDE_FRACTION }
+private fun backIn(): EnterTransition = fadeIn(tween(220, delayMillis = 90, easing = LinearOutSlowInEasing)) + slideInHorizontally(tween(340, easing = FastOutSlowInEasing)) { -it / SLIDE_FRACTION }
 
-private fun backOut(): ExitTransition = fadeOut(tween(140)) + slideOutHorizontally(tween(260, easing = FastOutSlowInEasing)) { it / SLIDE_FRACTION }
+private fun backOut(): ExitTransition = fadeOut(tween(90, easing = FastOutLinearInEasing)) + slideOutHorizontally(tween(260, easing = FastOutSlowInEasing)) { it / SLIDE_FRACTION }
 
 private fun NavHostController.navigateTo(route: Route) {
     navigate(route.path) {

@@ -12,7 +12,7 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 - **Ayarlar → Pil kısıtlaması**: durum gösterilir; Android'in "kısıtlama yok" izni (`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`) istenebilir; Xiaomi, Huawei, Oppo, Vivo, Samsung, OnePlus ve Asus cihazlarda üreticinin otomatik başlatma ekranı açılır.
 
 ### Eklendi (animasyonlar)
-- Logo artık durumu anlatır: boşta, çalışıyor (yörünge / dalga / çizgi çeşitleri dönüşümlü), bekliyor, başarı, hata ve açılış. Çalıştırma başlığındaki logo run durumunu izler.
+- Logo artık durumu anlatır: boşta, çalışıyor (altıgen üzerinde dolanan nokta), bekliyor, başarı, hata ve açılış. Çalıştırma başlığındaki logo run durumunu izler.
 - Ekran geçişleri (kayma + solma), ana ekranda kademeli belirme, düğme/kart basma efekti, çalışan düğümde nabız halkası, açılış animasyonu. Hepsi **Ayarlar → Animasyonlar**'a bağlıdır.
 - Hızlı e-posta ekleme: AI'lar ekranındaki "Tek dokunuşla ekle" düğmeleri sırayla belirir; hesap kaydedilince giriş ekranında logo başarı hareketi yapar ve ardından kapanır.
 

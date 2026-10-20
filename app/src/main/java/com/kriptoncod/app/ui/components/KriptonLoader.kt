@@ -9,7 +9,7 @@ import androidx.compose.ui.unit.dp
 import com.kriptoncod.app.ui.theme.LocalAnimationsEnabled
 
 /**
- * Yükleme/işlem göstergesi: dönen çember yerine animasyonlu logo; çeşitler (yörünge, dalga, çizgi) sırayla döner.
+ * Yükleme/işlem göstergesi: dönen çember yerine animasyonlu logo (altıgen üzerinde dolanan nokta).
  * Animasyonlar kapalıysa logo sönük ve hareketsiz görünür (hareket içeren hiçbir şey çizilmez).
  */
 @Composable

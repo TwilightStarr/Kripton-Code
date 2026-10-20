@@ -11,7 +11,10 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.graphicsLayer
@@ -44,15 +47,20 @@ fun Modifier.appear(index: Int = 0): Modifier = composed {
     if (!LocalAnimationsEnabled.current) {
         this
     } else {
-        val progress = remember { Animatable(0f) }
+        // Giriş bir kez oynar: liste öğesi kaydırmayla çıkıp geri gelse ya da ekran döndürülse tekrar belirmez.
+        var played by rememberSaveable { mutableStateOf(false) }
+        val progress = remember { Animatable(if (played) 1f else 0f) }
         LaunchedEffect(Unit) {
-            delay(index.coerceIn(0, MAX_STAGGER) * STAGGER_STEP_MS)
-            progress.animateTo(1f, tween(durationMillis = 420, easing = FastOutSlowInEasing))
+            if (!played) {
+                delay(index.coerceIn(0, MAX_STAGGER) * STAGGER_STEP_MS)
+                progress.animateTo(1f, tween(durationMillis = 380, easing = FastOutSlowInEasing))
+                played = true
+            }
         }
         this.graphicsLayer {
             val p = progress.value
-            alpha = p
-            translationY = (1f - p) * 20.dp.toPx()
+            alpha = p.coerceIn(0f, 1f)
+            translationY = (1f - p) * 16.dp.toPx()
         }
     }
 }
@@ -63,12 +71,14 @@ fun Modifier.pressScale(source: InteractionSource, pressedScale: Float = 0.97f):
     val pressed by source.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (on && pressed) pressedScale else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMedium),
         label = "pressScale",
     )
     this.graphicsLayer {
-        scaleX = scale
-        scaleY = scale
+        // Yaylanma 1'i aşıp kartı kenarlardan taşırmasın.
+        val s = scale.coerceIn(pressedScale.coerceAtMost(1f) - 0.02f, 1f)
+        scaleX = s
+        scaleY = s
     }
 }
 
