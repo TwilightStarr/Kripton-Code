@@ -75,7 +75,12 @@ class TokenRecordingTest {
     }
 
     @Test fun providerReportedUsageIsStoredAsExact(): Unit = runBlocking {
-        runWith(Gen { coroutineContext[TokenMeter]!!.add(TokenUsage(321, 45)); "ok" })
+        runWith(
+            Gen {
+                coroutineContext[TokenMeter]!!.add(TokenUsage(321, 45))
+                "ok"
+            },
+        )
         val e = db.usageEventDao().since(0).single()
         assertEquals(UsageOutcome.SUCCESS, e.outcome)
         assertEquals(321, e.promptTokens)
@@ -103,7 +108,12 @@ class TokenRecordingTest {
     }
 
     @Test fun failedRequestKeepsTokensTheProviderAlreadyBilled(): Unit = runBlocking {
-        runWith(Gen { coroutineContext[TokenMeter]!!.add(TokenUsage(50, 0)); throw AiGenerationException(Kind.BAD_REQUEST) })
+        runWith(
+            Gen {
+                coroutineContext[TokenMeter]!!.add(TokenUsage(50, 0))
+                throw AiGenerationException(Kind.BAD_REQUEST)
+            },
+        )
         val e = db.usageEventDao().since(0).first()
         assertEquals(50, e.promptTokens)
         assertEquals(0, e.completionTokens)
