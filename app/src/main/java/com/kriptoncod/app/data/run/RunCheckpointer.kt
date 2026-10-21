@@ -71,7 +71,6 @@ class RunCheckpointer(
 
         fun wipBranch(runId: Long): String = "kriptoncod/wip-$runId"
 
-        private fun sanitize(title: String?): String =
-            (title ?: "node").replace(Regex("[^A-Za-z0-9_-]"), "_").trim('_').ifEmpty { "node" }.take(40)
+        private fun sanitize(title: String?): String = (title ?: "node").replace(Regex("[^A-Za-z0-9_-]"), "_").trim('_').ifEmpty { "node" }.take(40)
     }
 }

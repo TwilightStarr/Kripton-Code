@@ -83,20 +83,18 @@ class CiFixer(
         }
     }
 
-    private suspend fun projectFiles(runId: Long): Map<String, String> =
-        runs.readZipFiles(runId)
-            .filter { (p, b) -> !p.startsWith("_kripton/") && b.none { it == 0.toByte() } }
-            .associate { (p, b) -> p to String(b, Charsets.UTF_8) }
+    private suspend fun projectFiles(runId: Long): Map<String, String> = runs.readZipFiles(runId)
+        .filter { (p, b) -> !p.startsWith("_kripton/") && b.none { it == 0.toByte() } }
+        .associate { (p, b) -> p to String(b, Charsets.UTF_8) }
 
-    private fun acceptable(text: String, project: Map<String, String>): List<CodeBlockParser.Block> =
-        CodeBlockParser.parse(text).mapNotNull { b ->
-            val safe = (PathSafety.validate(b.path) as? PathSafety.Result.Safe)?.normalized ?: return@mapNotNull null
-            if (b.content.isBlank()) return@mapNotNull null
-            val old = project[safe]
-            // Mevcut büyük bir dosyanın yarısından kısa "düzeltme" büyük olasılıkla kesik çıktıdır.
-            if (old != null && old.length > 400 && b.content.length * 2 < old.length) return@mapNotNull null
-            b.copy(path = safe)
-        }.associateBy { it.path }.values.toList() // aynı yol iki kez gelirse sonuncusu
+    private fun acceptable(text: String, project: Map<String, String>): List<CodeBlockParser.Block> = CodeBlockParser.parse(text).mapNotNull { b ->
+        val safe = (PathSafety.validate(b.path) as? PathSafety.Result.Safe)?.normalized ?: return@mapNotNull null
+        if (b.content.isBlank()) return@mapNotNull null
+        val old = project[safe]
+        // Mevcut büyük bir dosyanın yarısından kısa "düzeltme" büyük olasılıkla kesik çıktıdır.
+        if (old != null && old.length > 400 && b.content.length * 2 < old.length) return@mapNotNull null
+        b.copy(path = safe)
+    }.associateBy { it.path }.values.toList() // aynı yol iki kez gelirse sonuncusu
 }
 
 /** CI düzeltme istemi: hatalar + hatalı dosyaların içeriği + projenin arayüz özeti. */

@@ -84,8 +84,10 @@ object InterfaceSummarizer {
         val ext = path.substringAfterLast('.', "").lowercase()
         val body = when {
             ext in CODE_EXT -> declarations(lines)
+
             ext in DATA_EXT || path.substringAfterLast('/').lowercase() in NAMED_CONFIG ->
                 if (content.length <= SMALL_FILE_CHARS) lines else head(lines, CONFIG_HEAD_LINES)
+
             else -> head(lines, OTHER_HEAD_LINES)
         }
         return buildString {
@@ -97,8 +99,7 @@ object InterfaceSummarizer {
 
     private val NAMED_CONFIG = setOf("dockerfile", "makefile", "gemfile", "procfile")
 
-    private fun head(lines: List<String>, n: Int): List<String> =
-        if (lines.size <= n) lines else lines.take(n).map { cap(it) } + "… (${lines.size - n} satır daha)"
+    private fun head(lines: List<String>, n: Int): List<String> = if (lines.size <= n) lines else lines.take(n).map { cap(it) } + "… (${lines.size - n} satır daha)"
 
     private fun cap(s: String) = if (s.length <= MAX_LINE) s else s.take(MAX_LINE) + "…"
 

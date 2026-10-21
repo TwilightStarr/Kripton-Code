@@ -31,10 +31,16 @@ class RunCompleterTest {
         val calls = mutableListOf<String>()
         val completer = RunCompleter(
             runs = store,
-            packageRun = { calls += "package"; packaged },
+            packageRun = {
+                calls += "package"
+                packaged
+            },
             ensureTests = { calls += "tests" },
             shouldPublish = { repo },
-            publish = { calls += "publish"; publishOk },
+            publish = {
+                calls += "publish"
+                publishOk
+            },
             startCiLoop = { calls += "ci" },
         )
     }
@@ -83,7 +89,10 @@ class RunCompleterTest {
             packageRun = { true },
             ensureTests = { error("AI çöktü") },
             shouldPublish = { true },
-            publish = { calls += "publish"; true },
+            publish = {
+                calls += "publish"
+                true
+            },
             startCiLoop = { calls += "ci" },
         )
         assertEquals(RunStatus.CI_WAITING, c.complete(1))

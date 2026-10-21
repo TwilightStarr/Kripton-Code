@@ -25,8 +25,11 @@ class RunWatchdogTest {
 
     @Test fun neverTouchesPausedFinishedOrPartialRuns() {
         val runs = listOf(
-            r(1, RunStatus.PAUSED), r(2, RunStatus.DONE), r(3, RunStatus.FAILED),
-            r(4, RunStatus.CANCELLED), r(5, RunStatus.PARTIAL),
+            r(1, RunStatus.PAUSED),
+            r(2, RunStatus.DONE),
+            r(3, RunStatus.FAILED),
+            r(4, RunStatus.CANCELLED),
+            r(5, RunStatus.PARTIAL),
         )
         assertTrue(RunWatchdog.plan(runs, emptySet(), emptySet()).isEmpty())
     }

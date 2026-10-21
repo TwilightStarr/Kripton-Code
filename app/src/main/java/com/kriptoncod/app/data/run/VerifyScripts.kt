@@ -18,12 +18,18 @@ object VerifyScripts {
         val root = paths.filter { '/' !in it }.toSet()
         return when {
             "package.json" in root -> ProjectType.NODE
+
             root.any { it in setOf("build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts") } -> ProjectType.GRADLE
+
             "pom.xml" in root -> ProjectType.MAVEN
+
             "go.mod" in root -> ProjectType.GO
+
             "Cargo.toml" in root -> ProjectType.CARGO
+
             root.any { it in setOf("pyproject.toml", "requirements.txt", "setup.py", "setup.cfg") } ||
                 root.any { it.endsWith(".py") } -> ProjectType.PYTHON
+
             else -> ProjectType.UNKNOWN
         }
     }
@@ -39,8 +45,11 @@ object VerifyScripts {
                 Regex("""^test_.*\.py$|.*_test\.py$""").matches(name)
 
             ProjectType.GRADLE, ProjectType.MAVEN -> path.startsWith("src/test/") || "/src/test/" in path
+
             ProjectType.GO -> name.endsWith("_test.go")
+
             ProjectType.CARGO -> path.startsWith("tests/") && name.endsWith(".rs")
+
             ProjectType.UNKNOWN -> false
         }
     }
@@ -49,8 +58,7 @@ object VerifyScripts {
      * Yapay zekanın YAZABİLECEĞİ yollar: yalnız test dosyaları. Kaynak kodun, workflow'un ve doğrulama
      * betiğinin üzerine yazılması engellenir. `package.json` gibi yapılandırma değişikliği bu yoldan yapılmaz.
      */
-    fun isAllowedTestPath(type: ProjectType, path: String): Boolean =
-        !path.startsWith(".github/") && path != PATH && !path.startsWith("_kripton/") && isTestPathStrict(type, path)
+    fun isAllowedTestPath(type: ProjectType, path: String): Boolean = !path.startsWith(".github/") && path != PATH && !path.startsWith("_kripton/") && isTestPathStrict(type, path)
 
     /** Projede (algılanan türe göre) en az bir gerçek test var mı. */
     fun hasTests(type: ProjectType, files: Map<String, ByteArray>): Boolean {

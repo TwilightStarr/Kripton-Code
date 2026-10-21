@@ -7,8 +7,7 @@ import org.junit.Test
 
 class MergePlannerTest {
 
-    private fun src(name: String, id: Long, vararg files: Pair<String, String>) =
-        MergePlanner.Source(name, id, files.joinToString("\n\n") { (p, c) -> "```$p\n$c\n```" })
+    private fun src(name: String, id: Long, vararg files: Pair<String, String>) = MergePlanner.Source(name, id, files.joinToString("\n\n") { (p, c) -> "```$p\n$c\n```" })
 
     private fun parse(text: String) = CodeBlockParser.parse(text).associate { it.path to it.content }
 
