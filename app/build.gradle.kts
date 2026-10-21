@@ -68,7 +68,11 @@ android {
     // Room şema dışa aktarımı (migration testleri bu JSON'ları okur; repoya commit edilir).
     sourceSets.getByName("test").assets.srcDir("$projectDir/schemas")
 
-    packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
+    packaging {
+        resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" }
+        // "Unable to strip the following libraries" uyarısı: bu AndroidX yerel kütüphaneleri zaten sıyrılmış gelir.
+        jniLibs { keepDebugSymbols += setOf("**/libandroidx.graphics.path.so", "**/libdatastore_shared_counter.so") }
+    }
 
     lint {
         abortOnError = true

@@ -58,6 +58,17 @@
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
 
+        <!--
+            ACRA kütüphanesi bu sağlayıcıyı "tools:replace" ile işaretler ama kendi başına tanımlamaz; bu da her derlemede
+            "tagged to replace other declarations but no other declaration present" uyarısı üretiyordu. Aynı sağlayıcıyı
+            burada (kütüphanenin değerleriyle) tanımlamak uyarıyı giderir; davranış değişmez (ağa gönderim yok).
+        -->
+        <provider
+            android:name="org.acra.attachment.AcraContentProvider"
+            android:authorities="${applicationId}.acra"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+
         <!-- Bildirimdeki Duraklat / Devam et / İptal düğmeleri (yalnız uygulamanın kendi PendingIntent'leri). -->
         <receiver
             android:name=".work.RunActionReceiver"

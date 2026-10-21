@@ -5,6 +5,9 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
+### Değişti (debug)
+- LeakCanary'nin ana ekrana eklediği ayrı **"Leaks" simgesi** kaldırıldı (`leak_canary_add_launcher_icon=false`, yalnız debug). Sızıntı bildirimleri çalışmaya devam eder.
+
 ### Değişti (dayanıklılık)
 - **CI düzeltmesi artık kör değil**: istemde hatanın geçtiği dosyaların güncel içeriği ve projenin arayüz özeti var. Hesaplar güce göre sırayla denenir (hata/boş/kesik cevapta sıradaki hesaba geçilir) ve her CI turunda başlangıç hesabı kaydırılır. AI'ın büyük bir dosyayı yarıdan fazla kısaltması reddedilir; düzeltme zip'e de işlenir.
 - **Sabır**: sunucu/ağ hatasında düğüm artık 60 denemeye kadar (bekleme 15 sn'den 15 dk'ya artar, toplam ~7-8 saat) yeniden denenir; önce havuzdaki yedek hesap denenir. Bağlam aşımı, kesik çıktı, geçersiz istek gibi kalıcı hatalarda da sıradaki hesaba/modele geçilir; hepsi başarısızsa düğüm düşer.
