@@ -12,6 +12,7 @@ import com.kriptoncod.app.data.web.ContinuationMerger
 import com.kriptoncod.app.data.web.PromptWrapper
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.coroutineContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.Dispatchers
@@ -83,18 +84,24 @@ class OpenAiCompatibleGenerator(
 
         val normalizer = Normalizers.forModel(modelId, UpstreamProvider.fromId(endpoint.providerId))
         val streaming = sink !== StreamSink.NONE
+        // Token sayacı varsa her turun kullanımı ona eklenir (bkz. TokenMeter); yoksa yok sayılır.
+        val meter = coroutineContext[TokenMeter]
+        val report: (TokenUsage) -> Unit = { meter?.add(it) }
         val parts = mutableListOf<String>()
         var continuations = 0
         while (true) {
             val messages = messagesFor(prompt, parts)
             val chunk = if (streaming) {
                 when (val r = postStreaming(endpoint, modelId, key, messages, sink)) {
-                    is Streamed.Choice -> withContext(Dispatchers.Default) { extractChoice(r.choice, normalizer) }
-                    is Streamed.Whole -> withContext(Dispatchers.Default) { extract(r.body, normalizer) }
+                    is Streamed.Choice -> {
+                        r.usage?.let(report)
+                        withContext(Dispatchers.Default) { extractChoice(r.choice, normalizer) }
+                    }
+                    is Streamed.Whole -> withContext(Dispatchers.Default) { extract(r.body, normalizer, report) }
                 }
             } else {
                 val body = post(endpoint, modelId, key, messages)
-                withContext(Dispatchers.Default) { extract(body, normalizer) }
+                withContext(Dispatchers.Default) { extract(body, normalizer, report) }
             }
             parts += chunk.text
             if (!chunk.truncated) {
@@ -169,7 +176,7 @@ class OpenAiCompatibleGenerator(
 
     private sealed interface Streamed {
         /** SSE parçalarından birleştirilmiş, akışsız yanıttaki `choices[0]` ile aynı biçimli nesne. */
-        class Choice(val choice: JsonObject) : Streamed
+        class Choice(val choice: JsonObject, val usage: TokenUsage? = null) : Streamed
 
         /** Sağlayıcı akışı yok sayıp düz JSON döndürdü. */
         class Whole(val body: String) : Streamed
@@ -189,6 +196,10 @@ class OpenAiCompatibleGenerator(
         val payload = buildJsonObject {
             put("model", modelId.trim())
             put("stream", true)
+            // Akışta kullanım yalnız istenirse gelir; bilinmeyen alanı reddedebilecek sağlayıcılara gönderilmez.
+            if (endpoint.providerId in USAGE_STREAM_PROVIDERS) {
+                put("stream_options", buildJsonObject { put("include_usage", true) })
+            }
             put("messages", messages)
         }
         val request = buildRequest(endpoint, key, payload, "text/event-stream")
@@ -199,6 +210,7 @@ class OpenAiCompatibleGenerator(
             val text = StringBuilder()
             val refusal = StringBuilder()
             var finish: String? = null
+            var usage: TokenUsage? = null
 
             fun finishStream(): Streamed.Choice {
                 val message = buildJsonObject {
@@ -211,6 +223,7 @@ class OpenAiCompatibleGenerator(
                         put("message", message)
                         finish?.let { put("finish_reason", it) }
                     },
+                    usage,
                 )
             }
 
@@ -227,6 +240,8 @@ class OpenAiCompatibleGenerator(
                     } catch (e: IllegalArgumentException) {
                         return // bozuk/yorum olayı: yok say
                     }
+                    // Kullanım çoğunlukla son olayda, boş `choices` ile gelir; seçimden ÖNCE okunur.
+                    UsageParser.read(event["usage"])?.let { usage = it }
                     val choice = (event["choices"] as? JsonArray)
                         ?.firstOrNull() as? JsonObject
                     if (choice == null) {
@@ -307,14 +322,16 @@ class OpenAiCompatibleGenerator(
      */
     private class Chunk(val text: String, val truncated: Boolean)
 
-    private fun extract(body: String, normalizer: ProviderNormalizer): Chunk {
-        val choice: JsonObject = (
-            try {
-                json.parseToJsonElement(body).jsonObject["choices"]?.jsonArray?.firstOrNull()?.jsonObject
-            } catch (e: IllegalArgumentException) { // SerializationException ve tür dönüşüm hataları
-                null
-            }
-            ) ?: throw AiGenerationException(Kind.BAD_RESPONSE)
+    private fun extract(body: String, normalizer: ProviderNormalizer, report: (TokenUsage) -> Unit): Chunk {
+        val (choice, usage) = try {
+            val root = json.parseToJsonElement(body).jsonObject
+            root["choices"]?.jsonArray?.firstOrNull()?.jsonObject to UsageParser.read(root["usage"])
+        } catch (e: IllegalArgumentException) { // SerializationException ve tür dönüşüm hataları
+            null to null
+        }
+        // Reddedilen/boş yanıt da token harcamış olabilir: kullanım hata fırlatılmadan ÖNCE bildirilir.
+        usage?.let(report)
+        if (choice == null) throw AiGenerationException(Kind.BAD_RESPONSE)
         return extractChoice(choice, normalizer)
     }
 
@@ -329,6 +346,9 @@ class OpenAiCompatibleGenerator(
         const val DEFAULT_MAX_CONTINUATIONS = 20
         private const val MAX_BODY_BYTES = Long.MAX_VALUE
         private const val MAX_ERROR_BODY_BYTES = 64L * 1024
+
+        /** Akışta `stream_options.include_usage` gönderilen, bunu desteklediği bilinen sağlayıcılar. */
+        private val USAGE_STREAM_PROVIDERS = setOf("openai", "openrouter", "groq", "mistral", "deepseek")
         private val INVALID_KEY_HINTS = listOf("api key not valid", "api_key_invalid")
 
         /** Uzun üretimler için geniş zaman aşımı; yönlendirme kapalı (anahtar başka adrese sızmaz). */

@@ -67,4 +67,18 @@ class UsageDaoTest {
         db.aiAccountDao().deleteById(a)
         assertTrue(db.usageEventDao().observeSummary(since = 0).first().isEmpty())
     }
+
+    @Test fun tokenFieldsRoundTripAndDefaultToUnknown() = runBlocking {
+        val a = account("A")
+        val dao = db.usageEventDao()
+        dao.insert(UsageEvent(accountId = a, at = 100, outcome = UsageOutcome.SUCCESS, promptTokens = 12, completionTokens = 34, tokensEstimated = true))
+        dao.insert(ev(a, 200, UsageOutcome.FAILED))
+        val rows = dao.observeSince(0).first()
+        assertEquals(listOf(100L, 200L), rows.map { it.at })
+        assertEquals(12, rows[0].promptTokens)
+        assertEquals(34, rows[0].completionTokens)
+        assertEquals(true, rows[0].tokensEstimated)
+        assertEquals(null, rows[1].promptTokens)
+        assertEquals(false, rows[1].tokensEstimated)
+    }
 }

@@ -101,6 +101,8 @@ fun AccountEditorScreen(accountId: Long?, onClose: () -> Unit) {
         onBaseUrlChange = viewModel::onBaseUrlChanged,
         onDailyLimitChange = viewModel::onDailyLimitChanged,
         onBackupChange = viewModel::onBackupChanged,
+        onPriceInChange = viewModel::onPriceInChanged,
+        onPriceOutChange = viewModel::onPriceOutChanged,
         onSelectUpstream = viewModel::selectUpstream,
         onPaste = {
             scope.launch {
@@ -128,6 +130,8 @@ private fun AccountEditorContent(
     onBaseUrlChange: (String) -> Unit,
     onDailyLimitChange: (String) -> Unit,
     onBackupChange: (Boolean) -> Unit,
+    onPriceInChange: (String) -> Unit,
+    onPriceOutChange: (String) -> Unit,
     onSelectUpstream: (UpstreamProvider?) -> Unit,
     onPaste: () -> Unit,
     onVerify: () -> Unit,
@@ -250,7 +254,7 @@ private fun AccountEditorContent(
 
             if (state.providerId != null && !state.loading) {
                 item(key = "pool-title") { SectionTitle(R.string.step_pool) }
-                item(key = "pool-settings") { PoolSettings(state, onDailyLimitChange, onBackupChange) }
+                item(key = "pool-settings") { PoolSettings(state, onDailyLimitChange, onBackupChange, onPriceInChange, onPriceOutChange) }
             }
 
             if (state.models.isNotEmpty()) {
@@ -302,6 +306,8 @@ private fun PoolSettings(
     state: EditorUiState,
     onDailyLimitChange: (String) -> Unit,
     onBackupChange: (Boolean) -> Unit,
+    onPriceInChange: (String) -> Unit,
+    onPriceOutChange: (String) -> Unit,
 ) {
     val k = KriptonTheme.colors
     val enabled = !state.saving && !state.loading
@@ -328,6 +334,28 @@ private fun PoolSettings(
             }
             Switch(checked = state.isBackup, onCheckedChange = onBackupChange, enabled = enabled)
         }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            listOf(
+                Triple(state.priceIn, onPriceInChange, R.string.price_in_label),
+                Triple(state.priceOut, onPriceOutChange, R.string.price_out_label),
+            ).forEach { (value, onChange, label) ->
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = onChange,
+                    modifier = Modifier.weight(1f),
+                    label = { Text(stringResource(label)) },
+                    singleLine = true,
+                    enabled = enabled,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = k.nodeBorder,
+                    ),
+                )
+            }
+        }
+        Text(stringResource(R.string.price_hint), style = MaterialTheme.typography.bodySmall, color = k.muted)
     }
 }
 

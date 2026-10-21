@@ -8,7 +8,7 @@ import com.kriptoncod.app.domain.JobState
  * Başarısız bir düğüm yeniden denendiğinde hangi düğümlerin sıfırlanacağını belirler (saf mantık).
  *
  * Sıfırlananlar: düğümün kendisi + çıktısına dayanan her şey, YALNIZ zaten bitmiş (DONE/FAILED) olanlar:
- *  - `[[girdi: ...]]` ile bu düğümün çıktısını isteyen WORK düğümleri (zincirleme),
+ *  - `[[girdi: ...]]` ya da `{{çıktı:..}}` türü başvurularla bu düğümün çıktısını isteyen WORK düğümleri (zincirleme),
  *  - etkilenen WORK'lerin katalog birleştirmesi,
  *  - nihai birleştirme.
  * Aksi halde birleştirmeler, başarısız düğümün eksik çıktısıyla üretilmiş eski sonucu taşırdı.
@@ -31,7 +31,7 @@ object RetryPlanner {
                 changed = false
                 for (w in all) {
                     if (w.kind != JobKind.WORK || w.id in reset || !done(w)) continue
-                    val wanted = FlowDirectivesParser.parse(w.body.orEmpty()).inputs
+                    val wanted = FlowDirectivesParser.parse(w.body.orEmpty()).dependencies
                         .map { FlowDirectivesParser.normalize(it) }
                     val dependsOnChanged = wanted.any { name -> name in titles && (sourceIds[name] ?: Long.MAX_VALUE) < w.id }
                     if (dependsOnChanged) {

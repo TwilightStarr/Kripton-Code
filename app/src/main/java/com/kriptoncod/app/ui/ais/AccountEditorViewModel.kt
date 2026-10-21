@@ -69,6 +69,10 @@ data class EditorUiState(
     val dailyLimit: String = "",
     /** Yedek hesap: yalnız birincil hesaplar kullanılamazken devreye girer. */
     val isBackup: Boolean = false,
+    /** İsteğe bağlı fiyat: 1 milyon girdi tokenı başına USD ("12.5"); boş = bilinmiyor. */
+    val priceIn: String = "",
+    /** İsteğe bağlı fiyat: 1 milyon çıktı tokenı başına USD. */
+    val priceOut: String = "",
 ) {
     val isEdit: Boolean get() = editingId != null
     val isProxy: Boolean get() = providerId == ProxyProvider.ID
@@ -133,6 +137,8 @@ class AccountEditorViewModel(
                         baseUrl = if (proxy) account.baseUrl.orEmpty() else "",
                         dailyLimit = account.dailyLimit?.takeIf { n -> n > 0 }?.toString().orEmpty(),
                         isBackup = account.isBackup,
+                        priceIn = account.priceInPerM.toPriceText(),
+                        priceOut = account.priceOutPerM.toPriceText(),
                     )
                 }
                 runVerify()
@@ -183,6 +189,16 @@ class AccountEditorViewModel(
         val s = _state.value
         if (s.saving || s.loading) return
         _state.update { it.copy(dailyLimit = raw.filter { c -> c.isDigit() }.take(MAX_LIMIT_DIGITS)) }
+    }
+
+    fun onPriceInChanged(raw: String) = updatePrice { it.copy(priceIn = cleanPrice(raw)) }
+
+    fun onPriceOutChanged(raw: String) = updatePrice { it.copy(priceOut = cleanPrice(raw)) }
+
+    private fun updatePrice(change: (EditorUiState) -> EditorUiState) {
+        val s = _state.value
+        if (s.saving || s.loading) return
+        _state.update(change)
     }
 
     fun onBackupChanged(value: Boolean) {
@@ -354,6 +370,8 @@ class AccountEditorViewModel(
         val baseUrl = if (proxy) (ProxyProvider.normalizeBaseUrl(s.baseUrl) ?: return) else null
         val providerId = if (proxy) option.upstream.id else editorProviderId
         val dailyLimit = s.dailyLimit.toIntOrNull()?.takeIf { it > 0 }
+        val priceIn = parsePrice(s.priceIn)
+        val priceOut = parsePrice(s.priceOut)
         _state.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
             try {
@@ -372,6 +390,8 @@ class AccountEditorViewModel(
                         baseUrl = baseUrl,
                         dailyLimit = dailyLimit,
                         isBackup = s.isBackup,
+                        priceInPerM = priceIn,
+                        priceOutPerM = priceOut,
                     )
                     repository.add(account, s.apiKey.value) // anahtar KeyVault'a, hesap Room'a
                 } else {
@@ -392,6 +412,8 @@ class AccountEditorViewModel(
                             powerRank = option.score,
                             dailyLimit = dailyLimit,
                             isBackup = s.isBackup,
+                            priceInPerM = priceIn,
+                            priceOutPerM = priceOut,
                             status = if (recovered) AccountStatus.READY else current.status,
                             waitUntil = if (recovered) null else current.waitUntil,
                         ),
@@ -442,6 +464,24 @@ class AccountEditorViewModel(
     companion object {
         /** Günlük sınır alanının en çok basamağı (Int taşmasını önler). */
         private const val MAX_LIMIT_DIGITS = 6
+        private const val MAX_PRICE_CHARS = 9
+
+        /** Yalnız rakam ve tek ondalık ayracı; virgül noktaya çevrilir. */
+        internal fun cleanPrice(raw: String): String {
+            var dot = false
+            val out = StringBuilder()
+            for (c in raw.replace(',', '.')) {
+                if (c.isDigit()) out.append(c) else if (c == '.' && !dot) { dot = true; out.append(c) }
+            }
+            return out.toString().take(MAX_PRICE_CHARS)
+        }
+
+        /** Boş, 0 ya da geçersiz = fiyat yok (null). */
+        internal fun parsePrice(text: String): Double? =
+            text.toDoubleOrNull()?.takeIf { it > 0 && it.isFinite() }
+
+        private fun Double?.toPriceText(): String =
+            this?.takeIf { it > 0 }?.let { if (it % 1.0 == 0.0) it.toLong().toString() else it.toString() }.orEmpty()
 
         /** Özel sağlayıcı kalıcı adres alanı olmadığı için akışta yer almaz. */
         val SELECTABLE_PROVIDERS: List<Provider> = ProviderCatalog.all.filterNot { it.isCustom }

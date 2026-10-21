@@ -4,6 +4,8 @@ import com.kriptoncod.app.data.ai.AiGenerationException
 import com.kriptoncod.app.data.ai.AiGenerationException.Kind
 import com.kriptoncod.app.data.ai.AiGenerator
 import com.kriptoncod.app.data.ai.StreamSink
+import com.kriptoncod.app.data.ai.TokenEstimator
+import com.kriptoncod.app.data.ai.TokenMeter
 import com.kriptoncod.app.data.db.AiAccount
 import com.kriptoncod.app.data.db.Job
 import com.kriptoncod.app.data.db.PromptItem
@@ -27,7 +29,9 @@ import com.kriptoncod.app.domain.JobState
 import com.kriptoncod.app.domain.RunStatus
 import com.kriptoncod.app.domain.UsageOutcome
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 sealed interface DispatchOutcome {
     data class Finished(val status: RunStatus) : DispatchOutcome
@@ -56,6 +60,8 @@ class PromptDispatcher(
      * Bir katalog birleştirmesi bitince çağrılır (ara kayıt: WIP dalına commit). En iyi çabadır; hata run'ı etkilemez.
      */
     private val onCatalogDone: suspend (runId: Long, mergeJob: Job) -> Unit = { _, _ -> },
+    /** `[[tekrar-bekle: ..]]` beklemesi; testlerde sahte verilir. */
+    private val sleep: suspend (ms: Long) -> Unit = { delay(it) },
 ) {
 
     private fun sinkFor(job: Job): StreamSink = live?.sinkFor(job.id) ?: StreamSink.NONE
@@ -66,8 +72,27 @@ class PromptDispatcher(
         outcome: UsageOutcome,
         startedAt: Long,
         waitMs: Long? = null,
+        meter: TokenMeter? = null,
+        prompt: String? = null,
+        output: String? = null,
     ) {
-        usage?.record(account.id, job.id, outcome, (now() - startedAt).coerceAtLeast(0), waitMs)
+        // Sağlayıcı kullanım bildirdiyse o kaydedilir (başarısız istekte de: harcanan token silinmez). Bildirmediyse
+        // ve istek başarılıysa karakterden tahmin edilir ve "tahmini" diye işaretlenir; başarısızda bilinmiyor (null).
+        val reported = meter?.reported()
+        val estimated = if (reported == null && outcome == UsageOutcome.SUCCESS && prompt != null && output != null) {
+            TokenEstimator.estimate(prompt, output)
+        } else {
+            null
+        }
+        usage?.record(
+            account.id,
+            job.id,
+            outcome,
+            (now() - startedAt).coerceAtLeast(0),
+            waitMs,
+            tokens = reported ?: estimated,
+            tokensEstimated = reported == null && estimated != null,
+        )
     }
 
     /** İş başına akış yönergeleri (bkz. [FlowDirectivesParser]); iş kimlikleri benzersizdir. */
@@ -88,6 +113,27 @@ class PromptDispatcher(
         return all.filter {
             it.kind == JobKind.WORK && it.id < job.id && FlowDirectivesParser.normalize(it.title) in wanted
         }
+    }
+
+    /**
+     * [job]'un çıktısına bağlı olduğu ([FlowDirectives.dependencies]: `[[girdi:]]` + `{{çıktı:..}}` vb.) ÖNCEKİ
+     * WORK düğümleri. Hazır olma ve `[[kaynak: zorunlu]]` denetimi bunlara bakar.
+     */
+    private fun dependencySources(job: Job, d: FlowDirectives, all: List<Job>): List<Job> {
+        val wanted = d.dependencies.map { FlowDirectivesParser.normalize(it) }.toSet()
+        if (wanted.isEmpty()) return emptyList()
+        return all.filter {
+            it.kind == JobKind.WORK && it.id < job.id && FlowDirectivesParser.normalize(it.title) in wanted
+        }
+    }
+
+    /** Kullanıcı değişkenleri: bu düğüme kadar (dahil) olan WORK düğümlerinin tanımları; sonraki tanım öncekini ezer. */
+    private suspend fun variablesFor(job: Job, all: List<Job>): Map<String, String> {
+        val vars = LinkedHashMap<String, String>()
+        for (w in all.filter { it.kind == JobKind.WORK && it.id <= job.id }.sortedBy { it.id }) {
+            for (v in directivesOf(w).variables) vars[PromptTemplate.normName(v.name)] = v.value
+        }
+        return vars
     }
 
     /** @param onProgress her adımdan sonra (biten düğüm, toplam düğüm) ile çağrılır; bildirimler için. */
@@ -156,8 +202,8 @@ class PromptDispatcher(
     private suspend fun isReady(job: Job, all: List<Job>): Boolean = when (job.kind) {
         JobKind.PLAN -> true
 
-        // WORK: `[[girdi: ...]]` ile çıktısı istenen önceki promptlar bitene kadar bekler.
-        JobKind.WORK -> inputSources(job, directivesOf(job), all).all { it.isTerminal() }
+        // WORK: `[[girdi: ...]]` / `{{çıktı:..}}` ile çıktısı istenen önceki promptlar bitene kadar bekler.
+        JobKind.WORK -> dependencySources(job, directivesOf(job), all).all { it.isTerminal() }
 
         JobKind.CATALOG_MERGE ->
             all.filter { it.kind == JobKind.WORK && it.catalog == job.catalog }.all { it.isTerminal() }
@@ -210,14 +256,37 @@ class PromptDispatcher(
         "'${job.catalog}' kataloğundaki ayrı yapay zekaların çıktılarında çakışmalar var."
     }
 
-    /** WORK/PLAN metni: yönergeler çıkarılır; istenen önceki çıktılar (eksiksiz) göreve eklenir. */
-    private suspend fun workText(job: Job, all: List<Job>): String? {
+    /**
+     * WORK/PLAN metni: yönergeler çıkarılır, `{{...}}` değişkenleri ve çıktı başvuruları çözülür, `[[girdi:]]` ile
+     * istenen önceki çıktıların arayüz özeti göreve eklenir. null: düğüm çalıştırılamaz (metin yok ya da
+     * `[[kaynak: zorunlu]]` olup bir kaynak eksik/başarısız).
+     * @param attempt `{{deneme}}` yerleşiği için; 1'den başlar.
+     */
+    private suspend fun workText(job: Job, all: List<Job>, attempt: Int = 1): String? {
         val raw = job.body ?: prompts.getItem(job.promptId)?.body ?: return null
         if (job.kind != JobKind.WORK) return raw
         val d = directivesOf(job)
-        if (d.inputs.isEmpty()) return d.body
+        val deps = dependencySources(job, d, all)
+        val loaded = HashMap<String, PromptTemplate.SourceOutput>()
+        for (t in d.dependencies) {
+            val key = FlowDirectivesParser.normalize(t)
+            val src = deps.filter { FlowDirectivesParser.normalize(it.title) == key }.maxByOrNull { it.id }
+            val text = if (src?.state == JobState.DONE) runs.readOutput(src.id) else null
+            loaded[key] = PromptTemplate.SourceOutput(t, text)
+        }
+        if (d.requireSources && loaded.values.any { it.text == null }) return null
+
+        val index = all.filter { it.kind == JobKind.WORK }.sortedBy { it.id }.indexOfFirst { it.id == job.id } + 1
+        val ctx = PromptTemplate.Context(
+            vars = variablesFor(job, all),
+            builtins = PromptTemplate.builtins(job.runId, job.title, job.catalog, index, now(), attempt),
+            output = { loaded[FlowDirectivesParser.normalize(it)] },
+        )
+        val rendered = PromptTemplate.render(d.body, ctx)
+        if (d.requireSources && rendered.missing.isNotEmpty()) return null
+
         val sources = inputSources(job, d, all).filter { it.state == JobState.DONE }
-        if (sources.isEmpty()) return d.body
+        if (sources.isEmpty()) return rendered.text
         return buildString {
             appendLine(
                 "Aşağıda bu görev için daha önce üretilmiş çıktıların ARAYÜZ ÖZETİ var (dosya yolları ve bildirim " +
@@ -231,9 +300,15 @@ class PromptDispatcher(
                 appendLine()
             }
             appendLine("=== GÖREV ===")
-            append(d.body)
+            append(rendered.text)
         }
     }
+
+    private fun definitionSummary(d: FlowDirectives): String =
+        buildString {
+            appendLine("Değişkenler:")
+            d.variables.forEach { appendLine("- ${it.name} = ${it.value}") }
+        }.trimEnd()
 
     private sealed interface JobResult {
         data object Done : JobResult
@@ -249,6 +324,11 @@ class PromptDispatcher(
 
     private suspend fun processJob(job: Job, all: List<Job>): JobResult {
         // Birleştirme düğümleri: çakışmasız dosyalar kodla alınır; AI yalnız çakışan dosyalar için çağrılır.
+        if (job.kind == JobKind.WORK && directivesOf(job).isDefinitionOnly) {
+            // Yalnız `[[değişken:]]` tanımlayan düğüm: AI çağrılmaz, hesap/kota harcanmaz.
+            runs.completeJob(job.id, definitionSummary(directivesOf(job)))
+            return JobResult.Done
+        }
         var finish: (String) -> String = { it }
         val text: String? = when (job.kind) {
             JobKind.CATALOG_MERGE, JobKind.FINAL_MERGE -> {
@@ -273,7 +353,11 @@ class PromptDispatcher(
             runs.failJob(job.id)
             return JobResult.Failed
         }
-        val item = PromptItem(id = job.promptId, setId = 0, title = job.title.orEmpty(), body = text, order = 0)
+        var item = PromptItem(id = job.promptId, setId = 0, title = job.title.orEmpty(), body = text, order = 0)
+        val directives = if (job.kind == JobKind.WORK) directivesOf(job) else null
+        val retry = directives?.retry ?: RetryRules()
+        val rules = directives?.rules.orEmpty()
+        var qualityTries = 0 // doğrulama kuralı yüzünden yapılan yeniden üretimler (bu çağrıda)
         // MANUAL atama yalnız hesap sağlıklıyken geçerlidir; hesap kapanır/düşerse iş kaybolmaz, havuza geçer.
         var manual = prompts.getAssignment(job.promptId)?.mode == AssignmentMode.MANUAL
         val tried = mutableSetOf<Long>()
@@ -316,6 +400,7 @@ class PromptDispatcher(
             if (job.accountId != account.id) runs.assignAccount(job.id, account.id)
             runs.startJob(job.id)
             val startedAt = now()
+            val meter = TokenMeter()
 
             try {
                 val assets = mutableListOf<WebAsset>()
@@ -323,17 +408,48 @@ class PromptDispatcher(
                     // Web sohbeti: PLAN düz metin ister; diğer düğümler dosya bloğu bekler.
                     web!!.generate(account, item.body, expectFiles = job.kind != JobKind.PLAN, onAsset = { assets += it })
                 } else {
-                    generator.generate(endpoint!!, account.modelId, credential!!, item.body, sinkFor(job))
+                    withContext(meter) { generator.generate(endpoint!!, account.modelId, credential!!, item.body, sinkFor(job)) }
                 }
                 if (text.isBlank()) {
-                    recordUsage(account, job, UsageOutcome.FAILED, startedAt)
+                    recordUsage(account, job, UsageOutcome.FAILED, startedAt, meter = meter)
                     runs.failJob(job.id)
                     return JobResult.Failed
                 }
                 // Ham zip ve ikili dosyalar çıktıdan ÖNCE yazılır: çökme olursa iş DONE sayılmaz, yeniden üretilir.
                 if (assets.isNotEmpty()) runCatching { runs.saveAssets(job.id, assets.map { it.path to it.bytes }) }
+                if (rules.isNotEmpty()) {
+                    val reasons = OutputRules.check(text, rules)
+                    if (reasons.isNotEmpty()) {
+                        // İstek başarılıydı (kota harcandı) ama çıktı kuralları sağlamıyor.
+                        recordUsage(account, job, UsageOutcome.SUCCESS, startedAt, meter = meter, prompt = item.body, output = text)
+                        if (qualityTries < retry.maxRetries) {
+                            qualityTries++
+                            if (retry.delayMs > 0) sleep(retry.delayMs)
+                            val base = workText(job, runs.getJobs(job.runId), attempt = qualityTries + 1) ?: item.body
+                            item = item.copy(
+                                body = if (retry.feedback) base + OutputRules.feedback(reasons, qualityTries, retry.maxRetries) else base,
+                            )
+                            if (retry.switchAccount) {
+                                manual = false
+                                // Başka hesap yoksa aynı hesapla sürer (iş beklemeye düşmez).
+                                if (pickAccount(job, false, tried) !is Pick.Use) tried -= account.id
+                            } else {
+                                tried -= account.id
+                            }
+                            runs.requeueJob(job.id)
+                            continue
+                        }
+                        if (retry.onExhausted == OnExhausted.STOP) {
+                            runs.failJob(job.id)
+                            return JobResult.Failed
+                        }
+                        // CONTINUE: son çıktı kabul edilir.
+                        runs.completeJob(job.id, finish(text))
+                        return JobResult.Done
+                    }
+                }
                 runs.completeJob(job.id, finish(text))
-                recordUsage(account, job, UsageOutcome.SUCCESS, startedAt)
+                recordUsage(account, job, UsageOutcome.SUCCESS, startedAt, meter = meter, prompt = item.body, output = text)
                 return JobResult.Done
             } catch (e: AiGenerationException) {
                 recordUsage(
@@ -347,6 +463,7 @@ class PromptDispatcher(
                     },
                     startedAt,
                     waitMs = if (e.kind == Kind.RATE_LIMITED) (e.waitUntil(now()) - now()).coerceAtLeast(0) else null,
+                    meter = meter,
                 )
                 when (e.kind) {
                     Kind.UNAUTHORIZED -> {
@@ -365,8 +482,9 @@ class PromptDispatcher(
                     }
 
                     Kind.SERVER, Kind.NETWORK -> {
-                        val attempts = runs.getJob(job.id)?.attempts ?: MAX_ATTEMPTS
-                        if (attempts >= MAX_ATTEMPTS) {
+                        // Kalite yeniden denemeleri de `attempts` sayacını artırır; hata sınırından düşülür.
+                        val attempts = ((runs.getJob(job.id)?.attempts ?: MAX_ATTEMPTS) - qualityTries).coerceAtLeast(0)
+                        if (attempts >= (retry.maxErrorAttempts ?: MAX_ATTEMPTS)) {
                             runs.failJob(job.id)
                             return JobResult.Failed
                         }
@@ -399,7 +517,7 @@ class PromptDispatcher(
                     }
                 }
             } catch (_: IllegalArgumentException) {
-                recordUsage(account, job, UsageOutcome.FAILED, startedAt)
+                recordUsage(account, job, UsageOutcome.FAILED, startedAt, meter = meter)
                 runs.failJob(job.id)
                 return JobResult.Failed
             } finally {
@@ -420,18 +538,19 @@ class PromptDispatcher(
         if (job.accountId != account.id) runs.assignAccount(job.id, account.id)
         runs.startJob(job.id)
         val startedAt = now()
+        val meter = TokenMeter()
 
         return try {
-            val text = generator.generate(endpoint, account.modelId, credential, item.body, sinkFor(job))
+            val text = withContext(meter) { generator.generate(endpoint, account.modelId, credential, item.body, sinkFor(job)) }
             if (text.isBlank()) {
-                recordUsage(account, job, UsageOutcome.FAILED, startedAt)
+                recordUsage(account, job, UsageOutcome.FAILED, startedAt, meter = meter)
                 runs.failJob(job.id)
                 JobResult.Failed
             } else {
                 val finalText = finish(text)
                 kimiCodes?.collect(job.runId, finalText)
                 runs.completeJob(job.id, finalText)
-                recordUsage(account, job, UsageOutcome.SUCCESS, startedAt)
+                recordUsage(account, job, UsageOutcome.SUCCESS, startedAt, meter = meter, prompt = item.body, output = text)
                 JobResult.Done
             }
         } catch (e: AiGenerationException) {
@@ -446,6 +565,7 @@ class PromptDispatcher(
                 },
                 startedAt,
                 waitMs = if (e.kind == Kind.RATE_LIMITED) (e.waitUntil(now()) - now()).coerceAtLeast(0) else null,
+                meter = meter,
             )
             when (e.kind) {
                 Kind.RATE_LIMITED -> {
@@ -473,7 +593,7 @@ class PromptDispatcher(
                 }
             }
         } catch (_: IllegalArgumentException) {
-            recordUsage(account, job, UsageOutcome.FAILED, startedAt)
+            recordUsage(account, job, UsageOutcome.FAILED, startedAt, meter = meter)
             runs.failJob(job.id)
             JobResult.Failed
         } finally {

@@ -30,7 +30,7 @@ abstract class KriptonDatabase : RoomDatabase() {
     abstract fun usageEventDao(): UsageEventDao
 
     companion object {
-        const val VERSION = 6
+        const val VERSION = 7
         const val NAME = "kriptoncod.db"
 
         fun build(context: Context): KriptonDatabase = Room.databaseBuilder(context.applicationContext, KriptonDatabase::class.java, NAME)

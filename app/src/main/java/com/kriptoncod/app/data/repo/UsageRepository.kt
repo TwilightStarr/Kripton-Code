@@ -1,5 +1,6 @@
 package com.kriptoncod.app.data.repo
 
+import com.kriptoncod.app.data.ai.TokenUsage
 import com.kriptoncod.app.data.db.AccountUsage
 import com.kriptoncod.app.data.db.UsageEvent
 import com.kriptoncod.app.data.db.UsageEventDao
@@ -20,10 +21,24 @@ class UsageRepository(
         outcome: UsageOutcome,
         durationMs: Long,
         waitMs: Long? = null,
+        tokens: TokenUsage? = null,
+        tokensEstimated: Boolean = false,
     ) {
         try {
             val t = now()
-            dao.insert(UsageEvent(accountId = accountId, jobId = jobId, at = t, outcome = outcome, durationMs = durationMs, waitMs = waitMs))
+            dao.insert(
+                UsageEvent(
+                    accountId = accountId,
+                    jobId = jobId,
+                    at = t,
+                    outcome = outcome,
+                    durationMs = durationMs,
+                    waitMs = waitMs,
+                    promptTokens = tokens?.prompt,
+                    completionTokens = tokens?.completion,
+                    tokensEstimated = tokens != null && tokensEstimated,
+                ),
+            )
             dao.prune(t - RETENTION_MS)
         } catch (e: CancellationException) {
             throw e
@@ -34,6 +49,9 @@ class UsageRepository(
 
     /** Son [windowMs] içindeki hesap başına özet (varsayılan 24 saat). Pencere abonelik anında sabitlenir. */
     fun observeSummary(windowMs: Long = DAY_MS): Flow<List<AccountUsage>> = dao.observeSummary(now() - windowMs)
+
+    /** Kullanım paneli için son [windowMs] içindeki ham olaylar (eskiden yeniye). */
+    fun observeEvents(windowMs: Long): Flow<List<UsageEvent>> = dao.observeSince(now() - windowMs)
 
     /**
      * Hesap seçimi için son 24 saatin sağlık özeti (hesap kimliğine göre). Okuma hatası seçimi durdurmaz:

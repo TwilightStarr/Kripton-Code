@@ -224,6 +224,10 @@ interface UsageEventDao {
     )
     fun observeSummary(since: Long): Flow<List<AccountUsage>>
 
+    /** [since] sonrası olaylar, canlı (kullanım paneli); pencere abonelik anında sabitlenir. */
+    @Query("SELECT * FROM usage_events WHERE at >= :since ORDER BY at ASC, id ASC")
+    fun observeSince(since: Long): Flow<List<UsageEvent>>
+
     /** [since] sonrasındaki tüm olaylar, eskiden yeniye (hesap sağlığı ve kota hesabı için). */
     @Query("SELECT * FROM usage_events WHERE at >= :since ORDER BY at ASC, id ASC")
     suspend fun since(since: Long): List<UsageEvent>

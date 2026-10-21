@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kriptoncod.app.R
+import com.kriptoncod.app.data.run.IssueCode
 import com.kriptoncod.app.ui.components.KriptonLoader
 import com.kriptoncod.app.ui.components.KButton
 import com.kriptoncod.app.ui.components.NodeCard
@@ -110,6 +111,13 @@ private fun PromptEditorContent(
                     minLines = 6,
                     modifier = Modifier.fillMaxWidth(),
                 )
+                state.issues.forEach { issue ->
+                    Text(
+                        text = stringResource(issueRes(issue.code), issue.arg),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
             }
         }
 
@@ -120,4 +128,17 @@ private fun PromptEditorContent(
             modifier = Modifier.fillMaxWidth(),
         )
     }
+}
+
+private fun issueRes(code: IssueCode): Int = when (code) {
+    IssueCode.BAD_VARIABLE -> R.string.prompt_issue_bad_variable
+    IssueCode.DUPLICATE_VARIABLE -> R.string.prompt_issue_duplicate_variable
+    IssueCode.BAD_RULE -> R.string.prompt_issue_bad_rule
+    IssueCode.BAD_REGEX -> R.string.prompt_issue_bad_regex
+    IssueCode.BAD_NUMBER -> R.string.prompt_issue_bad_number
+    IssueCode.BAD_DURATION -> R.string.prompt_issue_bad_duration
+    IssueCode.BAD_CHOICE -> R.string.prompt_issue_bad_choice
+    IssueCode.UNKNOWN_SOURCE -> R.string.prompt_issue_unknown_source
+    IssueCode.FORWARD_SOURCE -> R.string.prompt_issue_forward_source
+    IssueCode.OUTPUT_IN_VARIABLE -> R.string.prompt_issue_output_in_variable
 }

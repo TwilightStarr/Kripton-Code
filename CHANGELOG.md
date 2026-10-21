@@ -5,6 +5,17 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
+### Eklendi (gelişmiş prompt motoru)
+- **Değişkenler**: `[[değişken: ad = değer]]` + `{{ad}}` / `{{ad|varsayılan}}`; yerleşikler (`{{başlık}}`, `{{sıra}}`, `{{tarih}}`, `{{deneme}}`…). Yalnız değişken tanımlayan prompt AI çağırmaz. Tanınmayan `{{...}}` kod şablonları bozulmaz.
+- **Çıktı bağlama**: `{{çıktı:Başlık}}`, `{{özet:}}`, `{{dosya:Başlık#yol}}`, `{{yollar:}}`, `{{blok:}}`; kaynak bitene kadar beklenir, yeniden denemede bağlı düğümler sıfırlanır (`RetryPlanner`). `[[kaynak: zorunlu]]` ile eksik kaynakta düğüm AI çağrılmadan düşer.
+- **Doğrulama + yeniden deneme kuralları**: `[[doğrula: ...]]` (min/max/içerir/içermez/regex/dosya/yer-tutucu-yok/kesilmemiş), `[[tekrar]]`, `[[tekrar-bekle]]`, `[[tekrar-hesap]]`, `[[tekrar-ipucu]]`, `[[hatada]]`, `[[hata-tekrar]]`.
+- Prompt düzenleyicide yönerge/kaynak uyarıları. Ayrıntı: `docs/PROMPT-ENGINE.md`. Veritabanı şeması değişmedi.
+### Eklendi (kullanım ve maliyet panosu)
+- **Token takibi:** Her istek artık girdi/çıktı tokenını kaydeder. Sağlayıcı `usage` bildirirse gerçek değer (akışta `stream_options.include_usage`, bunu destekleyen OpenAI, OpenRouter, Groq, Mistral, DeepSeek'e gönderilir); bildirmezse başarılı istekte karakterden **tahmin** (≈4 karakter = 1 token) ve "tahmini" diye işaretlenir. Başarısız istekte bilgi yoksa bilinmiyor (null) kalır, uydurulmaz. Reddedilen/boş yanıtta sağlayıcının faturaladığı token da kaydedilir.
+- **Kullanım ve maliyet ekranı** (Ana sayfa > Kullanım kartı): 24 saat / 7 gün / 30 gün; toplam token, girdi/çıktı dağılımı, saatlik ya da günlük token grafiği, hesap başına istek, token, günlük kota doluluğu, dinlenme durumu ve tahmini maliyet.
+- **İsteğe bağlı fiyat:** Hesap düzenleyicide 1M token başına girdi/çıktı fiyatı (USD). Fiyat girilmeyen hesapta maliyet gösterilmez; toplam eksikse uyarılır.
+- Altyapı: `TokenMeter` (coroutine bağlamıyla taşınır; `AiGenerator` imzası ve sahteler değişmedi), `UsageReport` (saf hesap), veritabanı **v7** (`usage_events` token alanları, `ai_accounts` fiyat alanları; 6→7 migrasyonu mevcut verileri korur, eski kayıtlar "bilinmiyor" olur).
+
 ### Eklendi (havuz görünürlüğü)
 - **AI'lar ekranında havuz durumu**: her hesap kartı artık havuzdaki sırasını (yedekler zincirin sonunda), neden dinlendiğini (sağlayıcı sınırı / günlük kota / devre kesici) ve **ne zaman açılacağını**, son 24 saatteki istek sayısını (`37 / 100`) ve "yakın zamanda çok hata verdi" uyarısını gösterir. Üstte tek satırlık özet: aktif · yedek · dinleniyor · hatalı. Durum 30 saniyede bir tazelenir.
 - Mantık `PoolStatus` içinde, `AccountSelector` ile aynı kurallar ve aynı sıralamayla çalışır (ekranda görünen sıra ile işlerin gerçekte seçildiği sıra ayrışamaz). Veritabanı şeması değişmedi.

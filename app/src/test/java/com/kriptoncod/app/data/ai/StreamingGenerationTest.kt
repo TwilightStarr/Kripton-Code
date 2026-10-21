@@ -5,10 +5,12 @@ import com.kriptoncod.app.data.providers.ApiKey
 import com.kriptoncod.app.data.providers.ProviderEndpoint
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -138,5 +140,31 @@ class StreamingGenerationTest {
         val req = server.takeRequest()
         assertEquals("application/json", req.getHeader("Accept"))
         assertTrue(req.body.readUtf8().contains("\"stream\":false"))
+    }
+
+    @Test fun streamUsageFromTheLastEventIsReported() {
+        server.enqueue(
+            sse(
+                delta("Mer"),
+                delta("haba", finish = "stop"),
+                """{"choices":[],"usage":{"prompt_tokens":40,"completion_tokens":9}}""",
+                "[DONE]",
+            ),
+        )
+        val meter = TokenMeter()
+        val text = runBlocking { withContext(meter) { generator.generate(endpoint(), "m-1", key, "Yaz", Recorder()) } }
+        assertEquals("Merhaba", text)
+        assertEquals(TokenUsage(40, 9), meter.reported())
+    }
+
+    @Test fun includeUsageIsRequestedOnlyFromKnownProviders() {
+        server.enqueue(sse(delta("a", finish = "stop"), "[DONE]"))
+        server.enqueue(sse(delta("a", finish = "stop"), "[DONE]"))
+        runBlocking {
+            generator.generate(endpoint().copy(providerId = "openai"), "m-1", key, "Yaz", Recorder())
+            generator.generate(endpoint(), "m-1", key, "Yaz", Recorder())
+        }
+        assertTrue(server.takeRequest().body.readUtf8().contains("\"include_usage\":true"))
+        assertFalse(server.takeRequest().body.readUtf8().contains("stream_options"))
     }
 }

@@ -64,6 +64,7 @@ fun HomeScreen(
     onAddAi: () -> Unit,
     onOpenRoute: (Route) -> Unit,
     onOpenRun: (Long) -> Unit,
+    onOpenUsage: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val container = remember { (context.applicationContext as KriptonCodApp).container }
@@ -127,7 +128,7 @@ fun HomeScreen(
         }
     }
     val usageCard: @Composable () -> Unit = {
-        if (accounts.isNotEmpty()) UsageCard(accounts, usage)
+        if (accounts.isNotEmpty()) UsageCard(accounts, usage, onOpenUsage)
     }
     val guide: @Composable () -> Unit = {
         if (nextAction != null) {
@@ -227,11 +228,11 @@ fun HomeScreen(
 
 /** Hesap başına son 24 saat: istek sayısı, hata oranı, kota sınırı sayısı ve anlık bekleme durumu. */
 @Composable
-private fun UsageCard(accounts: List<AiAccount>, usage: List<AccountUsage>) {
+private fun UsageCard(accounts: List<AiAccount>, usage: List<AccountUsage>, onOpenDetails: () -> Unit) {
     val k = KriptonTheme.colors
     val byId = remember(usage) { usage.associateBy { it.accountId } }
     val rows = remember(accounts, byId) { accounts.sortedByDescending { byId[it.id]?.requests ?: 0 }.take(5) }
-    NodeCard(modifier = Modifier.fillMaxWidth()) {
+    NodeCard(modifier = Modifier.fillMaxWidth(), onClick = onOpenDetails) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Column {
                 Text(stringResource(R.string.home_usage_title), style = MaterialTheme.typography.titleMedium)
@@ -283,6 +284,11 @@ private fun UsageCard(accounts: List<AiAccount>, usage: List<AccountUsage>) {
                     }
                 }
             }
+            Text(
+                stringResource(R.string.usage_open_details),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }

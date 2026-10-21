@@ -64,6 +64,7 @@ object ExtraRoutes {
     const val RUN = "run/{$ARG_RUN_ID}"
     const val GITHUB = "github"
     const val PERMISSIONS = "permissions"
+    const val USAGE = "usage"
 
     fun run(runId: Long): String = "run/$runId"
 }

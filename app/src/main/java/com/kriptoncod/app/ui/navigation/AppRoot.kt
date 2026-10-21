@@ -59,6 +59,7 @@ import com.kriptoncod.app.AppContainer
 import com.kriptoncod.app.ui.screens.AccountEditorScreen
 import com.kriptoncod.app.ui.screens.AisScreen
 import com.kriptoncod.app.ui.screens.GitHubSettingsScreen
+import com.kriptoncod.app.ui.screens.UsageScreen
 import com.kriptoncod.app.ui.screens.HistoryScreen
 import com.kriptoncod.app.ui.screens.HomeScreen
 import com.kriptoncod.app.ui.screens.PermissionScreen
@@ -177,7 +178,11 @@ fun AppRoot(
                                     onAddAi = { navController.navigate(AisRoutes.ADD) },
                                     onOpenRoute = { route -> navController.navigateTo(route) },
                                     onOpenRun = { id -> navController.navigate(ExtraRoutes.run(id)) },
+                                    onOpenUsage = { navController.navigate(ExtraRoutes.USAGE) },
                                 )
+                            }
+                            composable(ExtraRoutes.USAGE) {
+                                AdaptiveFrame(Adaptive.FormMaxWidth) { UsageScreen(onBack = { navController.popBackStack() }) }
                             }
                             composable(Route.Ais.path) {
                                 AisScreen(

@@ -64,5 +64,16 @@ object Migrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+    /** 6 → 7: usage_events token alanları; ai_accounts isteğe bağlı fiyat alanları (maliyet paneli). */
+    val MIGRATION_6_7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE usage_events ADD COLUMN promptTokens INTEGER")
+            db.execSQL("ALTER TABLE usage_events ADD COLUMN completionTokens INTEGER")
+            db.execSQL("ALTER TABLE usage_events ADD COLUMN tokensEstimated INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE ai_accounts ADD COLUMN priceInPerM REAL")
+            db.execSQL("ALTER TABLE ai_accounts ADD COLUMN priceOutPerM REAL")
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
 }

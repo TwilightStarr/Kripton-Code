@@ -5,6 +5,7 @@ import com.kriptoncod.app.data.providers.ApiKey
 import com.kriptoncod.app.data.providers.ProviderEndpoint
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.SocketPolicy
@@ -221,5 +222,35 @@ class OpenAiCompatibleGeneratorTest {
             assertTrue(e is IllegalArgumentException)
         }
         assertEquals(0, server.requestCount)
+    }
+
+    @Test fun reportsProviderUsageToTheMeterInContext() {
+        server.enqueue(
+            json("""{"choices":[{"message":{"role":"assistant","content":"merhaba"},"finish_reason":"stop"}],"usage":{"prompt_tokens":120,"completion_tokens":30}}"""),
+        )
+        val meter = TokenMeter()
+        val text = runBlocking { withContext(meter) { generator.generate(endpoint(), "m-1", key, "Yaz") } }
+        assertEquals("merhaba", text)
+        assertEquals(TokenUsage(120, 30), meter.reported())
+    }
+
+    @Test fun withoutUsageFieldMeterStaysEmpty() {
+        server.enqueue(reply("merhaba"))
+        val meter = TokenMeter()
+        runBlocking { withContext(meter) { generator.generate(endpoint(), "m-1", key, "Yaz") } }
+        assertNull(meter.reported())
+    }
+
+    @Test fun usageIsStillReportedWhenTheReplyIsRejected() {
+        server.enqueue(json("""{"choices":[{"message":{"role":"assistant","content":""},"finish_reason":"content_filter"}],"usage":{"prompt_tokens":5,"completion_tokens":0}}"""))
+        val meter = TokenMeter()
+        val e = failure { runBlocking { withContext(meter) { generator.generate(endpoint(), "m-1", key, "Yaz") } } }
+        assertEquals(Kind.BAD_RESPONSE, e.kind)
+        assertEquals(TokenUsage(5, 0), meter.reported())
+    }
+
+    @Test fun callWithoutMeterWorksAsBefore() {
+        server.enqueue(reply("tamam"))
+        assertEquals("tamam", generate())
     }
 }

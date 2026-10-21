@@ -36,6 +36,10 @@ data class AiAccount(
     val dailyLimit: Int? = null,
     /** Yedek hesap: yalnız birincil hesapların hiçbiri kullanılamazken devreye girer. */
     @ColumnInfo(defaultValue = "0") val isBackup: Boolean = false,
+    /** İsteğe bağlı fiyat (1 milyon girdi tokenı başına, kullanıcının para biriminde); maliyet tahmini içindir. */
+    val priceInPerM: Double? = null,
+    /** İsteğe bağlı fiyat (1 milyon çıktı tokenı başına). */
+    val priceOutPerM: Double? = null,
 ) {
     companion object {
         fun vaultKeyId(accountId: Long): String = "ai-account-$accountId"
@@ -177,4 +181,10 @@ data class UsageEvent(
     val durationMs: Long = 0,
     /** RATE_LIMITED ise sağlayıcının istediği bekleme (ms). */
     val waitMs: Long? = null,
+    /** Girdi tokenı; null = bilinmiyor (eski kayıt ya da başarısız istek). */
+    val promptTokens: Int? = null,
+    /** Çıktı tokenı; null = bilinmiyor. */
+    val completionTokens: Int? = null,
+    /** true: sağlayıcı kullanım bildirmedi, değerler karakter sayısından tahmin edildi. */
+    @ColumnInfo(defaultValue = "0") val tokensEstimated: Boolean = false,
 )
