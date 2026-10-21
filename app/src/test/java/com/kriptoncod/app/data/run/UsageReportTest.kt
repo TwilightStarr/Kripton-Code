@@ -19,8 +19,14 @@ class UsageReportTest {
     private val now = 100 * day + 12 * hour // UTC 12:00
 
     private fun acc(id: Long, pin: Double? = null, pout: Double? = null) = AiAccount(
-        id = id, providerId = "openai", displayName = "a$id", authType = AuthType.API_KEY,
-        modelId = "m$id", powerRank = 1, priceInPerM = pin, priceOutPerM = pout,
+        id = id,
+        providerId = "openai",
+        displayName = "a$id",
+        authType = AuthType.API_KEY,
+        modelId = "m$id",
+        powerRank = 1,
+        priceInPerM = pin,
+        priceOutPerM = pout,
     )
 
     private fun ev(
@@ -32,8 +38,7 @@ class UsageReportTest {
         est: Boolean = false,
     ) = UsageEvent(accountId = acc, at = at, outcome = o, promptTokens = p, completionTokens = c, tokensEstimated = est)
 
-    private fun build(events: List<UsageEvent>, accounts: List<AiAccount>, w: Window = Window.DAY) =
-        UsageReport.build(events, accounts, w, now, zone)
+    private fun build(events: List<UsageEvent>, accounts: List<AiAccount>, w: Window = Window.DAY) = UsageReport.build(events, accounts, w, now, zone)
 
     @Test fun sumsTokensPerAccountAndSortsByTokens() {
         val r = build(

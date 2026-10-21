@@ -35,8 +35,7 @@ class TokenMeter : AbstractCoroutineContextElement(Key) {
     }
 
     /** Sağlayıcı en az bir kez gerçek kullanım bildirdiyse toplamı, bildirmediyse null (tahmin gerekir). */
-    fun reported(): TokenUsage? =
-        if (reported.get()) TokenUsage(prompt.get().coerceAtMost(Int.MAX_VALUE.toLong()).toInt(), completion.get().coerceAtMost(Int.MAX_VALUE.toLong()).toInt()) else null
+    fun reported(): TokenUsage? = if (reported.get()) TokenUsage(prompt.get().coerceAtMost(Int.MAX_VALUE.toLong()).toInt(), completion.get().coerceAtMost(Int.MAX_VALUE.toLong()).toInt()) else null
 }
 
 /** Sağlayıcı kullanım bildirmediğinde kaba tahmin (yaklaşık 4 karakter = 1 token). Her zaman "tahmini" diye işaretlenir. */
