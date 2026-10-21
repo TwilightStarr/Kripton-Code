@@ -279,4 +279,19 @@
     <string name="home_usage_idle">İstek yok</string>
     <string name="home_usage_waiting">Bekliyor: %1$d dk</string>
     <string name="home_usage_error">Hata durumunda</string>
+    <string name="step_pool">Havuz ayarları</string>
+    <string name="pool_daily_limit_label">Günlük istek sınırı (isteğe bağlı)</string>
+    <string name="pool_daily_limit_hint">Son 24 saatte bu kadar istek atılınca hesap, süre dolana kadar havuzdan çıkar. Boş bırakırsan sınırsızdır.</string>
+    <string name="pool_backup_label">Yedek hesap</string>
+    <string name="pool_backup_hint">Yalnız diğer hesapların hiçbiri kullanılamazken devreye girer.</string>
+    <string name="pool_summary">Havuz: %1$d aktif · %2$d yedek · %3$d dinleniyor · %4$d hatalı</string>
+    <string name="pool_state_active">Havuzda · sıra %1$d</string>
+    <string name="pool_state_standby">Yedek · zincirde sıra %1$d</string>
+    <string name="pool_state_error">Havuz dışı · anahtar reddedildi ya da hata</string>
+    <string name="pool_resting_provider">Sağlayıcı sınırı, dinleniyor · açılış %1$s</string>
+    <string name="pool_resting_quota">Günlük kota doldu · açılış %1$s</string>
+    <string name="pool_resting_breaker">Art arda arıza, dinleniyor · açılış %1$s</string>
+    <string name="pool_usage_limited">Son 24 saat: %1$d / %2$d istek</string>
+    <string name="pool_usage_unlimited">Son 24 saat: %1$d istek</string>
+    <string name="pool_unhealthy">Yakın zamanda çok hata verdi; sıranın sonuna itildi.</string>
 </resources>

@@ -5,6 +5,10 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
+### Eklendi (havuz görünürlüğü)
+- **AI'lar ekranında havuz durumu**: her hesap kartı artık havuzdaki sırasını (yedekler zincirin sonunda), neden dinlendiğini (sağlayıcı sınırı / günlük kota / devre kesici) ve **ne zaman açılacağını**, son 24 saatteki istek sayısını (`37 / 100`) ve "yakın zamanda çok hata verdi" uyarısını gösterir. Üstte tek satırlık özet: aktif · yedek · dinleniyor · hatalı. Durum 30 saniyede bir tazelenir.
+- Mantık `PoolStatus` içinde, `AccountSelector` ile aynı kurallar ve aynı sıralamayla çalışır (ekranda görünen sıra ile işlerin gerçekte seçildiği sıra ayrışamaz). Veritabanı şeması değişmedi.
+
 ### Değişti (debug)
 - LeakCanary'nin ana ekrana eklediği ayrı **"Leaks" simgesi** kaldırıldı (`leak_canary_add_launcher_icon=false`, yalnız debug). Sızıntı bildirimleri çalışmaya devam eder.
 

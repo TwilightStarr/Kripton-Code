@@ -279,4 +279,19 @@
     <string name="home_usage_idle">No requests</string>
     <string name="home_usage_waiting">Waiting: %1$d min</string>
     <string name="home_usage_error">In error state</string>
+    <string name="step_pool">Pool settings</string>
+    <string name="pool_daily_limit_label">Daily request limit (optional)</string>
+    <string name="pool_daily_limit_hint">Once this many requests are made in the last 24 hours, the account leaves the pool until the window frees up. Leave empty for no limit.</string>
+    <string name="pool_backup_label">Backup account</string>
+    <string name="pool_backup_hint">Only used when none of your other accounts are available.</string>
+    <string name="pool_summary">Pool: %1$d active · %2$d backup · %3$d resting · %4$d failed</string>
+    <string name="pool_state_active">In pool · position %1$d</string>
+    <string name="pool_state_standby">Backup · chain position %1$d</string>
+    <string name="pool_state_error">Out of pool · key rejected or error</string>
+    <string name="pool_resting_provider">Provider limit, resting · back at %1$s</string>
+    <string name="pool_resting_quota">Daily quota used up · back at %1$s</string>
+    <string name="pool_resting_breaker">Repeated failures, resting · back at %1$s</string>
+    <string name="pool_usage_limited">Last 24 hours: %1$d / %2$d requests</string>
+    <string name="pool_usage_unlimited">Last 24 hours: %1$d requests</string>
+    <string name="pool_unhealthy">Failed often recently; moved to the back of the line.</string>
 </resources>

@@ -32,6 +32,10 @@ data class AiAccount(
      * yukarı akış sağlayıcısını (claude, gemini, openai, deepseek, kimi, other) tutar.
      */
     val baseUrl: String? = null,
+    /** Kayan 24 saatteki en çok istek sayısı; null (ya da 0 ve altı) = sınırsız. Dolunca hesap havuzdan çıkar. */
+    val dailyLimit: Int? = null,
+    /** Yedek hesap: yalnız birincil hesapların hiçbiri kullanılamazken devreye girer. */
+    @ColumnInfo(defaultValue = "0") val isBackup: Boolean = false,
 ) {
     companion object {
         fun vaultKeyId(accountId: Long): String = "ai-account-$accountId"

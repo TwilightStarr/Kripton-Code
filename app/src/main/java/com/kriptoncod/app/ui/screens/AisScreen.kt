@@ -36,9 +36,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -49,6 +51,7 @@ import com.kriptoncod.app.R
 import com.kriptoncod.app.data.db.AiAccount
 import com.kriptoncod.app.data.providers.ProviderCatalog
 import com.kriptoncod.app.data.providers.UpstreamProvider
+import com.kriptoncod.app.data.run.PoolStatus
 import com.kriptoncod.app.domain.AccountStatus
 import com.kriptoncod.app.domain.AuthType
 import com.kriptoncod.app.ui.ais.AisUiState
@@ -147,6 +150,9 @@ private fun AisContent(
                 }
             }
         }
+        if (state.pool.isNotEmpty()) {
+            item(key = "pool-summary", span = { GridItemSpan(maxLineSpan) }) { PoolSummaryRow(state.poolSummary) }
+        }
         state.error?.let { error ->
             item(key = "error", span = { GridItemSpan(maxLineSpan) }) { ErrorCard(error, onRetry, onDismissError) }
         }
@@ -167,7 +173,7 @@ private fun AisContent(
             }
 
             else -> items(state.accounts, key = { it.id }) { account ->
-                AccountCard(account, onToggle, onEdit, onRequestDelete)
+                AccountCard(account, state.pool[account.id], onToggle, onEdit, onRequestDelete)
             }
         }
     }
@@ -213,6 +219,7 @@ private fun ErrorCard(error: ListError, onRetry: () -> Unit, onDismiss: () -> Un
 @Composable
 private fun AccountCard(
     account: AiAccount,
+    pool: PoolStatus.Entry?,
     onToggle: (Long, Boolean) -> Unit,
     onEdit: (Long) -> Unit,
     onRequestDelete: (Long) -> Unit,
@@ -250,6 +257,7 @@ private fun AccountCard(
                 if (isProxy && !account.baseUrl.isNullOrBlank()) {
                     Text(account.baseUrl, style = MaterialTheme.typography.bodySmall, color = k.muted)
                 }
+                if (pool != null && account.enabled) PoolDetails(pool)
             }
             Switch(
                 checked = account.enabled,
@@ -279,6 +287,47 @@ private fun AccountCard(
             IconButton(onClick = { onRequestDelete(account.id) }) {
                 Icon(Icons.Filled.Delete, contentDescription = deleteLabel, tint = k.danger)
             }
+        }
+    }
+}
+
+@Composable
+private fun PoolSummaryRow(summary: PoolStatus.Summary) {
+    Text(
+        stringResource(R.string.pool_summary, summary.active, summary.standby, summary.resting, summary.error),
+        style = MaterialTheme.typography.bodySmall,
+        color = KriptonTheme.colors.muted,
+    )
+}
+
+/** Kartın altındaki havuz satırları: neden dinleniyor, kota ne kadar dolu, zincirde kaçıncı sırada. */
+@Composable
+private fun PoolDetails(entry: PoolStatus.Entry) {
+    val k = KriptonTheme.colors
+    val context = LocalContext.current
+    val timeFormat = remember(context) { android.text.format.DateFormat.getTimeFormat(context) }
+    fun at(ms: Long): String = timeFormat.format(java.util.Date(ms))
+
+    val reason: String? = when (entry.state) {
+        PoolStatus.State.RESTING_PROVIDER -> stringResource(R.string.pool_resting_provider, at(entry.untilMs ?: 0L))
+        PoolStatus.State.RESTING_QUOTA -> stringResource(R.string.pool_resting_quota, at(entry.untilMs ?: 0L))
+        PoolStatus.State.RESTING_BREAKER -> stringResource(R.string.pool_resting_breaker, at(entry.untilMs ?: 0L))
+        PoolStatus.State.ERROR -> stringResource(R.string.pool_state_error)
+        PoolStatus.State.STANDBY -> stringResource(R.string.pool_state_standby, entry.order ?: 0)
+        PoolStatus.State.ACTIVE -> stringResource(R.string.pool_state_active, entry.order ?: 0)
+        PoolStatus.State.DISABLED -> null
+    }
+    val usageLine = entry.dailyLimit?.let { stringResource(R.string.pool_usage_limited, entry.used24h, it) }
+        ?: if (entry.used24h > 0) stringResource(R.string.pool_usage_unlimited, entry.used24h) else null
+
+    Column(Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        reason?.let {
+            val color = if (entry.state == PoolStatus.State.ERROR) k.danger else k.muted
+            Text(it, style = MaterialTheme.typography.bodySmall, color = color)
+        }
+        usageLine?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = k.muted) }
+        if (entry.unhealthy && entry.inPool) {
+            Text(stringResource(R.string.pool_unhealthy), style = MaterialTheme.typography.bodySmall, color = k.danger)
         }
     }
 }

@@ -26,6 +26,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -98,6 +99,8 @@ fun AccountEditorScreen(accountId: Long?, onClose: () -> Unit) {
         onKeyChange = viewModel::onKeyChanged,
         onNameChange = viewModel::onNameChanged,
         onBaseUrlChange = viewModel::onBaseUrlChanged,
+        onDailyLimitChange = viewModel::onDailyLimitChanged,
+        onBackupChange = viewModel::onBackupChanged,
         onSelectUpstream = viewModel::selectUpstream,
         onPaste = {
             scope.launch {
@@ -123,6 +126,8 @@ private fun AccountEditorContent(
     onKeyChange: (String) -> Unit,
     onNameChange: (String) -> Unit,
     onBaseUrlChange: (String) -> Unit,
+    onDailyLimitChange: (String) -> Unit,
+    onBackupChange: (Boolean) -> Unit,
     onSelectUpstream: (UpstreamProvider?) -> Unit,
     onPaste: () -> Unit,
     onVerify: () -> Unit,
@@ -243,6 +248,11 @@ private fun AccountEditorContent(
                 item(key = "error") { ErrorCard(error, onRetry, onDismissError) }
             }
 
+            if (state.providerId != null && !state.loading) {
+                item(key = "pool-title") { SectionTitle(R.string.step_pool) }
+                item(key = "pool-settings") { PoolSettings(state, onDailyLimitChange, onBackupChange) }
+            }
+
             if (state.models.isNotEmpty()) {
                 if (state.isProxy) {
                     item(key = "upstream-title") { SectionTitle(R.string.step_upstream) }
@@ -283,6 +293,41 @@ private fun AccountEditorContent(
             enabled = state.canSave,
             modifier = Modifier.fillMaxWidth().padding(16.dp),
         )
+    }
+}
+
+/** Hesabın havuzdaki davranışı: günlük istek sınırı ve yedek hesap olup olmadığı. */
+@Composable
+private fun PoolSettings(
+    state: EditorUiState,
+    onDailyLimitChange: (String) -> Unit,
+    onBackupChange: (Boolean) -> Unit,
+) {
+    val k = KriptonTheme.colors
+    val enabled = !state.saving && !state.loading
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        OutlinedTextField(
+            value = state.dailyLimit,
+            onValueChange = onDailyLimitChange,
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.pool_daily_limit_label)) },
+            singleLine = true,
+            enabled = enabled,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            shape = MaterialTheme.shapes.medium,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = k.nodeBorder,
+            ),
+        )
+        Text(stringResource(R.string.pool_daily_limit_hint), style = MaterialTheme.typography.bodySmall, color = k.muted)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.pool_backup_label), style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(R.string.pool_backup_hint), style = MaterialTheme.typography.bodySmall, color = k.muted)
+            }
+            Switch(checked = state.isBackup, onCheckedChange = onBackupChange, enabled = enabled)
+        }
     }
 }
 

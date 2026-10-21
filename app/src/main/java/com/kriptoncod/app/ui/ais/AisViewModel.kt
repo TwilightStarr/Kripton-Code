@@ -6,8 +6,12 @@ import androidx.lifecycle.viewModelScope
 import com.kriptoncod.app.R
 import com.kriptoncod.app.data.db.AiAccount
 import com.kriptoncod.app.data.repo.AiAccountRepository
+import com.kriptoncod.app.data.repo.UsageRepository
+import com.kriptoncod.app.data.run.PoolStatus
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,9 +33,18 @@ data class AisUiState(
     val accounts: List<AiAccount> = emptyList(),
     val pendingDelete: AiAccount? = null,
     val error: ListError? = null,
-)
+    /** Hesap kimliğine göre havuz durumu; kullanım deposu yoksa ya da henüz okunmadıysa boş. */
+    val pool: Map<Long, PoolStatus.Entry> = emptyMap(),
+) {
+    val poolSummary: PoolStatus.Summary get() = PoolStatus.summarize(pool.values)
+}
 
-class AisViewModel(private val repository: AiAccountRepository) : ViewModel() {
+class AisViewModel(
+    private val repository: AiAccountRepository,
+    private val usage: UsageRepository? = null,
+    private val now: () -> Long = System::currentTimeMillis,
+    private val refreshMs: Long = POOL_REFRESH_MS,
+) : ViewModel() {
     private val _state = MutableStateFlow(AisUiState())
     val state: StateFlow<AisUiState> = _state.asStateFlow()
 
@@ -39,6 +52,29 @@ class AisViewModel(private val repository: AiAccountRepository) : ViewModel() {
 
     init {
         startCollecting()
+        startPoolTicker()
+    }
+
+    /**
+     * Havuz durumunu yeniden hesaplar. Sağlık verisi okunurken hesap listesi değişebilir; bu yüzden liste
+     * okumadan SONRA, güncelleme anında alınır (eski listeden hesaplanmış sonuç yenisini ezmez).
+     */
+    private suspend fun refreshPool() {
+        val repo = usage ?: return
+        val health = repo.healthSnapshot()
+        val t = now()
+        _state.update { s -> s.copy(pool = PoolStatus.resolve(s.accounts, health, t)) }
+    }
+
+    /** Kota ve dinlenme süreleri zamanla değişir; ekran açıkken durum periyodik tazelenir. */
+    private fun startPoolTicker() {
+        if (usage == null) return
+        viewModelScope.launch {
+            while (isActive) {
+                delay(refreshMs)
+                refreshPool()
+            }
+        }
     }
 
     private fun startCollecting() {
@@ -59,6 +95,7 @@ class AisViewModel(private val repository: AiAccountRepository) : ViewModel() {
                             pendingDelete = s.pendingDelete?.let { p -> list.firstOrNull { it.id == p.id } },
                         )
                     }
+                    refreshPool()
                 }
         }
     }
@@ -107,5 +144,9 @@ class AisViewModel(private val repository: AiAccountRepository) : ViewModel() {
                 _state.update { it.copy(error = ListError(R.string.err_action_failed, action)) }
             }
         }
+    }
+
+    companion object {
+        const val POOL_REFRESH_MS = 30_000L
     }
 }

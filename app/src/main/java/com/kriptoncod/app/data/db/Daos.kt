@@ -223,4 +223,8 @@ interface UsageEventDao {
             "FROM usage_events WHERE at >= :since GROUP BY accountId",
     )
     fun observeSummary(since: Long): Flow<List<AccountUsage>>
+
+    /** [since] sonrasındaki tüm olaylar, eskiden yeniye (hesap sağlığı ve kota hesabı için). */
+    @Query("SELECT * FROM usage_events WHERE at >= :since ORDER BY at ASC, id ASC")
+    suspend fun since(since: Long): List<UsageEvent>
 }

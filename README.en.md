@@ -12,6 +12,7 @@ A code-focused, multi-AI generation tool for Android. Split a large job into sma
 
 - **Multiple AI accounts:** Google Gemini, Groq, OpenRouter, Mistral, Cerebras, NVIDIA NIM, DeepSeek, Claude, OpenAI, Kimi, and custom OpenAI-compatible providers.
 - **Model picker:** After the key is verified, suitable chat models are listed with free ones highlighted.
+- **Smart account pool:** Each prompt goes to the best available account: strongest model first, equal models take turns (least recently used), recently flaky accounts drop to the back, and **backup** accounts only step in when nothing else is available. An optional **daily request limit** per account keeps free quotas from being drained, and a circuit breaker rests an account for 10 minutes after three provider/network failures. A background check (every 6 hours, no quota used) removes accounts whose key was rejected and restores ones that recovered. The **AIs** screen shows each account's place in the chain, why it is resting, and when it returns.
 - **Prompt sets:** Build ordered prompts, reorder them, and assign an account to each prompt automatically or manually.
 - **Background runs:** Generation continues through WorkManager; interrupted jobs are recovered.
 - **History:** Generated outputs and prepared zip files are stored on the device.

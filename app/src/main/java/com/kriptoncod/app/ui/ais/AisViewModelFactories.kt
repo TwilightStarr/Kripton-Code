@@ -23,7 +23,7 @@ internal fun rememberContainer(): AppContainer {
 internal fun rememberAisViewModelFactory(): ViewModelProvider.Factory {
     val container = rememberContainer()
     return remember(container) {
-        viewModelFactory { initializer { AisViewModel(container.aiAccountRepository) } }
+        viewModelFactory { initializer { AisViewModel(container.aiAccountRepository, container.usageRepository) } }
     }
 }
 

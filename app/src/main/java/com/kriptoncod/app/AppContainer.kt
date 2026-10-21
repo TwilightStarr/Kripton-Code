@@ -33,6 +33,7 @@ import com.kriptoncod.app.data.web.WebSessionStore
 import com.kriptoncod.app.data.web.WebViewChatDriver
 import com.kriptoncod.app.data.vault.AndroidKeystoreKeyVault
 import com.kriptoncod.app.data.vault.KeyVault
+import com.kriptoncod.app.data.run.AccountHealthChecker
 import com.kriptoncod.app.data.run.CiFixer
 import com.kriptoncod.app.data.run.CredentialProvider
 import com.kriptoncod.app.data.run.FinalAiAssembler
@@ -162,6 +163,9 @@ class AppContainer(context: Context) {
             startCiLoop = { runId -> runScheduler.startCiLoop(runId) },
         )
     }
+    val accountHealthChecker: AccountHealthChecker by lazy {
+        AccountHealthChecker(aiAccountRepository, credentialProvider, validate = { endpoint, key -> modelService.validate(endpoint, key) })
+    }
     val promptDispatcher: PromptDispatcher by lazy {
         PromptDispatcher(
             runRepository, promptRepository, aiAccountRepository, credentialProvider, aiGenerator,
@@ -198,6 +202,7 @@ class AppContainer(context: Context) {
                 aiAccountRepository.purgeOrphanSecrets()
                 aiAccountRepository.releaseExpiredWaits()
                 runScheduler.ensureWatchdog()
+                runScheduler.ensureAccountHealthCheck()
                 // Süreç öldürüldüyse yarım kalan run'ların dağıtımını/CI izlemesini yeniden başlat.
                 runWatchdogSweep()
             }

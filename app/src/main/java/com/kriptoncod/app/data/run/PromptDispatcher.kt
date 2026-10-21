@@ -489,29 +489,21 @@ class PromptDispatcher(
             if (!account.enabled || account.status == AccountStatus.ERROR) return Pick.None
             val until = account.waitUntil
             if (account.status == AccountStatus.WAITING && until != null && until > t) return Pick.WaitUntil(until)
+            // Günlük kota doldu ya da devre kesici açık: iş bu hesapta takılmaz, havuza geçer.
+            if (AccountSelector.poolBlockUntil(account, usage?.healthSnapshot()?.get(id), t) != null) return Pick.None
             return Pick.Use(account)
         }
 
         val enabled = accounts.observeAll().first().filter { it.enabled }
+        val health = usage?.healthSnapshot().orEmpty()
         // Grafik düğümlerinde planlama sırasında güce göre seçilen hesap önceliklidir; kullanılamıyorsa
-        // en güçlü kullanılabilir hesaba (ya da bekleme bitene) geçilir.
-        if (job.kind != JobKind.WORK || job.catalog != null) {
-            enabled.firstOrNull { it.id == job.accountId && it.id !in tried && it.isUsable(t) }?.let { return Pick.Use(it) }
+        // (bekleme/kota/devre kesici) seçici en uygun hesaba ya da en erken açılma zamanına geçer.
+        val preferred = if (job.kind != JobKind.WORK || job.catalog != null) job.accountId else null
+        return when (val choice = AccountSelector.choose(enabled, health, tried, preferred, t)) {
+            is AccountSelector.Choice.Use -> Pick.Use(choice.account)
+            is AccountSelector.Choice.WaitUntil -> Pick.WaitUntil(choice.untilMs)
+            AccountSelector.Choice.None -> Pick.None
         }
-        enabled.firstOrNull { it.id !in tried && it.isUsable(t) }?.let { return Pick.Use(it) }
-
-        val earliest = enabled
-            .filter { it.status == AccountStatus.WAITING }
-            .mapNotNull { it.waitUntil }
-            .filter { it > t }
-            .minOrNull()
-        return if (earliest != null) Pick.WaitUntil(earliest) else Pick.None
-    }
-
-    private fun AiAccount.isUsable(t: Long): Boolean = when (status) {
-        AccountStatus.READY -> true
-        AccountStatus.WAITING -> (waitUntil ?: 0L) <= t
-        AccountStatus.ERROR -> false
     }
 
     companion object {

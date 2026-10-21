@@ -4,6 +4,9 @@ import com.kriptoncod.app.R
 import com.kriptoncod.app.data.db.AiAccount
 import com.kriptoncod.app.data.db.KriptonDatabase
 import com.kriptoncod.app.data.repo.AiAccountRepository
+import com.kriptoncod.app.data.repo.UsageRepository
+import com.kriptoncod.app.data.run.PoolStatus
+import com.kriptoncod.app.domain.UsageOutcome
 import com.kriptoncod.app.data.vault.KeyVault
 import com.kriptoncod.app.domain.AuthType
 import com.kriptoncod.app.testutil.FakeKeyVault
@@ -147,5 +150,28 @@ class AisViewModelTest {
         vm.state.awaitValue { it.error != null }
         vm.dismissError()
         assertNull(vm.state.value.error)
+    }
+
+    @Test fun poolStaysEmptyWithoutUsageRepository() {
+        addAccount("a")
+        val s = AisViewModel(repo).state.awaitValue { !it.loading && it.accounts.isNotEmpty() }
+        assertTrue(s.pool.isEmpty())
+    }
+
+    @Test fun poolShowsFullQuotaAccountAsResting() {
+        val id = runBlocking {
+            repo.add(
+                AiAccount(
+                    providerId = "groq", displayName = "q", authType = AuthType.API_KEY,
+                    modelId = "m", powerRank = 1, dailyLimit = 1,
+                ),
+                "secret-q",
+            )
+        }
+        runBlocking { UsageRepository(db.usageEventDao()).record(id, null, UsageOutcome.SUCCESS, 10) }
+        val vm = AisViewModel(repo, UsageRepository(db.usageEventDao()))
+        val s = vm.state.awaitValue { it.pool[id] != null }
+        assertEquals(PoolStatus.State.RESTING_QUOTA, s.pool.getValue(id).state)
+        assertEquals(1, s.poolSummary.resting)
     }
 }

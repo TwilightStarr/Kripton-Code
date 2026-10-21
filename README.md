@@ -12,6 +12,7 @@ Android için kod odaklı, çoklu-AI üretim aracı. Büyük bir işi ayrıntıl
 
 - **E-posta ile web hesabı (riskli, isteğe bağlı):** Claude · ChatGPT · Kimi · Gemini hesaplarını API anahtarı olmadan, kendi giriş sayfalarında e-postayla bağla; çok hesap, kota bekleme ve hesap rotasyonu otomatik. Claude ve Gemini'de hesap kapatma uyarısı zorunludur. Ayrıntı: [docs/FREE-PROVIDERS.md](docs/FREE-PROVIDERS.md).
 - **Çoklu AI hesabı:** Google Gemini, Groq, OpenRouter, Mistral, Cerebras, NVIDIA NIM, DeepSeek, Claude, OpenAI, Kimi ve OpenAI-uyumlu özel sağlayıcılar.
+- **Akıllı hesap havuzu:** Her prompt en uygun hesaba gider: önce en güçlü model, eşit modeller sırayla (en uzun süredir kullanılmayan), yakın zamanda sorun çıkaran hesaplar sona kalır, **yedek** hesaplar yalnız başka seçenek kalmayınca devreye girer. Hesap başına isteğe bağlı **günlük istek sınırı** ücretsiz kotaların tükenmesini önler; art arda üç sağlayıcı/ağ hatasında devre kesici hesabı 10 dakika dinlendirir. Arka planda (6 saatte bir, kota harcamadan) anahtarı reddedilen hesaplar havuzdan çıkarılır, düzelenler geri alınır. **AI'lar** ekranı her hesabın havuzdaki sırasını, neden dinlendiğini ve ne zaman açılacağını gösterir.
 - **Model seçimi:** Anahtar doğrulanınca uygun sohbet modelleri listelenir, ücretsiz olanlar öne çıkarılır.
 - **Prompt setleri:** Sıralı promptlar oluştur, yukarı/aşağı taşı, her prompta otomatik veya manuel hesap ata.
 - **Arka planda çalışma:** Üretim WorkManager ile sürer; uygulama kapansa da yarım kalan işler kurtarılır.

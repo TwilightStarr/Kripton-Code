@@ -28,6 +28,14 @@ class RunScheduler(
         workManager.enqueueUniquePeriodicWork(WorkNames.WATCHDOG, ExistingPeriodicWorkPolicy.KEEP, request)
     }
 
+    /** Hesap sağlık yoklamasını (6 saat periyot) kurar; zaten kuruluysa dokunmaz. */
+    fun ensureAccountHealthCheck() {
+        val request = PeriodicWorkRequestBuilder<AccountHealthWorker>(6, TimeUnit.HOURS)
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .build()
+        workManager.enqueueUniquePeriodicWork(WorkNames.ACCOUNT_HEALTH, ExistingPeriodicWorkPolicy.KEEP, request)
+    }
+
     /** [uniqueName] adlı zincirde bekleyen ya da çalışan iş var mı. */
     private suspend fun isActive(uniqueName: String): Boolean = withContext(Dispatchers.IO) {
         workManager.getWorkInfosForUniqueWork(uniqueName).get().any { !it.state.isFinished }

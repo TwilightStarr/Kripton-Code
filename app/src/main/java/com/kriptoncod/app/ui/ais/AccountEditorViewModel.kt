@@ -65,6 +65,10 @@ data class EditorUiState(
     val baseUrl: String = "",
     /** Yalnız proxy hesabı: model listesini süzen sağlayıcı; null = tümü. */
     val upstreamFilter: UpstreamProvider? = null,
+    /** Günlük istek sınırı (yalnız rakam); boş = sınırsız. */
+    val dailyLimit: String = "",
+    /** Yedek hesap: yalnız birincil hesaplar kullanılamazken devreye girer. */
+    val isBackup: Boolean = false,
 ) {
     val isEdit: Boolean get() = editingId != null
     val isProxy: Boolean get() = providerId == ProxyProvider.ID
@@ -127,6 +131,8 @@ class AccountEditorViewModel(
                         displayName = account.displayName,
                         accountName = if (proxy) account.displayName else "",
                         baseUrl = if (proxy) account.baseUrl.orEmpty() else "",
+                        dailyLimit = account.dailyLimit?.takeIf { n -> n > 0 }?.toString().orEmpty(),
+                        isBackup = account.isBackup,
                     )
                 }
                 runVerify()
@@ -170,6 +176,19 @@ class AccountEditorViewModel(
                 error = null,
             )
         }
+    }
+
+    /** Günlük istek sınırı; yalnız rakam kabul edilir. Doğrulamayı etkilemez. */
+    fun onDailyLimitChanged(raw: String) {
+        val s = _state.value
+        if (s.saving || s.loading) return
+        _state.update { it.copy(dailyLimit = raw.filter { c -> c.isDigit() }.take(MAX_LIMIT_DIGITS)) }
+    }
+
+    fun onBackupChanged(value: Boolean) {
+        val s = _state.value
+        if (s.saving || s.loading) return
+        _state.update { it.copy(isBackup = value) }
     }
 
     /** Proxy: hesap adı (ör. "Arkadaşım"). Doğrulamayı etkilemez. */
@@ -334,6 +353,7 @@ class AccountEditorViewModel(
         // Proxy hesabında kayıtlı sağlayıcı, seçilen modelin yukarı akış sağlayıcısıdır; taban adres normalleştirilir.
         val baseUrl = if (proxy) (ProxyProvider.normalizeBaseUrl(s.baseUrl) ?: return) else null
         val providerId = if (proxy) option.upstream.id else editorProviderId
+        val dailyLimit = s.dailyLimit.toIntOrNull()?.takeIf { it > 0 }
         _state.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
             try {
@@ -350,6 +370,8 @@ class AccountEditorViewModel(
                         modelId = option.id,
                         powerRank = option.score,
                         baseUrl = baseUrl,
+                        dailyLimit = dailyLimit,
+                        isBackup = s.isBackup,
                     )
                     repository.add(account, s.apiKey.value) // anahtar KeyVault'a, hesap Room'a
                 } else {
@@ -368,6 +390,8 @@ class AccountEditorViewModel(
                             displayName = if (proxy) proxyDisplayName(s.accountName, taken, current.displayName) else current.displayName,
                             modelId = option.id,
                             powerRank = option.score,
+                            dailyLimit = dailyLimit,
+                            isBackup = s.isBackup,
                             status = if (recovered) AccountStatus.READY else current.status,
                             waitUntil = if (recovered) null else current.waitUntil,
                         ),
@@ -416,6 +440,8 @@ class AccountEditorViewModel(
     }
 
     companion object {
+        /** Günlük sınır alanının en çok basamağı (Int taşmasını önler). */
+        private const val MAX_LIMIT_DIGITS = 6
 
         /** Özel sağlayıcı kalıcı adres alanı olmadığı için akışta yer almaz. */
         val SELECTABLE_PROVIDERS: List<Provider> = ProviderCatalog.all.filterNot { it.isCustom }
