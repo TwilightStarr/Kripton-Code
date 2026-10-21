@@ -162,8 +162,12 @@ class AisViewModelTest {
         val id = runBlocking {
             repo.add(
                 AiAccount(
-                    providerId = "groq", displayName = "q", authType = AuthType.API_KEY,
-                    modelId = "m", powerRank = 1, dailyLimit = 1,
+                    providerId = "groq",
+                    displayName = "q",
+                    authType = AuthType.API_KEY,
+                    modelId = "m",
+                    powerRank = 1,
+                    dailyLimit = 1,
                 ),
                 "secret-q",
             )
