@@ -64,7 +64,7 @@ data class FlowDirectives(
 
 data class VariableDef(val name: String, val value: String)
 
-/** `[[tekrar...]]` ailesi: kalite (doğrulama) yeniden denemesi ve düğüm bazlı hata sınırı. */
+/** `tekrar` yönerge ailesi: kalite (doğrulama) yeniden denemesi ve düğüm bazlı hata sınırı. */
 data class RetryRules(
     /** Doğrulama kuralı bozulduğunda en çok kaç kez yeniden üretilir (0 = yeniden deneme yok). */
     val maxRetries: Int = 0,
