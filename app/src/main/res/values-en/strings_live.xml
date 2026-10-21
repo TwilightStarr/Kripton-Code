@@ -53,7 +53,7 @@
     <string name="run_partial_info">Some nodes failed, so the result may be incomplete. You can retry the failed nodes or approve pushing the incomplete result to GitHub.</string>
     <string name="run_approve_push">Push incomplete result to GitHub</string>
     <string name="notif_fgs_limit_title">Krypton Code — background protection used up</string>
-    <string name="notif_fgs_limit_text">Android's background service time limit was reached. Work continues in short slices and may be slower; protection returns when the quota resets.</string>
+    <string name="notif_fgs_limit_text">Android\'s background service time limit was reached. Work continues in short slices and may be slower; protection returns when the quota resets.</string>
     <string name="notif_crashed_text">Run #%1$d stopped because of an unexpected error.</string>
 
     <!-- Home screen widget -->

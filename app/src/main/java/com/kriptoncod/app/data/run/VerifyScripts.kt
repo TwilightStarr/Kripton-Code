@@ -41,7 +41,7 @@ object VerifyScripts {
             ProjectType.NODE -> dirs.any { it in setOf("__tests__", "tests", "test", "spec") } ||
                 Regex("""\.(test|spec)\.[cm]?[jt]sx?$""").containsMatchIn(name)
 
-            ProjectType.PYTHON -> dirs.any { it == "tests" || it == "test" } && name.endsWith(".py") ||
+            ProjectType.PYTHON -> (dirs.any { it == "tests" || it == "test" } && name.endsWith(".py")) ||
                 Regex("""^test_.*\.py$|.*_test\.py$""").matches(name)
 
             ProjectType.GRADLE, ProjectType.MAVEN -> path.startsWith("src/test/") || "/src/test/" in path
