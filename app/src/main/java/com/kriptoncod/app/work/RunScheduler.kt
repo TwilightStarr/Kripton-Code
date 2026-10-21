@@ -4,20 +4,42 @@ import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.kriptoncod.app.data.repo.RunRepository
 import com.kriptoncod.app.domain.RunStatus
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** Run başına tek bir WorkManager zinciri yönetir (aynı run iki worker'da çalışmaz). */
 class RunScheduler(
     private val workManager: WorkManager,
     private val runs: RunRepository,
 ) {
+    /** Bekçiyi (15 dk periyot) kurar; zaten kuruluysa dokunmaz. Uygulama açılışında ve her run başında çağrılır. */
+    fun ensureWatchdog() {
+        val request = PeriodicWorkRequestBuilder<RunWatchdogWorker>(15, TimeUnit.MINUTES)
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .build()
+        workManager.enqueueUniquePeriodicWork(WorkNames.WATCHDOG, ExistingPeriodicWorkPolicy.KEEP, request)
+    }
+
+    /** [uniqueName] adlı zincirde bekleyen ya da çalışan iş var mı. */
+    private suspend fun isActive(uniqueName: String): Boolean = withContext(Dispatchers.IO) {
+        workManager.getWorkInfosForUniqueWork(uniqueName).get().any { !it.state.isFinished }
+    }
+
+    suspend fun isDispatchActive(runId: Long): Boolean = isActive(WorkNames.dispatch(runId))
+
+    suspend fun isCiActive(runId: Long): Boolean = isActive(WorkNames.ciLoop(runId))
+
     /** Zaten bekleyen/çalışan zincir varsa dokunmaz (KEEP). */
     fun start(runId: Long) {
+        ensureWatchdog()
         workManager.enqueueUniqueWork(WorkNames.dispatch(runId), ExistingWorkPolicy.KEEP, request(runId, 0))
     }
 
@@ -41,6 +63,15 @@ class RunScheduler(
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
             .build()
         workManager.enqueueUniqueWork(WorkNames.ciLoop(runId), ExistingWorkPolicy.REPLACE, request)
+    }
+
+    /** PARTIAL run'ın kullanıcı onaylı GitHub gönderimini başlatır (çift tıklama tek iş: KEEP). */
+    fun approvePartialPush(runId: Long) {
+        val request = OneTimeWorkRequestBuilder<PartialPushWorker>()
+            .setInputData(workDataOf(PartialPushWorker.KEY_RUN_ID to runId))
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .build()
+        workManager.enqueueUniqueWork(WorkNames.partialPush(runId), ExistingWorkPolicy.KEEP, request)
     }
 
     /**

@@ -52,6 +52,10 @@ class PromptDispatcher(
     private val usage: UsageRepository? = null,
     /** Verilirse API üretimi akıtılır ve metin geldikçe buraya yazılır (ekranda canlı görünür). */
     private val live: LiveOutput? = null,
+    /**
+     * Bir katalog birleştirmesi bitince çağrılır (ara kayıt: WIP dalına commit). En iyi çabadır; hata run'ı etkilemez.
+     */
+    private val onCatalogDone: suspend (runId: Long, mergeJob: Job) -> Unit = { _, _ -> },
 ) {
 
     private fun sinkFor(job: Job): StreamSink = live?.sinkFor(job.id) ?: StreamSink.NONE
@@ -90,11 +94,13 @@ class PromptDispatcher(
     suspend fun process(
         runId: Long,
         onProgress: suspend (done: Int, total: Int) -> Unit = { _, _ -> },
+        /** true dönerse yeni düğüm başlatılmaz ve kısa beklemeyle çıkılır (ön plan koruması yoksa dilimli çalışma). */
+        shouldYield: () -> Boolean = { false },
     ): DispatchOutcome {
         val run = runs.getRun(runId) ?: return DispatchOutcome.Cancelled
         when (run.status) {
             RunStatus.CANCELLED, RunStatus.PAUSED -> return DispatchOutcome.Cancelled
-            RunStatus.DONE, RunStatus.FAILED -> return DispatchOutcome.Finished(run.status)
+            RunStatus.DONE, RunStatus.PARTIAL, RunStatus.FAILED -> return DispatchOutcome.Finished(run.status)
             else -> Unit
         }
         runs.setRunStatus(runId, RunStatus.RUNNING)
@@ -111,6 +117,7 @@ class PromptDispatcher(
             val job = all.firstOrNull {
                 it.id !in visited && (it.state == JobState.PENDING || it.state == JobState.WAITING) && isReady(it, all)
             } ?: break
+            if (shouldYield()) return DispatchOutcome.Wait(YIELD_DELAY_MS)
             visited += job.id
             when (runs.getRun(runId)?.status) {
                 RunStatus.CANCELLED, RunStatus.PAUSED -> return DispatchOutcome.Cancelled
@@ -122,6 +129,8 @@ class PromptDispatcher(
                 wakeAtMs = minOf(wakeAtMs ?: result.untilMs, result.untilMs)
             } else if (result is JobResult.Done && job.kind == JobKind.PLAN) {
                 expandPlan(job)
+            } else if (result is JobResult.Done && job.kind == JobKind.CATALOG_MERGE) {
+                runs.getJob(job.id)?.let { done -> runCatching { onCatalogDone(runId, done) } }
             }
         }
 
@@ -169,8 +178,11 @@ class PromptDispatcher(
         builder.build(plan.runId, catalogs)
     }
 
-    /** Birleştirme düğümünün girdisi: bağımlı düğümlerin çıktıları (çıktılar KISALTILMAZ, eksiksiz aktarılır). */
-    private suspend fun mergeBody(job: Job, all: List<Job>): String? {
+    /**
+     * Birleştirme düğümünün kaynakları: bağımlı düğümlerin çıktıları. Birleştirme KODLA yapılır
+     * ([MergePlanner]); AI yalnızca aynı yolda farklı içerik çıkarsa çağrılır.
+     */
+    private suspend fun mergeSources(job: Job, all: List<Job>): List<MergePlanner.Source> {
         val sources: List<Pair<String, Job>> = when (job.kind) {
             JobKind.CATALOG_MERGE ->
                 all.filter { it.kind == JobKind.WORK && it.catalog == job.catalog && it.state == JobState.DONE }
@@ -187,26 +199,15 @@ class PromptDispatcher(
                 }
             }
 
-            else -> return null
+            else -> return emptyList()
         }
-        if (sources.isEmpty()) return null
-        val header = if (job.kind == JobKind.FINAL_MERGE) {
-            "Aşağıda bir yazılım işinin katalog bazında birleştirilmiş çıktıları var. Hepsini çakışmaları gidererek, " +
-                "eksikleri tamamlayarak derlenir ve tutarlı TEK bir nihai pakete dönüştür. "
-        } else {
-            "Aşağıda '${job.catalog}' kataloğundaki ayrı yapay zekaların ürettiği çıktılar var. Çakışmaları gider, " +
-                "eksikleri tamamla ve bu kataloğu tutarlı tek bir bütün hâline getir. "
-        } + "Nihai dosyaları ```tam/dosya/yolu biçiminde kod bloklarıyla döndür; açıklama yazma."
-        return buildString {
-            appendLine(header)
-            appendLine()
-            for ((name, src) in sources) {
-                val text = runs.readOutput(src.id).orEmpty()
-                appendLine("=== $name ===")
-                appendLine(text)
-                appendLine()
-            }
-        }
+        return sources.map { (name, src) -> MergePlanner.Source(name, src.id, runs.readOutput(src.id).orEmpty()) }
+    }
+
+    private fun mergeHeader(job: Job): String = if (job.kind == JobKind.FINAL_MERGE) {
+        "Bir yazılım işinin katalog bazında birleştirilmiş çıktılarında çakışmalar var."
+    } else {
+        "'${job.catalog}' kataloğundaki ayrı yapay zekaların çıktılarında çakışmalar var."
     }
 
     /** WORK/PLAN metni: yönergeler çıkarılır; istenen önceki çıktılar (eksiksiz) göreve eklenir. */
@@ -219,13 +220,14 @@ class PromptDispatcher(
         if (sources.isEmpty()) return d.body
         return buildString {
             appendLine(
-                "Aşağıda bu görev için daha önce üretilmiş çıktılar var. Bunlarla tutarlı çalış " +
-                    "(aynı adlar, aynı dosya yolları); görevin kendisi en altta.",
+                "Aşağıda bu görev için daha önce üretilmiş çıktıların ARAYÜZ ÖZETİ var (dosya yolları ve bildirim " +
+                    "satırları; gövdeler çıkarıldı). Bunlarla tutarlı çalış (aynı adlar, aynı imzalar, aynı dosya " +
+                    "yolları); özetlenen dosyaları yeniden yazma. Görevin kendisi en altta.",
             )
             appendLine()
             for (src in sources) {
                 appendLine("=== ${src.title ?: "Prompt #${src.id}"} ===")
-                appendLine(runs.readOutput(src.id).orEmpty())
+                appendLine(InterfaceSummarizer.summarizeOutput(runs.readOutput(src.id).orEmpty()))
                 appendLine()
             }
             appendLine("=== GÖREV ===")
@@ -246,8 +248,25 @@ class PromptDispatcher(
     }
 
     private suspend fun processJob(job: Job, all: List<Job>): JobResult {
-        val text = when (job.kind) {
-            JobKind.CATALOG_MERGE, JobKind.FINAL_MERGE -> mergeBody(job, all)
+        // Birleştirme düğümleri: çakışmasız dosyalar kodla alınır; AI yalnız çakışan dosyalar için çağrılır.
+        var finish: (String) -> String = { it }
+        val text: String? = when (job.kind) {
+            JobKind.CATALOG_MERGE, JobKind.FINAL_MERGE -> {
+                val sources = mergeSources(job, all)
+                if (sources.isEmpty()) {
+                    null
+                } else {
+                    val plan = MergePlanner.plan(sources)
+                    if (!plan.needsAi) {
+                        // AI gerekmez: hesap/kota harcanmaz, hiçbir dosya yeniden yazılmadığı için düşme/değişme riski yok.
+                        runs.completeJob(job.id, MergePlanner.assemble(plan, null).text)
+                        return JobResult.Done
+                    }
+                    finish = { aiText -> MergePlanner.assemble(plan, aiText).text }
+                    MergePlanner.conflictPrompt(plan, mergeHeader(job))
+                }
+            }
+
             else -> workText(job, all)
         }
         if (text.isNullOrBlank()) {
@@ -281,7 +300,7 @@ class PromptDispatcher(
             tried += account.id
 
             if (account.authType == AuthType.KIMI && kimiCodes != null) {
-                return processKimiJob(job, account, item)
+                return processKimiJob(job, account, item, finish)
             }
 
             val isWeb = account.authType == AuthType.WEB_SESSION
@@ -313,7 +332,7 @@ class PromptDispatcher(
                 }
                 // Ham zip ve ikili dosyalar çıktıdan ÖNCE yazılır: çökme olursa iş DONE sayılmaz, yeniden üretilir.
                 if (assets.isNotEmpty()) runCatching { runs.saveAssets(job.id, assets.map { it.path to it.bytes }) }
-                runs.completeJob(job.id, text)
+                runs.completeJob(job.id, finish(text))
                 recordUsage(account, job, UsageOutcome.SUCCESS, startedAt)
                 return JobResult.Done
             } catch (e: AiGenerationException) {
@@ -352,12 +371,31 @@ class PromptDispatcher(
                             return JobResult.Failed
                         }
                         runs.requeueJob(job.id)
-                        return JobResult.Wait(now() + RETRY_BASE_MS * attempts)
+                        // Önce havuzdaki başka hesabı dene (yedek model); hepsi denendiyse artan beklemeyle yeniden kuyruğa al.
+                        if (!manual && pickAccount(job, false, tried) is Pick.Use) continue
+                        return JobResult.Wait(now() + retryDelayMs(attempts))
                     }
 
                     else -> {
-                        runs.failJob(job.id)
-                        return JobResult.Failed
+                        // Kalıcı hata (bağlam aşımı, kesik çıktı, geçersiz istek, model yok): bu hesapla tekrar denemek
+                        // anlamsız, ama başka hesap/model başarabilir. Sıradaki hesaba geç; hepsi denendiyse işi düşür.
+                        manual = false
+                        when (val next = pickAccount(job, false, tried)) {
+                            is Pick.Use -> {
+                                runs.requeueJob(job.id)
+                                continue
+                            }
+
+                            is Pick.WaitUntil -> {
+                                runs.waitJob(job.id)
+                                return JobResult.Wait(next.untilMs)
+                            }
+
+                            Pick.None -> {
+                                runs.failJob(job.id)
+                                return JobResult.Failed
+                            }
+                        }
                     }
                 }
             } catch (_: IllegalArgumentException) {
@@ -370,7 +408,7 @@ class PromptDispatcher(
         }
     }
 
-    private suspend fun processKimiJob(job: Job, account: AiAccount, item: PromptItem): JobResult {
+    private suspend fun processKimiJob(job: Job, account: AiAccount, item: PromptItem, finish: (String) -> String): JobResult {
         val endpoint = resolveEndpoint(account)
         val credential = credentials.credentialFor(account)
         if (endpoint == null || credential.isNullOrBlank()) {
@@ -390,8 +428,9 @@ class PromptDispatcher(
                 runs.failJob(job.id)
                 JobResult.Failed
             } else {
-                kimiCodes?.collect(job.runId, text)
-                runs.completeJob(job.id, text)
+                val finalText = finish(text)
+                kimiCodes?.collect(job.runId, finalText)
+                runs.completeJob(job.id, finalText)
                 recordUsage(account, job, UsageOutcome.SUCCESS, startedAt)
                 JobResult.Done
             }
@@ -423,7 +462,7 @@ class PromptDispatcher(
                         JobResult.Failed
                     } else {
                         runs.requeueJob(job.id)
-                        JobResult.Wait(now() + RETRY_BASE_MS * attempts)
+                        JobResult.Wait(now() + retryDelayMs(attempts))
                     }
                 }
 
@@ -476,7 +515,18 @@ class PromptDispatcher(
     }
 
     companion object {
-        const val MAX_ATTEMPTS = 4
+        /**
+         * Geçici (5xx/ağ) hatada bir düğüm için en çok deneme. Bekleme [RETRY_BASE_MS] * deneme ile artar ve
+         * [MAX_RETRY_DELAY_MS]'de sınırlanır: 60 denemede toplam yaklaşık 7-8 saat; günlerce süren işte
+         * kısa bir sunucu kesintisi düğümü kalıcı düşürmez.
+         */
+        const val MAX_ATTEMPTS = 60
+        const val MAX_RETRY_DELAY_MS = 15L * 60 * 1000
+
+        /** Ön plan koruması yokken bir çalışma diliminden sonra bekleme. */
+        const val YIELD_DELAY_MS = 5_000L
+
+        fun retryDelayMs(attempts: Int): Long = (RETRY_BASE_MS * attempts.coerceAtLeast(1)).coerceAtMost(MAX_RETRY_DELAY_MS)
 
         /** Hiç kullanılabilir hesap yokken işin yeniden denenme aralığı. */
         const val NO_ACCOUNT_WAIT_MS = 10L * 60 * 1000

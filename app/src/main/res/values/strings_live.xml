@@ -13,6 +13,7 @@
     <string name="run_status_fixing">Düzeltiliyor</string>
     <string name="run_status_paused">Duraklatıldı</string>
     <string name="run_status_done">Tamamlandı</string>
+    <string name="run_status_partial">Kısmi — onay bekliyor</string>
     <string name="run_status_failed">Başarısız</string>
     <string name="run_status_cancelled">İptal Edildi</string>
 
@@ -47,6 +48,12 @@
     <string name="notif_done_text">Çalışma #%1$d bitti. Zip hazır.</string>
     <string name="notif_failed_title">Krypton Code — hata</string>
     <string name="notif_failed_text">Çalışma #%1$d başarısız oldu. Ayrıntı için uygulamayı aç.</string>
+    <string name="notif_partial_title">Krypton Code — kısmi sonuç</string>
+    <string name="notif_partial_text">Çalışma #%1$d bitti ama bazı düğümler başarısız oldu. GitHub'a göndermeden önce onayını bekliyor.</string>
+    <string name="run_partial_info">Bazı düğümler başarısız oldu; sonuç eksik olabilir. Başarısız düğümleri yeniden deneyebilir ya da eksik haliyle GitHub'a göndermeyi onaylayabilirsin.</string>
+    <string name="run_approve_push">Eksik haliyle GitHub'a gönder</string>
+    <string name="notif_fgs_limit_title">Krypton Code — arka plan koruması doldu</string>
+    <string name="notif_fgs_limit_text">Android arka plan hizmeti süre sınırına ulaştı. İş kısa dilimlerle sürüyor; yavaşlayabilir. Ön plan koruması süre yenilenince geri gelir.</string>
     <string name="notif_crashed_text">Çalışma #%1$d beklenmedik bir hatayla durdu.</string>
 
     <!-- Ana ekran widget'ı -->

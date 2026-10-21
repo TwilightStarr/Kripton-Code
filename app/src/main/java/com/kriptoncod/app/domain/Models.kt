@@ -20,6 +20,12 @@ enum class RunStatus {
     CI_WAITING,
     FIXING,
     DONE,
+
+    /**
+     * Dağıtım bitti ve paket hazır, ama en az bir düğüm BAŞARISIZ oldu. Sonuç eksik olabilir:
+     * GitHub'a ancak kullanıcı onaylarsa gönderilir (bkz. RunCompleter.approvePush).
+     */
+    PARTIAL,
     FAILED,
     CANCELLED,
     PAUSED,

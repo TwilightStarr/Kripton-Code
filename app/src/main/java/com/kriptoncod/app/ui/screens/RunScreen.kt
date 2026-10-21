@@ -216,6 +216,14 @@ fun RunScreen(
                 modifier = Modifier.padding(start = 4.dp, top = 2.dp),
             )
         }
+        if (status == RunStatus.PARTIAL) {
+            Text(
+                stringResource(R.string.run_partial_info),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.padding(start = 4.dp, top = 2.dp),
+            )
+        }
         Spacer(Modifier.height(6.dp))
 
         // Denetim düğmeleri
@@ -233,6 +241,15 @@ fun RunScreen(
                     onClick = { scope.launch { container.runScheduler.unpause(runId) } },
                     modifier = Modifier.weight(1f),
                 )
+
+                // Kısmi sonuç: GitHub'a yalnız kullanıcı onaylarsa gönderilir.
+                RunStatus.PARTIAL -> if (currentRun?.repo != null) {
+                    KButton(
+                        text = stringResource(R.string.run_approve_push),
+                        onClick = { container.runScheduler.approvePartialPush(runId) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
 
                 else -> Unit
             }
@@ -430,7 +447,7 @@ private fun GraphPane(
 }
 
 /** Başarısız düğümün yeniden denenebildiği run durumları (dağıtım bitmiş olmalı). */
-private val RETRYABLE_RUN = setOf(RunStatus.FAILED, RunStatus.DONE)
+private val RETRYABLE_RUN = setOf(RunStatus.FAILED, RunStatus.DONE, RunStatus.PARTIAL)
 
 @Composable
 private fun NodeDetail(

@@ -35,7 +35,7 @@ val LocalAppBusy = compositionLocalOf { false }
 /** Kullanıcı açısından "iş yürüyor" sayılan çalışma durumları (duraklatılmış/bitmiş değil). */
 fun RunStatus.isInProgress(): Boolean = when (this) {
     RunStatus.PREPARING, RunStatus.RUNNING, RunStatus.PUSHING, RunStatus.CI_WAITING, RunStatus.FIXING -> true
-    RunStatus.PAUSED, RunStatus.DONE, RunStatus.FAILED, RunStatus.CANCELLED -> false
+    RunStatus.PAUSED, RunStatus.DONE, RunStatus.PARTIAL, RunStatus.FAILED, RunStatus.CANCELLED -> false
 }
 
 /** Aynı anda en fazla bu kadar öğe kademeli girer; sonrakiler gecikmesiz (uzun listeler yavaşlamasın). */
@@ -87,7 +87,7 @@ fun RunStatus.logoMood(): com.kriptoncod.app.ui.components.LogoMood = when (this
     RunStatus.PREPARING, RunStatus.RUNNING, RunStatus.PUSHING, RunStatus.CI_WAITING, RunStatus.FIXING ->
         com.kriptoncod.app.ui.components.LogoMood.Working
 
-    RunStatus.PAUSED -> com.kriptoncod.app.ui.components.LogoMood.Waiting
+    RunStatus.PAUSED, RunStatus.PARTIAL -> com.kriptoncod.app.ui.components.LogoMood.Waiting
 
     RunStatus.DONE -> com.kriptoncod.app.ui.components.LogoMood.Success
 

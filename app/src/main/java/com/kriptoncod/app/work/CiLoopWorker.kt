@@ -9,10 +9,7 @@ import com.kriptoncod.app.data.github.GitHubFile
 import com.kriptoncod.app.data.github.GitHubService
 import com.kriptoncod.app.data.github.RunWait
 import com.kriptoncod.app.data.providers.ApiResult
-import com.kriptoncod.app.data.providers.ProviderCatalog
-import com.kriptoncod.app.data.run.CodeBlockParser
-import com.kriptoncod.app.data.run.PathSafety
-import com.kriptoncod.app.domain.AccountStatus
+import com.kriptoncod.app.data.run.CiFixer
 import com.kriptoncod.app.domain.CiLogParser
 import com.kriptoncod.app.domain.RunStatus
 import kotlinx.coroutines.flow.first
@@ -71,35 +68,12 @@ class CiLoopWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         val errors = CiLogParser.parse(logText)
         if (errors.isEmpty()) return failRun(runId) // hata çözümlenemedi
 
-        // En güçlü hazır AI ile düzelt
-        val fixPrompt = buildString {
-            appendLine(
-                "Aşağıdaki CI hatalarını düzelt. Yalnızca düzeltilmiş dosyaları " +
-                    "```yol/dosya biçiminde kod bloklarıyla döndür.",
-            )
-            appendLine(CiLogParser.toPromptSummary(errors))
-        }
-        val account = c.aiAccountRepository.observeAll().first()
-            .filter { it.enabled && it.status == AccountStatus.READY }
-            .maxByOrNull { it.powerRank } ?: return retryOrFail()
-
-        val credential = c.credentialProvider.credentialFor(account) ?: return retryOrFail()
-        val endpoint = ProviderCatalog.byId(account.providerId)?.resolve() ?: return retryOrFail()
-
+        // Düzeltme: hatalı dosyaların güncel içeriğiyle; hesaplar sırayla denenir (bkz. CiFixer).
         c.runRepository.setRunStatus(runId, RunStatus.FIXING)
-        val fixed = try {
-            c.aiGenerator.generate(endpoint, account.modelId, credential, fixPrompt)
-        } catch (e: Exception) {
-            return retryOrFail()
+        val blocks = when (val fixed = c.ciFixer.fix(runId, errors, current.ciAttempts)) {
+            is CiFixer.Result.Fixed -> fixed.files
+            is CiFixer.Result.Failed -> return retryOrFail()
         }
-
-        val blocks = CodeBlockParser.parse(fixed).mapNotNull { b ->
-            when (val r = PathSafety.validate(b.path)) {
-                is PathSafety.Result.Safe -> b.copy(path = r.normalized)
-                is PathSafety.Result.Rejected -> null
-            }
-        }.associateBy { it.path }.values.toList() // aynı yol iki kez gelirse sonuncusu
-        if (blocks.isEmpty()) return retryOrFail()
 
         // Yeni commit + push
         val commit = try {
@@ -113,7 +87,10 @@ class CiLoopWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         } catch (e: IllegalArgumentException) {
             return failRun(runId)
         }
-        if (commit is ApiResult.Ok) c.runRepository.setRunStatus(runId, RunStatus.CI_WAITING)
+        if (commit is ApiResult.Ok) {
+            runCatching { c.ciFixer.applyToZip(runId, blocks) } // sonraki tur güncel içerikle çalışsın
+            c.runRepository.setRunStatus(runId, RunStatus.CI_WAITING)
+        }
         return retryOrFail() // yeni CI turunu izle
     }
 

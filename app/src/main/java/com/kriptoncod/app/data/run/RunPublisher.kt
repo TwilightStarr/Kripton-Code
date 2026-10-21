@@ -10,7 +10,8 @@ import com.kriptoncod.app.domain.RunStatus
 
 /**
  * Tamamlanan run'ın zip'indeki dosyaları, seçilen repoda yeni bir dala (`kriptoncod/run-<id>`)
- * TEK commit olarak gönderir. Commit'e doğrulama workflow'u da eklenir; böylece push CI'ı tetikler.
+ * TEK commit olarak gönderir. Commit'e doğrulama workflow'u ve (projede yoksa) türe özel `.kriptoncod/verify.sh`
+ * eklenir; böylece push CI'ı tetikler ve CI gerçekten derleyip test koşar.
  */
 class RunPublisher(
     private val runs: RunRepository,
@@ -37,6 +38,12 @@ class RunPublisher(
             .map { (path, bytes) -> GitHubFile(path, bytes) }
         if (files.isEmpty()) return false
 
+        // Projede kendi doğrulaması yoksa türe göre derleme + test betiği eklenir; aksi halde CI hiçbir şeyi doğrulamaz.
+        val extra = mutableListOf(GitHubFile(VerifyWorkflow.PATH, VerifyWorkflow.YAML))
+        if (files.none { it.path == VerifyScripts.PATH }) {
+            VerifyScripts.scriptFor(VerifyScripts.detect(files.map { it.path }))?.let { extra += GitHubFile(VerifyScripts.PATH, it) }
+        }
+
         return try {
             val base = github.defaultBranch(token, repo)
             if (base !is ApiResult.Ok) return false
@@ -48,7 +55,7 @@ class RunPublisher(
                 repo = repo,
                 branch = branch,
                 message = "Kripton Cod: run #$runId",
-                files = files + GitHubFile(VerifyWorkflow.PATH, VerifyWorkflow.YAML),
+                files = files + extra,
             )
             commit is ApiResult.Ok
         } catch (_: IllegalArgumentException) {

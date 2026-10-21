@@ -16,6 +16,7 @@ fun RunStatus.labelRes(): Int = when (this) {
     RunStatus.FIXING -> R.string.run_status_fixing
     RunStatus.PAUSED -> R.string.run_status_paused
     RunStatus.DONE -> R.string.run_status_done
+    RunStatus.PARTIAL -> R.string.run_status_partial
     RunStatus.FAILED -> R.string.run_status_failed
     RunStatus.CANCELLED -> R.string.run_status_cancelled
 }

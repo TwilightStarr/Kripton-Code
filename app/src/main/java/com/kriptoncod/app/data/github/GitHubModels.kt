@@ -44,7 +44,11 @@ sealed interface RunWait {
 object VerifyWorkflow {
     const val PATH = ".github/workflows/kriptoncod-verify.yml"
 
-    /** Varsa `.kriptoncod/verify.sh` çalıştırır; yoksa üretilen dosyaların boş olmadığını denetler. */
+    /**
+     * `.kriptoncod/verify.sh` çalıştırır (RunPublisher, projede yoksa türe göre derleme + test betiği ekler).
+     * Betik yoksa (proje türü tanınmadı) yalnız dosyaların boş olmadığına bakılır ve bu açıkça UYARI olarak basılır:
+     * bu durumda yeşil sonuç derleme/test doğrulaması DEĞİLDİR.
+     */
     val YAML: String = """
         name: kriptoncod-verify
         on:
@@ -65,6 +69,7 @@ object VerifyWorkflow {
                   if [ -f .kriptoncod/verify.sh ]; then
                     bash .kriptoncod/verify.sh
                   else
+                    echo "::warning::Proje türü tanınmadı ve .kriptoncod/verify.sh yok: yalnızca dosyaların boş olmadığı denetlendi. Derleme/test DOĞRULANMADI."
                     git ls-files -z | grep -zv '^\.github/' | xargs -0 -r -I{} test -s "{}"
                   fi
     """.trimIndent() + "\n"

@@ -5,6 +5,19 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
+### Değişti (dayanıklılık)
+- **CI düzeltmesi artık kör değil**: istemde hatanın geçtiği dosyaların güncel içeriği ve projenin arayüz özeti var. Hesaplar güce göre sırayla denenir (hata/boş/kesik cevapta sıradaki hesaba geçilir) ve her CI turunda başlangıç hesabı kaydırılır. AI'ın büyük bir dosyayı yarıdan fazla kısaltması reddedilir; düzeltme zip'e de işlenir.
+- **Sabır**: sunucu/ağ hatasında düğüm artık 60 denemeye kadar (bekleme 15 sn'den 15 dk'ya artar, toplam ~7-8 saat) yeniden denenir; önce havuzdaki yedek hesap denenir. Bağlam aşımı, kesik çıktı, geçersiz istek gibi kalıcı hatalarda da sıradaki hesaba/modele geçilir; hepsi başarısızsa düğüm düşer.
+- **Android sınırları**: 15 dakikada bir çalışan **bekçi** (`RunWatchdogWorker`) zinciri kopmuş yarım run'ları (dağıtım ve CI izleme) yeniden kurar; kurtarma artık yalnız uygulama açılışına bağlı değil. Ön plan servisi (dataSync, Android 15 günlük ~6 saat kota) başlatılamazsa hata yutulmaz: kullanıcı bilgilendirilir ve iş 8 dakikalık dilimlerle sürer. WorkManager 2.10.0'a yükseltildi (Android 15 dataSync zaman aşımı yönetimi). Not: kullanıcı uygulamayı "Zorla durdur" ederse Android tüm zamanlanmış işleri siler; uygulama elle açılana dek hiçbir şey çalışamaz.
+- **Ara kayıt**: her katalog birleştirmesi bitince katalogun dosyaları ve ham düğüm çıktıları GitHub'da `kriptoncod/wip-<runId>` dalına commit edilir (`[skip ci]`). Telefon kaybolsa bile iş depoda durur. Repo seçili ve token tanımlıysa çalışır; hata run'ı etkilemez.
+
+### Değişti (güvenilir sonuç)
+- **Kısmi sonuç (`PARTIAL`)**: nihai birleştirme bitse bile bir düğüm başarısız olduysa run artık yeşil "Tamamlandı" değil **Kısmi — onay bekliyor** olur. GitHub'a otomatik gönderilmez; Run ekranındaki "Eksik haliyle GitHub'a gönder" düğmesiyle onaylanır. Başarısız düğümler yeniden denenebilir.
+- **CI doğrulaması**: projede `.kriptoncod/verify.sh` yoksa türe göre (Node, Python, Gradle/Android, Maven, Go, Rust) derleme + test betiği eklenir. Test yoksa betik "TEST YOK" ile bilerek başarısız olur. Tür tanınmazsa CI zayıf denetimi açık uyarıyla basar.
+- **Test yazdırma**: push'tan önce projede test yoksa en güçlü hesaptan başlayarak AI'a yalnızca test dosyaları yazdırılır (kaynak kod, workflow ve verify.sh'a yazılamaz); sonuç `_kripton/tests.md` içinde raporlanır.
+- **Birleştirme kodla**: katalog/nihai birleştirme dosya yoluna göre kodla yapılır; çakışmasız dosyalar AI'a gitmez ve düşemez. AI yalnız aynı yolda farklı içerik varsa, yalnız o dosyalarla çağrılır; boş/kısaltılmış cevapta en uzun sürüm korunur.
+- `[[girdi: ...]]` artık önceki çıktının tamamı yerine **arayüz özeti** (yollar + bildirim satırları) verir.
+
 ### Değişti (tema)
 - Tema seçenekleri yalnızca **Sistem / Koyu / Açık**. Eski kayıtlar (siyah, grafit, adaçayı) Koyu'ya, bilinmeyen değer Sistem'e düşer. Tema değişimi renk geçişiyle animasyonludur. Açılış ekranı koyu kalır (`values-night` yalnızca pencere zemini için, `values-night-v31` açılış temasını koyu tutar).
 

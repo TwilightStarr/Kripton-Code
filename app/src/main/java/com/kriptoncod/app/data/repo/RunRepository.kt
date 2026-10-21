@@ -107,13 +107,13 @@ class RunRepository(
     /**
      * Başarısız bir düğümü (ve çıktısına dayanan bitmiş düğümleri, bkz. [RetryPlanner]) sıfırdan çalışacak
      * şekilde hazırlar; run'ı RUNNING yapar. [accountId] verilirse düğüm o hesaba yönlendirilir.
-     * Yalnız FAILED/DONE run'larda ve FAILED düğümde geçerlidir; aksi halde null döner (hiçbir şey değişmez).
+     * Yalnız FAILED/DONE/PARTIAL run'larda ve FAILED düğümde geçerlidir; aksi halde null döner (hiçbir şey değişmez).
      * @return run kimliği (çağıran dağıtımı yeniden başlatmalı: bkz. RunScheduler.retryNode).
      */
     suspend fun prepareRetry(jobId: Long, accountId: Long? = null): Long? {
         val job = jobs.get(jobId) ?: return null
         val run = runs.get(job.runId) ?: return null
-        if (run.status != RunStatus.FAILED && run.status != RunStatus.DONE) return null
+        if (run.status != RunStatus.FAILED && run.status != RunStatus.DONE && run.status != RunStatus.PARTIAL) return null
         val ids = RetryPlanner.plan(job, jobs.getByRun(job.runId))
         if (ids.isEmpty()) return null
         // Önce dosyalar: yarıda çökerse recover() "DONE ama dosyası yok" işleri zaten PENDING'e alır;

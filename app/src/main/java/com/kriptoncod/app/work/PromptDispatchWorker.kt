@@ -24,22 +24,42 @@ class PromptDispatchWorker(context: Context, params: WorkerParameters) : Corouti
         val notify = runCatching { container.themeStore.notifyFlow.first() }.getOrDefault(true)
 
         // Arka planda kısılmamak için HER çalışma ön plana alınır (web oturumu WebView'ı da buna bağlıdır).
+        // Android 15'te dataSync servis tipinin günlük süre kotası (~6 saat) vardır; dolunca setForeground
+        // fırlatır. Bu artık sessizce yutulmaz: kullanıcı bilgilendirilir ve iş KISA DİLİMLERLE sürer
+        // (dilim sonunda zincir yeniden kurulur; kota yenilenince ön plan koruması geri gelir, bekçi de zinciri izler).
         val ctx = applicationContext
-        runCatching {
+        var unprotected = !foregroundOk {
             setForeground(RunNotifier.foregroundInfo(ctx, ctx.getString(R.string.notif_running), runId = runId))
         }
+        if (unprotected && notify) {
+            RunNotifier.event(
+                ctx,
+                runId,
+                RunNotifier.KIND_WAITING,
+                ctx.getString(R.string.notif_fgs_limit_title),
+                ctx.getString(R.string.notif_fgs_limit_text),
+            )
+        }
+        val startedAt = System.currentTimeMillis()
         RunNotifier.clearPaused(ctx, runId)
         RunWidgetUpdater.refresh(ctx)
 
         return try {
-            val outcome = container.promptDispatcher.process(runId) { done, total ->
-                runCatching {
-                    setForeground(
-                        RunNotifier.foregroundInfo(ctx, ctx.getString(R.string.notif_progress, done, total), done, total, runId),
-                    )
-                }
-                RunWidgetUpdater.refresh(ctx)
-            }
+            val outcome = container.promptDispatcher.process(
+                runId,
+                onProgress = { done, total ->
+                    if (!unprotected) {
+                        unprotected = !foregroundOk {
+                            setForeground(
+                                RunNotifier.foregroundInfo(ctx, ctx.getString(R.string.notif_progress, done, total), done, total, runId),
+                            )
+                        }
+                    }
+                    RunWidgetUpdater.refresh(ctx)
+                },
+                // Koruma yokken tek çalışma 8 dakikayı geçmez (sistem kısıtlı işleri ~10 dakikada öldürür).
+                shouldYield = { unprotected && System.currentTimeMillis() - startedAt > UNPROTECTED_SLICE_MS },
+            )
             when (outcome) {
                 is DispatchOutcome.Wait -> {
                     container.runScheduler.resume(runId, outcome.delayMs)
@@ -62,6 +82,14 @@ class PromptDispatchWorker(context: Context, params: WorkerParameters) : Corouti
                             RunNotifier.KIND_DONE,
                             ctx.getString(R.string.notif_done_title),
                             ctx.getString(R.string.notif_done_text, runId),
+                        )
+                    } else if (outcome.status == RunStatus.PARTIAL) {
+                        RunNotifier.event(
+                            ctx,
+                            runId,
+                            RunNotifier.KIND_FAILED,
+                            ctx.getString(R.string.notif_partial_title),
+                            ctx.getString(R.string.notif_partial_text, runId),
                         )
                     } else if (outcome.status == RunStatus.FAILED) {
                         RunNotifier.event(
@@ -102,8 +130,19 @@ class PromptDispatchWorker(context: Context, params: WorkerParameters) : Corouti
         }
     }
 
+    /** [block] ön plan kurulumu; fırlatırsa (kota/izin) false döner. İptal istisnası yutulmaz. */
+    private suspend fun foregroundOk(block: suspend () -> Unit): Boolean = try {
+        block()
+        true
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        false
+    }
+
     companion object {
         const val KEY_RUN_ID = "run_id"
+        private const val UNPROTECTED_SLICE_MS = 8L * 60 * 1000
         private const val MAX_WORKER_ATTEMPTS = 3
         private const val LONG_WAIT_MS = 5L * 60 * 1000
     }
