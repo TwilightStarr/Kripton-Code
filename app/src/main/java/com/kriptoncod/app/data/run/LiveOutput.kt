@@ -33,6 +33,14 @@ class LiveOutput(
     /** [jobId] için üreticiye verilecek alıcı. [clear] sonrası eski alıcıdan gelen geç parçalar yok sayılır. */
     fun sinkFor(jobId: Long): StreamSink = synchronized(lock) { Sink(jobId).also { sinks[jobId] = it } }
 
+    /**
+     * Akış olmayan kısa durum notu (bekleme ya da hata sebebi). Yalnız bellekte durur; [clear] ile silinir.
+     * Düğüm ayrıntısında, çıktısı olmayan BEKLİYOR/BAŞARISIZ düğümler için gösterilir.
+     */
+    fun note(jobId: Long, text: String) {
+        synchronized(lock) { state.value = state.value + (jobId to text) }
+    }
+
     /** Düğüm bitti/başarısız/iptal: canlı metin atılır (kalıcı çıktı depodan okunur). */
     fun clear(jobId: Long) {
         synchronized(lock) {

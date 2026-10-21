@@ -34,6 +34,22 @@ android {
         !System.getenv("KEY_PASSWORD").isNullOrBlank()
 
     signingConfigs {
+        // Sabit debug imzası: CI her çalışmada geçici bir debug anahtarı üretirdi; imza her sürümde değiştiği için
+        // Android güncellemeyi reddederdi. Anahtar depoda base64 METİN olarak (debug-cert.txt) durur ve derlemede
+        // build klasörüne açılır; böylece her APK öncekinin üstüne kurulur (Obtainium vb. sorunsuz günceller).
+        // Yalnız kişisel/debug dağıtım içindir.
+        val debugCertText = file("debug-cert.txt")
+        if (debugCertText.exists()) {
+            val decoded = project.layout.buildDirectory.get().asFile.resolve("debug-signing/kripton-debug.p12")
+            decoded.parentFile.mkdirs()
+            decoded.writeBytes(java.util.Base64.getMimeDecoder().decode(debugCertText.readText()))
+            getByName("debug") {
+                storeFile = decoded
+                storePassword = "kripton-debug"
+                keyAlias = "kripton"
+                keyPassword = "kripton-debug"
+            }
+        }
         if (hasReleaseSigning) {
             create("release") {
                 storeFile = file(releaseKeystorePath!!)

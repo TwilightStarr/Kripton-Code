@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.cancellation.CancellationException
 
 sealed interface DispatchOutcome {
     data class Finished(val status: RunStatus) : DispatchOutcome
@@ -62,6 +63,8 @@ class PromptDispatcher(
     private val onCatalogDone: suspend (runId: Long, mergeJob: Job) -> Unit = { _, _ -> },
     /** `[[tekrar-bekle: ..]]` beklemesi; testlerde sahte verilir. */
     private val sleep: suspend (ms: Long) -> Unit = { delay(it) },
+    /** Beklenmedik bir istisna düğümü düşürünce çağrılır (çökme günlüğüne yazmak için); kendi hatası yutulur. */
+    private val onJobError: (job: Job, error: Throwable) -> Unit = { _, _ -> },
 ) {
 
     private fun sinkFor(job: Job): StreamSink = live?.sinkFor(job.id) ?: StreamSink.NONE
@@ -161,7 +164,7 @@ class PromptDispatcher(
         while (true) {
             val all = runs.getJobs(runId)
             val job = all.firstOrNull {
-                it.id !in visited && (it.state == JobState.PENDING || it.state == JobState.WAITING) && isReady(it, all)
+                it.id !in visited && (it.state == JobState.PENDING || it.state == JobState.WAITING) && readyOrBroken(it, all)
             } ?: break
             if (shouldYield()) return DispatchOutcome.Wait(YIELD_DELAY_MS)
             visited += job.id
@@ -169,7 +172,19 @@ class PromptDispatcher(
                 RunStatus.CANCELLED, RunStatus.PAUSED -> return DispatchOutcome.Cancelled
                 else -> Unit
             }
-            val result = processJob(job, all)
+            // Beklenmedik istisna run'ı sessizce kilitlemesin: düğüm sebebiyle birlikte BAŞARISIZ olur, run sürer;
+            // kullanıcı düğümü tek başına yeniden deneyebilir (RunScheduler.retryNode).
+            val result = try {
+                processJob(job, all)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                live?.clear(job.id)
+                runCatching { runs.failJob(job.id) }
+                live?.note(job.id, "Beklenmeyen hata: ${e::class.simpleName}: ${e.message.orEmpty().take(300)}")
+                runCatching { onJobError(job, e) }
+                JobResult.Failed
+            }
             runs.getJobs(runId).let { l -> onProgress(l.count { it.state == JobState.DONE }, l.size) }
             if (result is JobResult.Wait) {
                 wakeAtMs = minOf(wakeAtMs ?: result.untilMs, result.untilMs)
@@ -210,6 +225,21 @@ class PromptDispatcher(
 
         JobKind.FINAL_MERGE ->
             all.filter { it.kind == JobKind.WORK || it.kind == JobKind.CATALOG_MERGE }.all { it.isTerminal() }
+    }
+
+    /** Hazırlık denetimi (yönerge ayrıştırma vb.) fırlatırsa düğüm "hazır" sayılır; hata [processJob]'da sebebiyle düşer. */
+    private suspend fun readyOrBroken(job: Job, all: List<Job>): Boolean = try {
+        isReady(job, all)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        true
+    }
+
+    private fun waitNote(untilMs: Long): String {
+        val minutes = ((untilMs - now()) / 60_000L).coerceAtLeast(0) + 1
+        return "Tüm hesaplar şu an kullanılamıyor (sağlayıcı sınırı, günlük kota ya da geçici arıza). " +
+            "Yaklaşık $minutes dk sonra yeniden denenecek."
     }
 
     private fun Job.isTerminal() = state == JobState.DONE || state == JobState.FAILED
@@ -304,10 +334,11 @@ class PromptDispatcher(
         }
     }
 
-    private fun definitionSummary(d: FlowDirectives): String = buildString {
-        appendLine("Değişkenler:")
-        d.variables.forEach { appendLine("- ${it.name} = ${it.value}") }
-    }.trimEnd()
+    private fun definitionSummary(d: FlowDirectives): String =
+        buildString {
+            appendLine("Değişkenler:")
+            d.variables.forEach { appendLine("- ${it.name} = ${it.value}") }
+        }.trimEnd()
 
     private sealed interface JobResult {
         data object Done : JobResult
@@ -366,6 +397,7 @@ class PromptDispatcher(
                 is Pick.Use -> pick.account
 
                 is Pick.WaitUntil -> {
+                    live?.note(job.id, waitNote(pick.untilMs))
                     runs.waitJob(job.id)
                     return JobResult.Wait(pick.untilMs)
                 }
@@ -376,6 +408,11 @@ class PromptDispatcher(
                         continue
                     }
                     // Kullanılabilir hesap kalmadı: iş BAŞARISIZ OLMAZ, kullanıcı hesap ekleyene/açana kadar bekler.
+                    live?.note(
+                        job.id,
+                        "Kullanılabilir hesap yok: hesaplar kapalı ya da Hata durumunda. " +
+                            "Hesap açılınca ya da onarılınca otomatik yeniden denenecek.",
+                    )
                     runs.waitJob(job.id)
                     return JobResult.Wait(now() + NO_ACCOUNT_WAIT_MS)
                 }
@@ -397,6 +434,7 @@ class PromptDispatcher(
             }
 
             if (job.accountId != account.id) runs.assignAccount(job.id, account.id)
+            live?.clear(job.id) // eski bekleme notu canlı akışa karışmasın
             runs.startJob(job.id)
             val startedAt = now()
             val meter = TokenMeter()

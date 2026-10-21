@@ -164,7 +164,12 @@ class AppContainer(context: Context) {
         )
     }
     val accountHealthChecker: AccountHealthChecker by lazy {
-        AccountHealthChecker(aiAccountRepository, credentialProvider, validate = { endpoint, key -> modelService.validate(endpoint, key) })
+        AccountHealthChecker(
+            aiAccountRepository,
+            credentialProvider,
+            validate = { endpoint, key -> modelService.validate(endpoint, key) },
+            hasWebSession = { accountId -> webSessionStore.has(accountId) },
+        )
     }
     val promptDispatcher: PromptDispatcher by lazy {
         PromptDispatcher(
@@ -176,6 +181,9 @@ class AppContainer(context: Context) {
             usage = usageRepository,
             live = liveOutput,
             onCatalogDone = { runId, merge -> runCheckpointer.checkpoint(runId, merge) },
+            onJobError = { job, error ->
+                com.kriptoncod.app.data.crash.RunErrorLog.record(appContext, "job", job.runId, job.id, job.title, error)
+            },
         )
     }
     val runScheduler: RunScheduler by lazy { RunScheduler(WorkManager.getInstance(appContext), runRepository) }

@@ -24,6 +24,12 @@ class AccountHealthChecker(
     private val credentials: CredentialProvider,
     private val validate: suspend (ProviderEndpoint, String) -> ApiResult<Unit>,
     private val resolveEndpoint: (AiAccount) -> ProviderEndpoint? = AccountEndpoints::resolve,
+    /**
+     * Web oturumlu hesap için kayıtlı (boş olmayan) oturum var mı. null: web hesapları yoklanmaz (eski davranış).
+     * Çerezlerin sunucuda süresi dolup dolmadığı çevrimdışı bilinemez; o durum bir iş giriş ekranıyla karşılaşınca
+     * ([WebReply.Status.NEEDS_LOGIN]) hesabı ERROR yapar. Burada yalnız oturumu HİÇ olmayan hesap yakalanır.
+     */
+    private val hasWebSession: (suspend (accountId: Long) -> Boolean)? = null,
 ) {
     enum class Verdict {
         /** Anahtar geçerli, durum değişmedi. */
@@ -51,6 +57,13 @@ class AccountHealthChecker(
     suspend fun checkAll(): List<Result> = accounts.observeAll().first().filter { it.enabled }.map { check(it) }
 
     suspend fun check(account: AiAccount): Result {
+        if (account.authType == AuthType.WEB_SESSION && hasWebSession != null) {
+            if (!hasWebSession.invoke(account.id)) {
+                if (account.status != AccountStatus.ERROR) accounts.markError(account.id)
+                return Result(account.id, Verdict.KEY_INVALID)
+            }
+            return Result(account.id, Verdict.OK)
+        }
         if (account.authType != AuthType.API_KEY && account.authType != AuthType.PROXY) return skipped(account)
         val endpoint = resolveEndpoint(account) ?: return skipped(account)
         val credential = credentials.credentialFor(account)

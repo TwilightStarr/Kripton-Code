@@ -599,6 +599,15 @@ private fun NodeDetail(
                 text == null && liveText != null && job.state == JobState.RUNNING ->
                     LiveStreamView(liveText.orEmpty())
 
+                // Çıktısı olmayan bekleyen/başarısız düğüm: dağıtıcının yazdığı bekleme ya da hata sebebi.
+                text == null && !liveText.isNullOrBlank() &&
+                    (job.state == JobState.WAITING || job.state == JobState.FAILED || job.state == JobState.PENDING) ->
+                    Text(
+                        liveText.orEmpty(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = k.muted,
+                    )
+
                 text == null -> Text(
                     stringResource(R.string.run_node_no_output),
                     style = MaterialTheme.typography.bodySmall,
