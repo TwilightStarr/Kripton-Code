@@ -48,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.kriptoncod.app.BuildConfig
 import com.kriptoncod.app.R
 import com.kriptoncod.app.domain.ThemePreference
 import com.kriptoncod.app.ui.components.KButton
@@ -202,6 +203,17 @@ fun SettingsScreen(
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
+            }
+        }
+
+        // Kurulu sürüm: güncellemenin gerçekten yüklendiğini uygulamanın içinden doğrulamak için.
+        NodeCard(modifier = Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(stringResource(R.string.settings_version_title), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(R.string.settings_version_value, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
             }
         }
 

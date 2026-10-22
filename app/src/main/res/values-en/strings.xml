@@ -331,4 +331,6 @@
     <string name="price_hint">Optional: USD per 1 million tokens. Only used to estimate cost on the usage screen; leave empty to hide cost.</string>
     <string name="run_node_plan_no_account">No account needed (ready catalog)</string>
     <string name="run_no_usable_accounts">No usable account: accounts are disabled or in error. Enable the account in the AIs tab, or sign in again for web accounts; the run continues on its own.</string>
+    <string name="settings_version_title">Version</string>
+    <string name="settings_version_value" tools:ignore="PluralsCandidate">%1$s (version code %2$d)</string>
 </resources>

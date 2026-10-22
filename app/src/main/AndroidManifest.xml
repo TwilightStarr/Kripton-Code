@@ -59,15 +59,14 @@
             tools:node="merge" />
 
         <!--
-            ACRA kütüphanesi bu sağlayıcıyı "tools:replace" ile işaretler ama kendi başına tanımlamaz; bu da her derlemede
-            "tagged to replace other declarations but no other declaration present" uyarısı üretiyordu. Aynı sağlayıcıyı
-            burada (kütüphanenin değerleriyle) tanımlamak uyarıyı giderir; davranış değişmez (ağa gönderim yok).
+            ACRA bu sağlayıcıyı "tools:replace" ile işaretler ama kendi başına tanımlamaz; bu yüzden her derlemede
+            "tagged to replace other declarations but no other declaration present" uyarısı çıkıyordu (aynı sağlayıcıyı
+            burada tanımlamak uyarıyı gidermedi). Sağlayıcı yalnız e-posta/ek dosya gönderimi içindir; bu uygulama
+            yalnız yerel yazıcıyı (LocalCrashSender) kullanır, ek dosya yok. Bu yüzden birleşik manifestten çıkarılır.
         -->
         <provider
             android:name="org.acra.attachment.AcraContentProvider"
-            android:authorities="${applicationId}.acra"
-            android:exported="false"
-            android:grantUriPermissions="true" />
+            tools:node="remove" />
 
         <!-- Bildirimdeki Duraklat / Devam et / İptal düğmeleri (yalnız uygulamanın kendi PendingIntent'leri). -->
         <receiver

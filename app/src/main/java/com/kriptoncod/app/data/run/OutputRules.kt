@@ -68,7 +68,8 @@ sealed interface OutputRule {
     /** Kapanmamış kod çiti (kesik çıktı) olmamalı. */
     data object Complete : OutputRule {
         override val label get() = "kesilmemiş"
-        override fun violation(output: String) = if (CodeBlockParser.analyze(output).unclosedFence) "çıktı kesilmiş (kapanmamış kod bloğu)" else null
+        override fun violation(output: String) =
+            if (CodeBlockParser.analyze(output).unclosedFence) "çıktı kesilmiş (kapanmamış kod bloğu)" else null
     }
 }
 
