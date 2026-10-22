@@ -25,6 +25,9 @@ class LiveOutput(
     private val sinks = HashMap<Long, Sink>()
     private val state = MutableStateFlow<Map<Long, String>>(emptyMap())
 
+    /** Düğümün son başarısız denemesinin sebebi; [clear] bunu silmez, düğüm başarıyla bitince [forget] siler. */
+    private val failures = HashMap<Long, String>()
+
     /** Düğümün canlı metni; akış yoksa null. Aynı değer art arda yayılmaz. */
     fun observe(jobId: Long): Flow<String?> = state.map { it[jobId] }.distinctUntilChanged()
 
@@ -41,12 +44,36 @@ class LiveOutput(
         synchronized(lock) { state.value = state.value + (jobId to text) }
     }
 
-    /** Düğüm bitti/başarısız/iptal: canlı metin atılır (kalıcı çıktı depodan okunur). */
+    /**
+     * Başarısız denemenin sebebi. [note]'tan farkı: sonraki [clear] çağrısında silinmez; böylece düğüm
+     * yeniden denenirken ya da beklemeye alınırken kullanıcı SON hatayı görmeye devam eder.
+     */
+    fun failure(jobId: Long, text: String) {
+        synchronized(lock) {
+            failures[jobId] = text
+            state.value = state.value + (jobId to text)
+        }
+    }
+
+    /** Düğüm başarıyla bitti: kalıcı hata notu da atılır. */
+    fun forget(jobId: Long) {
+        synchronized(lock) {
+            failures.remove(jobId)
+            if (jobId in state.value) state.value = state.value - jobId
+        }
+    }
+
+    /** Düğüm bitti/başarısız/iptal: canlı metin atılır (kalıcı çıktı depodan okunur); varsa son hata notu kalır. */
     fun clear(jobId: Long) {
         synchronized(lock) {
             sinks.remove(jobId)?.closed = true
             buffers.remove(jobId)
-            if (jobId in state.value) state.value = state.value - jobId
+            val kept = failures[jobId]
+            if (kept != null) {
+                state.value = state.value + (jobId to kept)
+            } else if (jobId in state.value) {
+                state.value = state.value - jobId
+            }
         }
     }
 

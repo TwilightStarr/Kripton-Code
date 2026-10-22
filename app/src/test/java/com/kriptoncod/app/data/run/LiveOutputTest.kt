@@ -59,4 +59,23 @@ class LiveOutputTest {
         sink.append("geç")
         assertNull(l.current(3))
     }
+
+    @Test fun failureNoteSurvivesClearUntilForgotten() {
+        val l = live(interval = 0)
+        l.failure(5, "Son deneme başarısız")
+        l.clear(5) // yeniden deneme başlarken canlı metin temizlenir; hata sebebi kalır
+        assertEquals("Son deneme başarısız", l.current(5))
+        l.forget(5) // düğüm başarıyla bitti
+        assertNull(l.current(5))
+    }
+
+    @Test fun streamedTextReplacesFailureNoteAndClearRestoresIt() {
+        val l = live(interval = 0)
+        l.failure(6, "hata")
+        val sink = l.sinkFor(6)
+        sink.append("yeni çıktı")
+        assertEquals("yeni çıktı", l.current(6))
+        l.clear(6)
+        assertEquals("hata", l.current(6))
+    }
 }

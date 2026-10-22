@@ -159,7 +159,8 @@ class OutputRulesTest {
 }
 
 class RetryPlannerReferenceTest {
-    private fun job(id: Long, title: String, body: String, state: JobState = JobState.DONE, kind: JobKind = JobKind.WORK) = Job(id = id, runId = 1, promptId = id, state = state, updatedAt = 0, kind = kind, catalog = "k", title = title, body = body)
+    private fun job(id: Long, title: String, body: String, state: JobState = JobState.DONE, kind: JobKind = JobKind.WORK) =
+        Job(id = id, runId = 1, promptId = id, state = state, updatedAt = 0, kind = kind, catalog = "k", title = title, body = body)
 
     @Test fun outputReferenceChainsAreResetLikeInputs() {
         val all = listOf(

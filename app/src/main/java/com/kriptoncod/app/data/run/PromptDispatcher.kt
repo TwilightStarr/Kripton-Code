@@ -186,6 +186,7 @@ class PromptDispatcher(
                 JobResult.Failed
             }
             runs.getJobs(runId).let { l -> onProgress(l.count { it.state == JobState.DONE }, l.size) }
+            if (result is JobResult.Done) live?.forget(job.id)
             if (result is JobResult.Wait) {
                 wakeAtMs = minOf(wakeAtMs ?: result.untilMs, result.untilMs)
             } else if (result is JobResult.Done && job.kind == JobKind.PLAN) {
@@ -240,6 +241,18 @@ class PromptDispatcher(
         val minutes = ((untilMs - now()) / 60_000L).coerceAtLeast(0) + 1
         return "Tüm hesaplar şu an kullanılamıyor (sağlayıcı sınırı, günlük kota ya da geçici arıza). " +
             "Yaklaşık $minutes dk sonra yeniden denenecek."
+    }
+
+    /** Düğüm ayrıntısında gösterilen, son başarısız denemenin kısa açıklaması (prompt/anahtar/çıktı içermez). */
+    private fun failureNote(account: AiAccount, e: AiGenerationException): String {
+        val reason = when (e.kind) {
+            Kind.UNAUTHORIZED -> "oturum/anahtar geçersiz ya da giriş istendi; hesap Hata durumuna alındı"
+            Kind.RATE_LIMITED -> "kota ya da istek sınırı"
+            Kind.SERVER -> "sağlayıcı geçici olarak yanıt vermedi"
+            Kind.NETWORK -> "sayfa açılmadı, giriş alanı bulunamadı, yanıt başlamadı ya da zaman aşımı"
+            else -> "geçersiz istek ya da yanıt (${e.kind.name})"
+        }
+        return "Son deneme başarısız: ${account.displayName}: $reason."
     }
 
     private fun Job.isTerminal() = state == JobState.DONE || state == JobState.FAILED
@@ -334,10 +347,11 @@ class PromptDispatcher(
         }
     }
 
-    private fun definitionSummary(d: FlowDirectives): String = buildString {
-        appendLine("Değişkenler:")
-        d.variables.forEach { appendLine("- ${it.name} = ${it.value}") }
-    }.trimEnd()
+    private fun definitionSummary(d: FlowDirectives): String =
+        buildString {
+            appendLine("Değişkenler:")
+            d.variables.forEach { appendLine("- ${it.name} = ${it.value}") }
+        }.trimEnd()
 
     private sealed interface JobResult {
         data object Done : JobResult
@@ -501,6 +515,8 @@ class PromptDispatcher(
                     waitMs = if (e.kind == Kind.RATE_LIMITED) (e.waitUntil(now()) - now()).coerceAtLeast(0) else null,
                     meter = meter,
                 )
+                // Sebep sessizce kaybolmasın: düğüm ayrıntısında SON başarısız denemenin hesabı ve sebebi görünür.
+                live?.failure(job.id, failureNote(account, e))
                 when (e.kind) {
                     Kind.UNAUTHORIZED -> {
                         // Hesap kapandı/oturum düştü: ERROR yap ve işi aynı turda havuzdaki diğer hesaba ver.

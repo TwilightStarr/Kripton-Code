@@ -13,6 +13,7 @@ import kotlin.coroutines.resume
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -97,11 +98,19 @@ object WebCookies {
         provider.cookieOrigins.mapNotNull { o -> cm.getCookie(o)?.takeIf { it.isNotBlank() }?.let { o to it } }.toMap()
     }
 
-    suspend fun evalString(webView: WebView, script: String): String? = withContext(Dispatchers.Main) {
-        suspendCancellableCoroutine<String?> { c ->
-            webView.evaluateJavascript(script, ValueCallback { raw -> c.resume(raw) })
+    /**
+     * Sayfada betik çalıştırır. WebView çökmüş/duraklamışsa geri çağrı hiç gelmeyebilir; bu yüzden süre sınırı vardır
+     * ve aşılırsa null döner (çağıranlar null'ı "yanıt yok" sayar). Aksi hâlde iş sessizce sonsuza dek takılırdı.
+     */
+    suspend fun evalString(webView: WebView, script: String): String? = withTimeoutOrNull(EVAL_TIMEOUT_MS) {
+        withContext(Dispatchers.Main) {
+            suspendCancellableCoroutine<String?> { c ->
+                webView.evaluateJavascript(script, ValueCallback { raw -> c.resume(raw) })
+            }
         }
     }
+
+    private const val EVAL_TIMEOUT_MS = 30_000L
 
     /** `evaluateJavascript` çıktısındaki JSON metin değerini düz metne çevirir ("null"/boş -> ""). */
     fun unquote(raw: String?): String {

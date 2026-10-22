@@ -471,20 +471,17 @@ class AccountEditorViewModel(
             var dot = false
             val out = StringBuilder()
             for (c in raw.replace(',', '.')) {
-                if (c.isDigit()) {
-                    out.append(c)
-                } else if (c == '.' && !dot) {
-                    dot = true
-                    out.append(c)
-                }
+                if (c.isDigit()) out.append(c) else if (c == '.' && !dot) { dot = true; out.append(c) }
             }
             return out.toString().take(MAX_PRICE_CHARS)
         }
 
         /** Boş, 0 ya da geçersiz = fiyat yok (null). */
-        internal fun parsePrice(text: String): Double? = text.toDoubleOrNull()?.takeIf { it > 0 && it.isFinite() }
+        internal fun parsePrice(text: String): Double? =
+            text.toDoubleOrNull()?.takeIf { it > 0 && it.isFinite() }
 
-        private fun Double?.toPriceText(): String = this?.takeIf { it > 0 }?.let { if (it % 1.0 == 0.0) it.toLong().toString() else it.toString() }.orEmpty()
+        private fun Double?.toPriceText(): String =
+            this?.takeIf { it > 0 }?.let { if (it % 1.0 == 0.0) it.toLong().toString() else it.toString() }.orEmpty()
 
         /** Özel sağlayıcı kalıcı adres alanı olmadığı için akışta yer almaz. */
         val SELECTABLE_PROVIDERS: List<Provider> = ProviderCatalog.all.filterNot { it.isCustom }
