@@ -45,7 +45,8 @@ class PoolStatusTest {
         recent: List<Pair<Long, UsageOutcome>> = emptyList(),
     ) = AccountHealth(id, requests, recent.map { HealthEvent(it.first, it.second) })
 
-    private fun resolve(accounts: List<AiAccount>, vararg h: AccountHealth) = PoolStatus.resolve(accounts, h.associateBy { it.accountId }, t)
+    private fun resolve(accounts: List<AiAccount>, vararg h: AccountHealth) =
+        PoolStatus.resolve(accounts, h.associateBy { it.accountId }, t)
 
     @Test fun healthyPrimaryIsActiveAndBackupIsStandby() {
         val r = resolve(listOf(acc(1), acc(2, backup = true)))

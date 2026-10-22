@@ -72,7 +72,8 @@ object AccountSelector {
      * Yalnız kota ve devre kesici engeli (sağlayıcı beklemesi hariç); MANUAL atamada kullanılır:
      * engel varsa iş atanan hesapta takılı kalmaz, havuza geçer.
      */
-    fun poolBlockUntil(account: AiAccount, health: AccountHealth?, t: Long): Long? = listOfNotNull(quotaResetAt(account, health, t), breakerReopenAt(health, t)).maxOrNull()
+    fun poolBlockUntil(account: AiAccount, health: AccountHealth?, t: Long): Long? =
+        listOfNotNull(quotaResetAt(account, health, t), breakerReopenAt(health, t)).maxOrNull()
 
     /** Hesap havuzda değilse ne zamana kadar; havuzdaysa null. ERROR hesaplar için çağrılmaz. */
     private fun blockedUntil(account: AiAccount, health: AccountHealth?, t: Long): Long? {
@@ -116,9 +117,10 @@ object AccountSelector {
     }
 
     /** Havuzdaki hesapların seçilme sırası; [PoolStatus] da aynı sıralamayı gösterir. */
-    internal fun ordering(health: Map<Long, AccountHealth>, t: Long): Comparator<AiAccount> = compareBy<AiAccount> { it.isBackup }
-        .thenBy { healthScore(health[it.id], t) < UNHEALTHY_BELOW }
-        .thenByDescending { it.powerRank }
-        .thenBy { health[it.id]?.recent?.firstOrNull()?.at ?: Long.MIN_VALUE }
-        .thenBy { it.id }
+    internal fun ordering(health: Map<Long, AccountHealth>, t: Long): Comparator<AiAccount> =
+        compareBy<AiAccount> { it.isBackup }
+            .thenBy { healthScore(health[it.id], t) < UNHEALTHY_BELOW }
+            .thenByDescending { it.powerRank }
+            .thenBy { health[it.id]?.recent?.firstOrNull()?.at ?: Long.MIN_VALUE }
+            .thenBy { it.id }
 }
