@@ -66,8 +66,7 @@ class AccountRotationTest {
         db.close()
     }
 
-    private fun dispatcher(generator: AiGenerator) =
-        PromptDispatcher(runs, prompts, accounts, credentials, generator, now = { clock }, usage = usage)
+    private fun dispatcher(generator: AiGenerator) = PromptDispatcher(runs, prompts, accounts, credentials, generator, now = { clock }, usage = usage)
 
     private suspend fun account(model: String, rank: Int, limit: Int? = null, backup: Boolean = false): Long = accounts.add(
         AiAccount(
