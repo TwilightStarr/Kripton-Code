@@ -347,10 +347,11 @@ class PromptDispatcher(
         }
     }
 
-    private fun definitionSummary(d: FlowDirectives): String = buildString {
-        appendLine("Değişkenler:")
-        d.variables.forEach { appendLine("- ${it.name} = ${it.value}") }
-    }.trimEnd()
+    private fun definitionSummary(d: FlowDirectives): String =
+        buildString {
+            appendLine("Değişkenler:")
+            d.variables.forEach { appendLine("- ${it.name} = ${it.value}") }
+        }.trimEnd()
 
     private sealed interface JobResult {
         data object Done : JobResult

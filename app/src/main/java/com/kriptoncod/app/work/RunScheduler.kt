@@ -4,6 +4,7 @@ import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OutOfQuotaPolicy
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
@@ -112,10 +113,19 @@ class RunScheduler(
         workManager.cancelUniqueWork(WorkNames.ciLoop(runId))
     }
 
-    private fun request(runId: Long, delayMs: Long) = OneTimeWorkRequestBuilder<PromptDispatchWorker>()
-        .setInputData(workDataOf(PromptDispatchWorker.KEY_RUN_ID to runId))
-        .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-        .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
-        .setInitialDelay(delayMs.coerceAtLeast(0), TimeUnit.MILLISECONDS)
-        .build()
+    private fun request(runId: Long, delayMs: Long): androidx.work.OneTimeWorkRequest {
+        val builder = OneTimeWorkRequestBuilder<PromptDispatchWorker>()
+            .setInputData(workDataOf(PromptDispatchWorker.KEY_RUN_ID to runId))
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+        if (delayMs > 0) {
+            builder.setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
+        } else {
+            // Gecikmesiz başlangıç: Doze / uygulama bekleme kovası / üretici (Vivo, Xiaomi...) kısıtları işi
+            // dakikalarca ya da saatlerce ertelemesin diye hızlandırılmış iş olarak istenir. Kota doluysa
+            // normal iş olarak sürer.
+            builder.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+        }
+        return builder.build()
+    }
 }
