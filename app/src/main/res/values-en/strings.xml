@@ -185,7 +185,7 @@
     <string name="run_launch_repo_loading">Loading repositories…</string>
     <string name="run_launch_repo_error">Couldn\'t fetch repositories. Check your token and internet connection.</string>
     <string name="run_launch_no_token">To push the result to GitHub, add a token in Settings. For now only a zip is produced.</string>
-    <string name="run_launch_no_accounts">To run, add an account in the AIs tab first.</string>
+    <string name="run_launch_no_accounts">To run, at least one account in the AIs tab must be enabled and Ready. Disabled or errored accounts cannot be used; for web accounts, sign in again.</string>
     <string name="run_launch_failed">Couldn\'t start the run.</string>
     <string name="run_launch_branch_note">The result is pushed to a new branch in the selected repository as a single commit and verified with Actions.</string>
 
@@ -329,4 +329,6 @@
     <string name="price_in_label">Input price ($/1M)</string>
     <string name="price_out_label">Output price ($/1M)</string>
     <string name="price_hint">Optional: USD per 1 million tokens. Only used to estimate cost on the usage screen; leave empty to hide cost.</string>
+    <string name="run_node_plan_no_account">No account needed (ready catalog)</string>
+    <string name="run_no_usable_accounts">No usable account: accounts are disabled or in error. Enable the account in the AIs tab, or sign in again for web accounts; the run continues on its own.</string>
 </resources>

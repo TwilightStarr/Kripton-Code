@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kriptoncod.app.R
+import com.kriptoncod.app.domain.AccountStatus
 import com.kriptoncod.app.domain.AssignmentMode
 import com.kriptoncod.app.ui.components.KriptonLoader
 import com.kriptoncod.app.ui.components.EmptyState
@@ -72,7 +73,7 @@ fun PromptSetScreen(
     if (showRun) {
         RunLaunchDialog(
             launch = { repo -> container.runLauncher.launch(setId, repo) },
-            hasAccounts = state.accounts.isNotEmpty(),
+            hasAccounts = state.accounts.any { it.enabled && it.status != AccountStatus.ERROR },
             onDismiss = { showRun = false },
             onStarted = { runId ->
                 showRun = false

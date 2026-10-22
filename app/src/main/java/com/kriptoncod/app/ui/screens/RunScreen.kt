@@ -216,6 +216,15 @@ fun RunScreen(
                 modifier = Modifier.padding(start = 4.dp, top = 2.dp),
             )
         }
+        val noUsableAccount = accounts.none { it.enabled && it.status != AccountStatus.ERROR }
+        if (noUsableAccount && status == RunStatus.RUNNING && jobs.any { it.state == JobState.WAITING || it.state == JobState.PENDING }) {
+            Text(
+                stringResource(R.string.run_no_usable_accounts),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(start = 4.dp, top = 2.dp),
+            )
+        }
         if (status == RunStatus.PARTIAL) {
             Text(
                 stringResource(R.string.run_partial_info),
@@ -495,7 +504,9 @@ private fun NodeDetail(
                 )
                 Text(
                     listOfNotNull(
-                        accountName ?: stringResource(R.string.run_node_no_account),
+                        accountName ?: stringResource(
+                            if (job.kind == JobKind.PLAN && job.state == JobState.DONE) R.string.run_node_plan_no_account else R.string.run_node_no_account,
+                        ),
                         stringResource(R.string.run_node_attempts, job.attempts),
                     ).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,

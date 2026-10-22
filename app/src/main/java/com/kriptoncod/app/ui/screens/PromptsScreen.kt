@@ -36,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import com.kriptoncod.app.domain.AccountStatus
 import com.kriptoncod.app.domain.Catalog
 import com.kriptoncod.app.domain.CatalogParser
 import com.kriptoncod.app.ui.ais.rememberContainer
@@ -106,7 +107,7 @@ fun PromptsScreen(onOpenSet: (Long) -> Unit, onRunStarted: (Long) -> Unit = {}) 
     zipCatalogs?.let { cats ->
         RunLaunchDialog(
             launch = { repo -> container.runLauncher.launchCatalogs(cats, repo) },
-            hasAccounts = accounts.isNotEmpty(),
+            hasAccounts = accounts.any { it.enabled && it.status != AccountStatus.ERROR },
             onDismiss = { zipCatalogs = null },
             onStarted = { id ->
                 zipCatalogs = null

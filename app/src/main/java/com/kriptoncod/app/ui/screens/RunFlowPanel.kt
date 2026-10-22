@@ -25,6 +25,7 @@ import com.kriptoncod.app.data.db.AiAccount
 import com.kriptoncod.app.data.db.Job
 import com.kriptoncod.app.data.run.CodeBlockParser
 import com.kriptoncod.app.data.run.PlaceholderDetector
+import com.kriptoncod.app.domain.JobKind
 import com.kriptoncod.app.domain.JobState
 import com.kriptoncod.app.ui.components.NodeAccent
 import com.kriptoncod.app.ui.components.NodeCard
@@ -113,7 +114,9 @@ private fun FlowItem(job: Job, accountName: String?, container: AppContainer, se
                 )
                 Text(
                     listOfNotNull(
-                        accountName ?: stringResource(R.string.run_node_no_account),
+                        accountName ?: stringResource(
+                            if (job.kind == JobKind.PLAN && job.state == JobState.DONE) R.string.run_node_plan_no_account else R.string.run_node_no_account,
+                        ),
                         stringResource(R.string.run_node_attempts, job.attempts),
                         SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(job.updatedAt)),
                     ).joinToString(" · "),

@@ -46,13 +46,8 @@ class UsageViewModelTest {
     private fun addAccount(limit: Int? = null, pin: Double? = null): Long = runBlocking {
         accounts.add(
             AiAccount(
-                providerId = "openai",
-                displayName = "hesap",
-                authType = AuthType.API_KEY,
-                modelId = "m",
-                powerRank = 1,
-                dailyLimit = limit,
-                priceInPerM = pin,
+                providerId = "openai", displayName = "hesap", authType = AuthType.API_KEY, modelId = "m",
+                powerRank = 1, dailyLimit = limit, priceInPerM = pin,
             ),
             "sk",
         )

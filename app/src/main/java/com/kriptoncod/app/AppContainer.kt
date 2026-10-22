@@ -168,7 +168,7 @@ class AppContainer(context: Context) {
             aiAccountRepository,
             credentialProvider,
             validate = { endpoint, key -> modelService.validate(endpoint, key) },
-            hasWebSession = { accountId -> webSessionStore.has(accountId) },
+            hasWebSession = { accountId -> webSessionStore.load(accountId)?.isEmpty == false },
         )
     }
     val promptDispatcher: PromptDispatcher by lazy {

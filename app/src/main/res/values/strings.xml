@@ -185,7 +185,7 @@
     <string name="run_launch_repo_loading">Repolar yükleniyor…</string>
     <string name="run_launch_repo_error">Repolar alınamadı. Token\'ı ve internet bağlantısını kontrol et.</string>
     <string name="run_launch_no_token">Sonucu GitHub\'a göndermek için Ayarlar\'dan bir token ekle. Şimdilik yalnızca zip üretilir.</string>
-    <string name="run_launch_no_accounts">Çalıştırmak için önce AI\'lar sekmesinden bir hesap ekle.</string>
+    <string name="run_launch_no_accounts">Çalıştırmak için AI\'lar sekmesinde en az bir hesap açık ve Hazır durumda olmalı. Kapalı ya da Hata durumundaki hesaplar kullanılamaz; web hesabında oturumu yeniden aç.</string>
     <string name="run_launch_failed">Çalıştırma başlatılamadı.</string>
     <string name="run_launch_branch_note">Sonuç, seçilen repoda yeni bir dala tek commit olarak gönderilir ve Actions ile doğrulanır.</string>
 
@@ -329,4 +329,6 @@
     <string name="price_in_label">Girdi fiyatı ($/1M)</string>
     <string name="price_out_label">Çıktı fiyatı ($/1M)</string>
     <string name="price_hint">İsteğe bağlı: 1 milyon token başına USD. Yalnız kullanım panosunda tahmini maliyeti hesaplamak içindir; boşsa maliyet gösterilmez.</string>
+    <string name="run_node_plan_no_account">Hesap gerekmez (hazır katalog)</string>
+    <string name="run_no_usable_accounts">Kullanılabilir hesap yok: hesaplar kapalı ya da Hata durumunda. AI\'lar sekmesinde hesabı aç, web hesabında oturumu yeniden aç; iş kendiliğinden devam eder.</string>
 </resources>
