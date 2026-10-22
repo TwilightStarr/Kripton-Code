@@ -1,3 +1,5 @@
+import java.util.Base64
+
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -42,7 +44,7 @@ android {
         if (debugCertText.exists()) {
             val decoded = project.layout.buildDirectory.get().asFile.resolve("debug-signing/kripton-debug.p12")
             decoded.parentFile.mkdirs()
-            decoded.writeBytes(java.util.Base64.getMimeDecoder().decode(debugCertText.readText()))
+            decoded.writeBytes(Base64.getMimeDecoder().decode(debugCertText.readText()))
             getByName("debug") {
                 storeFile = decoded
                 storePassword = "kripton-debug"

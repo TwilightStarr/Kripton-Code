@@ -284,13 +284,9 @@ object FlowDirectivesParser {
         }
         return when (name) {
             "min" -> arg.toIntOrNull()?.takeIf { it >= 0 }?.let { OutputRule.MinChars(it) } ?: bad()
-
             "max" -> arg.toIntOrNull()?.takeIf { it > 0 }?.let { OutputRule.MaxChars(it) } ?: bad()
-
             "içerir", "icerir", "contains" -> if (arg.isEmpty()) bad() else OutputRule.Contains(arg)
-
             "içermez", "icermez", "not-contains" -> if (arg.isEmpty()) bad() else OutputRule.NotContains(arg)
-
             "regex", "desen" -> {
                 if (arg.isEmpty()) {
                     bad()
@@ -303,11 +299,8 @@ object FlowDirectivesParser {
             }
 
             "dosya", "file" -> OutputRule.HasFile(arg.ifEmpty { null })
-
             "yer-tutucu-yok", "no-placeholders" -> OutputRule.NoPlaceholders
-
             "kesilmemiş", "kesilmemis", "complete" -> OutputRule.Complete
-
             else -> bad()
         }
     }
