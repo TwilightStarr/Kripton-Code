@@ -89,8 +89,7 @@ object PromptTemplate {
     }
 
     /** [text] içindeki tüm (kaçışsız) başvurular, görünüş sırasıyla. */
-    fun references(text: String): List<Ref> =
-        TOKEN.findAll(text).filter { it.groupValues[1].isEmpty() }.mapNotNull { parseRef(it.groupValues[2]) }.toList()
+    fun references(text: String): List<Ref> = TOKEN.findAll(text).filter { it.groupValues[1].isEmpty() }.mapNotNull { parseRef(it.groupValues[2]) }.toList()
 
     /** Çıktısına başvurulan düğüm başlıkları (tekrarsız, ilk yazılışla). */
     fun referencedTitles(text: String): List<String> {
@@ -141,7 +140,10 @@ object PromptTemplate {
                 val raw = ctx.vars[key] ?: ctx.builtins[key]
                 when {
                     raw == null -> ref.default ?: whole
-                    key in active || depth >= MAX_DEPTH -> whole // döngü ya da aşırı derinlik: dokunma
+
+                    key in active || depth >= MAX_DEPTH -> whole
+
+                    // döngü ya da aşırı derinlik: dokunma
                     else -> renderInner(raw, ctx, depth + 1, active + key, allowOutputs = false, missing = missing)
                 }
             }
@@ -196,11 +198,9 @@ object PromptTemplate {
         }
     }
 
-    private fun files(text: String): List<Pair<String, String>> =
-        CodeBlockParser.analyze(WebOutputCheck.canonical(text)).blocks.mapNotNull { b -> b.path?.let { it to b.content } }
+    private fun files(text: String): List<Pair<String, String>> = CodeBlockParser.analyze(WebOutputCheck.canonical(text)).blocks.mapNotNull { b -> b.path?.let { it to b.content } }
 
-    private fun cap(text: String, max: Int): String =
-        if (text.length <= max) text else text.take(max).trimEnd() + "\n… (${text.length - max} karakter kısaltıldı)"
+    private fun cap(text: String, max: Int): String = if (text.length <= max) text else text.take(max).trimEnd() + "\n… (${text.length - max} karakter kısaltıldı)"
 
     /**
      * Yerleşik değişkenler (hem Türkçe hem İngilizce adlarla): çalıştırma kimliği, başlık, katalog, sıra, tarih, deneme.

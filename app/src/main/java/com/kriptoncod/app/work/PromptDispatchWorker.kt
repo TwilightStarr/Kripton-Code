@@ -19,12 +19,11 @@ import kotlin.coroutines.cancellation.CancellationException
 class PromptDispatchWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     /** Hızlandırılmış iş (Android 11 ve altı) için gerekli ön plan bildirimi. */
-    override suspend fun getForegroundInfo(): ForegroundInfo =
-        RunNotifier.foregroundInfo(
-            applicationContext,
-            applicationContext.getString(R.string.notif_running),
-            runId = inputData.getLong(KEY_RUN_ID, -1L).takeIf { it >= 0 },
-        )
+    override suspend fun getForegroundInfo(): ForegroundInfo = RunNotifier.foregroundInfo(
+        applicationContext,
+        applicationContext.getString(R.string.notif_running),
+        runId = inputData.getLong(KEY_RUN_ID, -1L).takeIf { it >= 0 },
+    )
 
     override suspend fun doWork(): Result {
         val runId = inputData.getLong(KEY_RUN_ID, -1L)
