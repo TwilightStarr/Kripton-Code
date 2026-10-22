@@ -155,6 +155,5 @@ object UsageFormat {
     }
 
     /** USD; küçük tutarlar sıfır görünmesin diye 1 sentin altında üç basamak. */
-    fun cost(usd: Double): String =
-        if (usd in 0.0..0.0099999) String.format(java.util.Locale.ROOT, "$%.3f", usd) else String.format(java.util.Locale.ROOT, "$%.2f", usd)
+    fun cost(usd: Double): String = if (usd in 0.0..0.0099999) String.format(java.util.Locale.ROOT, "$%.3f", usd) else String.format(java.util.Locale.ROOT, "$%.2f", usd)
 }

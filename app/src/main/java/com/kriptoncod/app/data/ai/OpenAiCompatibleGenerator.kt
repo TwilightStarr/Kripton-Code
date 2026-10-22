@@ -97,6 +97,7 @@ class OpenAiCompatibleGenerator(
                         r.usage?.let(report)
                         withContext(Dispatchers.Default) { extractChoice(r.choice, normalizer) }
                     }
+
                     is Streamed.Whole -> withContext(Dispatchers.Default) { extract(r.body, normalizer, report) }
                 }
             } else {
