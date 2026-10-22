@@ -130,15 +130,10 @@ fun KriptonCodLogo(
                 } else {
                     when (mood) {
                         LogoMood.Idle -> drawRest(g, color, color)
-
                         LogoMood.Working -> drawOrbit(g, color, p)
-
                         LogoMood.Waiting -> drawWaiting(g, color, p)
-
                         LogoMood.Success -> drawSuccess(g, color, q)
-
                         LogoMood.Error -> drawError(g, color, errorColor, q)
-
                         LogoMood.Intro -> drawIntro(g, color, q)
                     }
                 }
