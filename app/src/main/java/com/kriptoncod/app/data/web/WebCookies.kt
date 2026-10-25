@@ -70,18 +70,19 @@ object WebCookies {
     }
 
     /** Çerezleri ve sayfa depolarını siler (hesap değişiminde önceki hesabın izi kalmasın). */
-    suspend fun clearAll() = withContext(Dispatchers.Main) {
-        val cm = CookieManager.getInstance()
+    suspend fun clearAll(
+        cm: CookieManager = CookieManager.getInstance(),
+        storage: WebStorage = WebStorage.getInstance(),
+    ) = withContext(Dispatchers.Main) {
         suspendCancellableCoroutine<Unit> { c ->
             cm.removeAllCookies { c.resume(Unit) }
         }
         cm.flush()
-        WebStorage.getInstance().deleteAllData()
+        storage.deleteAllData()
     }
 
     /** Kaydedilmiş oturumun çerezlerini yükler. */
-    suspend fun restore(session: WebSession) = withContext(Dispatchers.Main) {
-        val cm = CookieManager.getInstance()
+    suspend fun restore(session: WebSession, cm: CookieManager = CookieManager.getInstance()) = withContext(Dispatchers.Main) {
         cm.setAcceptCookie(true)
         for ((origin, header) in session.cookies) {
             for ((name, value) in CookieText.parse(header)) {
@@ -93,8 +94,7 @@ object WebCookies {
     }
 
     /** Sağlayıcı kökleri için güncel çerezleri okur. */
-    suspend fun snapshot(provider: WebProvider): Map<String, String> = withContext(Dispatchers.Main) {
-        val cm = CookieManager.getInstance()
+    suspend fun snapshot(provider: WebProvider, cm: CookieManager = CookieManager.getInstance()): Map<String, String> = withContext(Dispatchers.Main) {
         provider.cookieOrigins.mapNotNull { o -> cm.getCookie(o)?.takeIf { it.isNotBlank() }?.let { o to it } }.toMap()
     }
 
@@ -129,8 +129,8 @@ object WebCookies {
         return obj.mapNotNull { (k, v) -> (v as? JsonPrimitive)?.contentOrNull?.let { k to it } }.toMap()
     }
 
-    suspend fun capture(provider: WebProvider, webView: WebView?): WebSession {
+    suspend fun capture(provider: WebProvider, webView: WebView?, cm: CookieManager = CookieManager.getInstance()): WebSession {
         val ls = if (webView != null) readLocalStorage(webView, provider.localStorageKeys) else emptyMap()
-        return WebSession(cookies = snapshot(provider), localStorage = ls)
+        return WebSession(cookies = snapshot(provider, cm), localStorage = ls)
     }
 }

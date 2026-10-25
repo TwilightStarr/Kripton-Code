@@ -5,6 +5,15 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
+### Eklendi (hesapların aynı anda çalışması)
+- Bir run artık hazır düğümleri **aynı anda** yürütür: açık ve hatasız hesap sayısı kadar (en çok `PromptDispatcher.MAX_PARALLEL` = 6) düğüm paralel çalışır; bir hesapta aynı anda tek düğüm vardır. Tüm hesaplar meşgulse düğüm hataya/beklemeye düşmez, hesap boşalınca başlar. Bağımlılıklar (`[[girdi:]]`, birleştirmeler) aynen korunur.
+- **Web oturumları paralel**: WebView sürümü çoklu profili destekliyorsa her hesap kendi profilinde (ayrı çerez/depo) açılır; desteklenmiyorsa eski sıralı davranış sürer.
+
+### Düzeltildi (işler hiç başlamıyordu)
+- **Uygulama içi yürütücü** (`InAppDispatcher`): run artık yalnız WorkManager işçisine bağlı değil; uygulama açıkken kendi süreci içinde de yürütülür. İşçi hiç başlamasa ya da sessizce ölse bile düğümler ilerler. Açılışta ve bekçi taramasında açık run'lar otomatik sürdürülür. Aynı run'ı iki yürütücü birlikte işlemez (`PromptDispatcher.process` koruması).
+- `Error` türü hatalar (NoClassDefFoundError vb.) artık yakalanır: düğüm sebebiyle birlikte "Hata" olur, işçi sessizce ölmez.
+- Web düğümlerinde düğüm ayrıntısında "hangi hesapta ne bekleniyor" notu görünür.
+
 ### Eklendi (gelişmiş prompt motoru)
 - **Değişkenler**: `[[değişken: ad = değer]]` + `{{ad}}` / `{{ad|varsayılan}}`; yerleşikler (`{{başlık}}`, `{{sıra}}`, `{{tarih}}`, `{{deneme}}`…). Yalnız değişken tanımlayan prompt AI çağırmaz. Tanınmayan `{{...}}` kod şablonları bozulmaz.
 - **Çıktı bağlama**: `{{çıktı:Başlık}}`, `{{özet:}}`, `{{dosya:Başlık#yol}}`, `{{yollar:}}`, `{{blok:}}`; kaynak bitene kadar beklenir, yeniden denemede bağlı düğümler sıfırlanır (`RetryPlanner`). `[[kaynak: zorunlu]]` ile eksik kaynakta düğüm AI çağrılmadan düşer.

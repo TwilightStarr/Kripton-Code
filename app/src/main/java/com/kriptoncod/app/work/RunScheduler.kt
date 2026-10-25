@@ -21,6 +21,12 @@ class RunScheduler(
     private val workManager: WorkManager,
     private val runs: RunRepository,
 ) {
+    /**
+     * Uygulama içi yürütücü (bkz. [InAppDispatcher]). AppContainer kurar; testlerde null kalır.
+     * WorkManager işçisi çalışmasa bile uygulama açıkken run'ın ilerlemesini sağlar.
+     */
+    var inApp: InAppDispatcher? = null
+
     /** Bekçiyi (15 dk periyot) kurar; zaten kuruluysa dokunmaz. Uygulama açılışında ve her run başında çağrılır. */
     fun ensureWatchdog() {
         val request = PeriodicWorkRequestBuilder<RunWatchdogWorker>(15, TimeUnit.MINUTES)
@@ -50,6 +56,7 @@ class RunScheduler(
     fun start(runId: Long) {
         ensureWatchdog()
         workManager.enqueueUniqueWork(WorkNames.dispatch(runId), ExistingWorkPolicy.KEEP, request(runId, 0))
+        inApp?.ensure(runId)
     }
 
     /** Çalışan worker'ın ardına, [delayMs] sonra çalışacak devam işi ekler. */
@@ -99,6 +106,7 @@ class RunScheduler(
     suspend fun pause(runId: Long) {
         runs.setRunStatus(runId, RunStatus.PAUSED)
         workManager.cancelUniqueWork(WorkNames.dispatch(runId))
+        inApp?.stop(runId)
     }
 
     /** Duraklatılmış run'ı kaldığı yerden sürdürür. */
@@ -111,6 +119,7 @@ class RunScheduler(
         runs.setRunStatus(runId, RunStatus.CANCELLED)
         workManager.cancelUniqueWork(WorkNames.dispatch(runId))
         workManager.cancelUniqueWork(WorkNames.ciLoop(runId))
+        inApp?.stop(runId)
     }
 
     private fun request(runId: Long, delayMs: Long): androidx.work.OneTimeWorkRequest {

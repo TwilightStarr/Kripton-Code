@@ -48,6 +48,7 @@ import com.kriptoncod.app.data.run.RunPublisher
 import com.kriptoncod.app.data.run.TestSynthesizer
 import com.kriptoncod.app.data.run.VaultCredentialProvider
 import com.kriptoncod.app.domain.RunStatus
+import com.kriptoncod.app.work.InAppDispatcher
 import com.kriptoncod.app.work.RunScheduler
 import com.kriptoncod.app.work.RunWatchdog
 import androidx.work.WorkManager
@@ -186,7 +187,19 @@ class AppContainer(context: Context) {
             },
         )
     }
-    val runScheduler: RunScheduler by lazy { RunScheduler(WorkManager.getInstance(appContext), runRepository) }
+    val runScheduler: RunScheduler by lazy {
+        RunScheduler(WorkManager.getInstance(appContext), runRepository).also { it.inApp = inAppDispatcher }
+    }
+
+    /**
+     * Uygulama açıkken run'ı kendi süreci içinde yürütür; WorkManager işçisi hiç başlamasa bile iş ilerler
+     * (işçi arka plan sürekliliği için yine kurulur). Aynı run'ı ikisi birlikte işlemez: bkz. PromptDispatcher.process.
+     */
+    val inAppDispatcher: InAppDispatcher by lazy {
+        InAppDispatcher(appScope, { promptDispatcher }) { runId, error ->
+            com.kriptoncod.app.data.crash.RunErrorLog.record(appContext, "in-app", runId, null, null, error)
+        }
+    }
     val runGraphBuilder: RunGraphBuilder by lazy { RunGraphBuilder(runRepository, aiAccountRepository) }
     val runLauncher: RunLauncher by lazy { RunLauncher(promptRepository, runRepository, runScheduler, runGraphBuilder) }
 
@@ -200,6 +213,9 @@ class AppContainer(context: Context) {
             restartDispatch = { runScheduler.start(it) },
             restartCi = { runScheduler.startCiLoop(it) },
         )
+        // WorkManager zinciri görünse bile (ör. kısıt yüzünden hiç başlamamış olabilir) açık run'ları uygulama içinde de sürdür.
+        views.filter { it.status == RunStatus.RUNNING || it.status == RunStatus.PREPARING }
+            .forEach { inAppDispatcher.ensure(it.id) }
     }
 
     /** Açılışta yarım kalan dosya/iş durumlarını toparlar; hata uygulamayı düşürmez. */

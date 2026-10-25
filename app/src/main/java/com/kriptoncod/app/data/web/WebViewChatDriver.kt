@@ -5,6 +5,12 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.util.Base64
 import android.view.View
+import android.webkit.CookieManager
+import android.webkit.WebStorage
+import androidx.webkit.ProfileStore
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
+import java.util.concurrent.ConcurrentHashMap
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -23,9 +29,12 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 /**
- * Gizli WebView ile gerçek web sohbetini sürer. Çerez deposu süreç geneli tek olduğundan oturumlar
- * bir [Mutex] ile sırayla açılır; her oturum kendi hesabının çerezleriyle başlar ve bittiğinde
- * yenilenen çerezleri geri kaydeder, depoyu temizler.
+ * Gizli WebView ile gerçek web sohbetini sürer.
+ *
+ * Aynı anda çalışma: WebView sürümü ÇOKLU PROFİLİ destekliyorsa (androidx.webkit MULTI_PROFILE) her hesap kendi
+ * profilinde (ayrı çerez + depo) çalışır; farklı hesapların oturumları aynı anda açılabilir, yalnız AYNI hesap
+ * sıraya girer. Desteklenmiyorsa eski davranış sürer: süreç geneli tek çerez deposu bir [Mutex] ile sırayla kullanılır.
+ * Her oturum kendi hesabının çerezleriyle başlar ve bittiğinde yenilenen çerezleri geri kaydeder, depoyu temizler.
  */
 class WebViewChatDriver(
     context: Context,
@@ -34,13 +43,21 @@ class WebViewChatDriver(
 ) : WebChatDriver {
 
     private val appContext = context.applicationContext
-    private val lock = Mutex()
+    private val globalLock = Mutex()
+    private val accountLocks = ConcurrentHashMap<Long, Mutex>()
+
+    /** Bu cihazın WebView'ı hesap başına ayrı profili destekliyor mu (ayrı çerez deposu = gerçek eşzamanlılık). */
+    private fun profilesSupported(): Boolean = runCatching { WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE) }.getOrDefault(false)
+
+    private fun profileName(accountId: Long) = "kripton-acc-$accountId"
 
     override suspend fun open(account: AiAccount, provider: WebProvider): WebChatSession {
         val saved = sessions.load(account.id)?.takeIf { !it.isEmpty }
             ?: throw AiGenerationException(Kind.UNAUTHORIZED)
+        val profiled = profilesSupported()
+        val lock = if (profiled) accountLocks.getOrPut(account.id) { Mutex() } else globalLock
         lock.lock()
-        val s = ChatSession(account, provider, WebSelectors.load(provider, selectorsFile))
+        val s = ChatSession(account, provider, WebSelectors.load(provider, selectorsFile), lock, profiled)
         try {
             s.start(saved)
         } catch (t: Throwable) {
@@ -54,7 +71,12 @@ class WebViewChatDriver(
         private val account: AiAccount,
         private val provider: WebProvider,
         private val selectors: SiteSelectors,
+        private val lock: Mutex,
+        private val profiled: Boolean,
     ) : WebChatSession {
+
+        private var cookieManager: CookieManager = CookieManager.getInstance()
+        private var webStorage: WebStorage = WebStorage.getInstance()
 
         private var webView: WebView? = null
         private val released = AtomicBoolean(false)
@@ -64,9 +86,20 @@ class WebViewChatDriver(
 
         suspend fun start(saved: WebSession) {
             base = saved
-            WebCookies.clearAll()
-            WebCookies.restore(saved)
-            withContext(Dispatchers.Main) { webView = createWebView() }
+            withContext(Dispatchers.Main) {
+                // WebView oluşturulur oluşturulmaz (herhangi bir yükleme öncesi) hesabın profiline bağlanır.
+                val wv = createWebView()
+                if (profiled) {
+                    val name = profileName(account.id)
+                    val profile = ProfileStore.getInstance().getOrCreateProfile(name)
+                    WebViewCompat.setProfile(wv, name)
+                    cookieManager = profile.cookieManager
+                    webStorage = profile.webStorage
+                }
+                webView = wv
+            }
+            WebCookies.clearAll(cookieManager, webStorage)
+            WebCookies.restore(saved, cookieManager)
             load(provider.chatUrl)
             if (saved.localStorage.isNotEmpty()) {
                 WebCookies.evalString(webView!!, WebScripts.writeLocalStorage(saved.localStorage))
@@ -211,12 +244,12 @@ class WebViewChatDriver(
             try {
                 val wv = webView
                 if (wv != null) {
-                    val snap = WebCookies.capture(provider, wv)
+                    val snap = WebCookies.capture(provider, wv, cookieManager)
                     // Oturum düştüyse (çerezler boşaldı) eski kaydı ezme; bir sonraki işte UNAUTHORIZED döner.
                     // Elle aktarılan ek localStorage kayıtları (ör. Kimi tokenları) ilk oturumdan sonra silinmesin.
                     val merged = base?.let { b -> snap.copy(localStorage = b.localStorage + snap.localStorage) } ?: snap
                     if (!snap.isEmpty) sessions.save(account.id, merged)
-                    WebCookies.clearAll()
+                    WebCookies.clearAll(cookieManager, webStorage)
                 }
             } finally {
                 release()

@@ -29,8 +29,13 @@ import com.kriptoncod.app.domain.JobState
 import com.kriptoncod.app.domain.RunStatus
 import com.kriptoncod.app.domain.UsageOutcome
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -139,12 +144,31 @@ class PromptDispatcher(
         return vars
     }
 
-    /** @param onProgress her adımdan sonra (biten düğüm, toplam düğüm) ile çağrılır; bildirimler için. */
+    /** Şu an [process] içinde olan run'lar: aynı run'ı iki yürütücü (WorkManager işçisi + uygulama içi) birlikte işlemesin. */
+    private val activeRuns: MutableSet<Long> = ConcurrentHashMap.newKeySet<Long>()
+
+    /**
+     * @param onProgress her adımdan sonra (biten düğüm, toplam düğüm) ile çağrılır; bildirimler için.
+     * Run zaten başka bir yürütücüde işleniyorsa hiçbir şeye dokunmadan [BUSY_DELAY_MS] sonra yeniden denenmek üzere döner.
+     */
     suspend fun process(
         runId: Long,
         onProgress: suspend (done: Int, total: Int) -> Unit = { _, _ -> },
         /** true dönerse yeni düğüm başlatılmaz ve kısa beklemeyle çıkılır (ön plan koruması yoksa dilimli çalışma). */
         shouldYield: () -> Boolean = { false },
+    ): DispatchOutcome {
+        if (!activeRuns.add(runId)) return DispatchOutcome.Wait(BUSY_DELAY_MS)
+        try {
+            return processRun(runId, onProgress, shouldYield)
+        } finally {
+            activeRuns.remove(runId)
+        }
+    }
+
+    private suspend fun processRun(
+        runId: Long,
+        onProgress: suspend (done: Int, total: Int) -> Unit,
+        shouldYield: () -> Boolean,
     ): DispatchOutcome {
         val run = runs.getRun(runId) ?: return DispatchOutcome.Cancelled
         when (run.status) {
@@ -161,40 +185,74 @@ class PromptDispatcher(
         // Düğüm grafiği: işler bağımlılık sırasıyla (PLAN -> WORK -> katalog birleştirme -> nihai) çalışır.
         // Her adımda taze liste okunur; böylece biten işlerin ardılları aynı turda hazır olur.
         val visited = mutableSetOf<Long>()
-        while (true) {
-            val all = runs.getJobs(runId)
-            val job = all.firstOrNull {
-                it.id !in visited && (it.state == JobState.PENDING || it.state == JobState.WAITING) && readyOrBroken(it, all)
-            } ?: break
-            if (shouldYield()) return DispatchOutcome.Wait(YIELD_DELAY_MS)
-            visited += job.id
-            when (runs.getRun(runId)?.status) {
-                RunStatus.CANCELLED, RunStatus.PAUSED -> return DispatchOutcome.Cancelled
-                else -> Unit
-            }
-            // Beklenmedik istisna run'ı sessizce kilitlemesin: düğüm sebebiyle birlikte BAŞARISIZ olur, run sürer;
-            // kullanıcı düğümü tek başına yeniden deneyebilir (RunScheduler.retryNode).
-            val result = try {
-                processJob(job, all)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                live?.clear(job.id)
-                runCatching { runs.failJob(job.id) }
-                live?.note(job.id, "Beklenmeyen hata: ${e::class.simpleName}: ${e.message.orEmpty().take(300)}")
-                runCatching { onJobError(job, e) }
-                JobResult.Failed
-            }
-            runs.getJobs(runId).let { l -> onProgress(l.count { it.state == JobState.DONE }, l.size) }
-            if (result is JobResult.Done) live?.forget(job.id)
-            if (result is JobResult.Wait) {
-                wakeAtMs = minOf(wakeAtMs ?: result.untilMs, result.untilMs)
-            } else if (result is JobResult.Done && job.kind == JobKind.PLAN) {
-                expandPlan(job)
-            } else if (result is JobResult.Done && job.kind == JobKind.CATALOG_MERGE) {
-                runs.getJob(job.id)?.let { done -> runCatching { onCatalogDone(runId, done) } }
+        val inFlight = mutableSetOf<Long>()
+        val results = Channel<Pair<Job, JobResult>>(Channel.UNLIMITED)
+        var stopCancelled = false
+        var stopYield = false
+        // Aynı anda en çok kullanılabilir hesap sayısı kadar düğüm çalışır (hesap başına bir düğüm).
+        val limit = accounts.observeAll().first().count { it.enabled && it.status != AccountStatus.ERROR }
+            .coerceIn(1, MAX_PARALLEL)
+        coroutineScope {
+            while (true) {
+                // 1) Boş hesap kadar hazır düğüm başlat.
+                if (!stopCancelled && !stopYield) {
+                    val all = runs.getJobs(runId)
+                    while (inFlight.size < limit) {
+                        val job = all.firstOrNull {
+                            it.id !in visited && it.id !in inFlight &&
+                                (it.state == JobState.PENDING || it.state == JobState.WAITING) && readyOrBroken(it, all)
+                        } ?: break
+                        if (shouldYield()) {
+                            stopYield = true
+                            break
+                        }
+                        when (runs.getRun(runId)?.status) {
+                            RunStatus.CANCELLED, RunStatus.PAUSED -> {
+                                stopCancelled = true
+                                break
+                            }
+                            else -> Unit
+                        }
+                        visited += job.id
+                        inFlight += job.id
+                        launch {
+                            // Beklenmedik istisna run'ı sessizce kilitlemesin: düğüm sebebiyle birlikte BAŞARISIZ olur, run sürer;
+                            // kullanıcı düğümü tek başına yeniden deneyebilir (RunScheduler.retryNode).
+                            val result = try {
+                                processJob(job, all)
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: Throwable) {
+                                // Error türleri de (NoClassDefFoundError, StackOverflowError...) yakalanır: aksi hâlde işçi sessizce ölür,
+                                // iş "Bekliyor" kalır ve kullanıcı sebebi hiç göremez.
+                                live?.clear(job.id)
+                                runCatching { runs.failJob(job.id) }
+                                live?.note(job.id, "Beklenmeyen hata: ${e::class.simpleName}: ${e.message.orEmpty().take(300)}")
+                                runCatching { onJobError(job, e) }
+                                JobResult.Failed
+                            }
+                            results.send(job to result)
+                        }
+                    }
+                }
+                if (inFlight.isEmpty()) break
+
+                // 2) Biten bir düğümü sırayla işle (sonraki düğümler bunun çıktısına bağlı olabilir).
+                val (job, result) = results.receive()
+                inFlight -= job.id
+                runs.getJobs(runId).let { l -> onProgress(l.count { it.state == JobState.DONE }, l.size) }
+                if (result is JobResult.Done) live?.forget(job.id)
+                if (result is JobResult.Wait) {
+                    wakeAtMs = minOf(wakeAtMs ?: result.untilMs, result.untilMs)
+                } else if (result is JobResult.Done && job.kind == JobKind.PLAN) {
+                    expandPlan(job)
+                } else if (result is JobResult.Done && job.kind == JobKind.CATALOG_MERGE) {
+                    runs.getJob(job.id)?.let { done -> runCatching { onCatalogDone(runId, done) } }
+                }
             }
         }
+        if (stopCancelled) return DispatchOutcome.Cancelled
+        if (stopYield) return DispatchOutcome.Wait(YIELD_DELAY_MS)
 
         val jobs = runs.getJobs(runId)
         if (jobs.any { it.state in OPEN_STATES }) {
@@ -362,7 +420,14 @@ class PromptDispatcher(
         data class Use(val account: AiAccount) : Pick
         data class WaitUntil(val untilMs: Long) : Pick
         data object None : Pick
+
+        /** Kullanılabilir hesaplar var ama şu an başka düğümlerde meşgul; iş durumu değişmeden kısa süre sonra denenir. */
+        data object Busy : Pick
     }
+
+    /** Şu an bir düğümde çalışan hesaplar (hesap başına aynı anda tek düğüm: web oturumu ve kota için). */
+    private val busyAccounts: MutableSet<Long> = ConcurrentHashMap.newKeySet<Long>()
+    private val pickLock = Mutex()
 
     private suspend fun processJob(job: Job, all: List<Job>): JobResult {
         // Birleştirme düğümleri: çakışmasız dosyalar kodla alınır; AI yalnız çakışan dosyalar için çağrılır.
@@ -405,8 +470,10 @@ class PromptDispatcher(
         val tried = mutableSetOf<Long>()
 
         while (true) {
-            val account = when (val pick = pickAccount(job, manual, tried)) {
+            val account = when (val pick = pickLock.withLock { pickAccount(job, manual, tried).also { if (it is Pick.Use) busyAccounts += it.account.id } }) {
                 is Pick.Use -> pick.account
+
+                Pick.Busy -> return JobResult.Wait(now() + BUSY_RETRY_MS)
 
                 is Pick.WaitUntil -> {
                     live?.note(job.id, waitNote(pick.untilMs))
@@ -430,149 +497,166 @@ class PromptDispatcher(
                 }
             }
             tried += account.id
-
-            if (account.authType == AuthType.KIMI && kimiCodes != null) {
-                return processKimiJob(job, account, item, finish)
-            }
-
-            val isWeb = account.authType == AuthType.WEB_SESSION
-            val endpoint = if (isWeb) null else resolveEndpoint(account)
-            val credential = if (isWeb) null else credentials.credentialFor(account)
-            val unusable = if (isWeb) web == null else (endpoint == null || credential.isNullOrBlank())
-            if (unusable) {
-                accounts.markError(account.id)
-                manual = false
-                continue
-            }
-
-            if (job.accountId != account.id) runs.assignAccount(job.id, account.id)
-            live?.clear(job.id) // eski bekleme notu canlı akışa karışmasın
-            runs.startJob(job.id)
-            val startedAt = now()
-            val meter = TokenMeter()
-
             try {
-                val assets = mutableListOf<WebAsset>()
-                val text = if (isWeb) {
-                    // Web sohbeti: PLAN düz metin ister; diğer düğümler dosya bloğu bekler.
-                    web!!.generate(account, item.body, expectFiles = job.kind != JobKind.PLAN, onAsset = { assets += it })
-                } else {
-                    withContext(meter) { generator.generate(endpoint!!, account.modelId, credential!!, item.body, sinkFor(job)) }
-                }
-                if (text.isBlank()) {
-                    recordUsage(account, job, UsageOutcome.FAILED, startedAt, meter = meter)
-                    runs.failJob(job.id)
-                    return JobResult.Failed
-                }
-                // Ham zip ve ikili dosyalar çıktıdan ÖNCE yazılır: çökme olursa iş DONE sayılmaz, yeniden üretilir.
-                if (assets.isNotEmpty()) runCatching { runs.saveAssets(job.id, assets.map { it.path to it.bytes }) }
-                if (rules.isNotEmpty()) {
-                    val reasons = OutputRules.check(text, rules)
-                    if (reasons.isNotEmpty()) {
-                        // İstek başarılıydı (kota harcandı) ama çıktı kuralları sağlamıyor.
-                        recordUsage(account, job, UsageOutcome.SUCCESS, startedAt, meter = meter, prompt = item.body, output = text)
-                        if (qualityTries < retry.maxRetries) {
-                            qualityTries++
-                            if (retry.delayMs > 0) sleep(retry.delayMs)
-                            val base = workText(job, runs.getJobs(job.runId), attempt = qualityTries + 1) ?: item.body
-                            item = item.copy(
-                                body = if (retry.feedback) base + OutputRules.feedback(reasons, qualityTries, retry.maxRetries) else base,
-                            )
-                            if (retry.switchAccount) {
-                                manual = false
-                                // Başka hesap yoksa aynı hesapla sürer (iş beklemeye düşmez).
-                                if (pickAccount(job, false, tried) !is Pick.Use) tried -= account.id
-                            } else {
-                                tried -= account.id
-                            }
-                            runs.requeueJob(job.id)
-                            continue
-                        }
-                        if (retry.onExhausted == OnExhausted.STOP) {
-                            runs.failJob(job.id)
-                            return JobResult.Failed
-                        }
-                        // CONTINUE: son çıktı kabul edilir.
-                        runs.completeJob(job.id, finish(text))
-                        return JobResult.Done
-                    }
-                }
-                runs.completeJob(job.id, finish(text))
-                recordUsage(account, job, UsageOutcome.SUCCESS, startedAt, meter = meter, prompt = item.body, output = text)
-                return JobResult.Done
-            } catch (e: AiGenerationException) {
-                recordUsage(
-                    account,
-                    job,
-                    when (e.kind) {
-                        Kind.UNAUTHORIZED -> UsageOutcome.UNAUTHORIZED
-                        Kind.RATE_LIMITED -> UsageOutcome.RATE_LIMITED
-                        Kind.SERVER, Kind.NETWORK -> UsageOutcome.TRANSIENT
-                        else -> UsageOutcome.FAILED
-                    },
-                    startedAt,
-                    waitMs = if (e.kind == Kind.RATE_LIMITED) (e.waitUntil(now()) - now()).coerceAtLeast(0) else null,
-                    meter = meter,
-                )
-                // Sebep sessizce kaybolmasın: düğüm ayrıntısında SON başarısız denemenin hesabı ve sebebi görünür.
-                live?.failure(job.id, failureNote(account, e))
-                when (e.kind) {
-                    Kind.UNAUTHORIZED -> {
-                        // Hesap kapandı/oturum düştü: ERROR yap ve işi aynı turda havuzdaki diğer hesaba ver.
-                        accounts.markError(account.id)
-                        manual = false
-                    }
 
-                    Kind.RATE_LIMITED -> {
-                        val until = e.waitUntil(now())
-                        accounts.markWaiting(account.id, until)
-                        if (manual) {
-                            runs.waitJob(job.id)
-                            return JobResult.Wait(until)
-                        }
-                    }
+                if (account.authType == AuthType.KIMI && kimiCodes != null) {
+                    return processKimiJob(job, account, item, finish)
+                }
 
-                    Kind.SERVER, Kind.NETWORK -> {
-                        // Kalite yeniden denemeleri de `attempts` sayacını artırır; hata sınırından düşülür.
-                        val attempts = ((runs.getJob(job.id)?.attempts ?: MAX_ATTEMPTS) - qualityTries).coerceAtLeast(0)
-                        if (attempts >= (retry.maxErrorAttempts ?: MAX_ATTEMPTS)) {
-                            runs.failJob(job.id)
-                            return JobResult.Failed
-                        }
-                        runs.requeueJob(job.id)
-                        // Önce havuzdaki başka hesabı dene (yedek model); hepsi denendiyse artan beklemeyle yeniden kuyruğa al.
-                        if (!manual && pickAccount(job, false, tried) is Pick.Use) continue
-                        return JobResult.Wait(now() + retryDelayMs(attempts))
-                    }
+                val isWeb = account.authType == AuthType.WEB_SESSION
+                val endpoint = if (isWeb) null else resolveEndpoint(account)
+                val credential = if (isWeb) null else credentials.credentialFor(account)
+                val unusable = if (isWeb) web == null else (endpoint == null || credential.isNullOrBlank())
+                if (unusable) {
+                    accounts.markError(account.id)
+                    manual = false
+                    continue
+                }
 
-                    else -> {
-                        // Kalıcı hata (bağlam aşımı, kesik çıktı, geçersiz istek, model yok): bu hesapla tekrar denemek
-                        // anlamsız, ama başka hesap/model başarabilir. Sıradaki hesaba geç; hepsi denendiyse işi düşür.
-                        manual = false
-                        when (val next = pickAccount(job, false, tried)) {
-                            is Pick.Use -> {
+                if (job.accountId != account.id) runs.assignAccount(job.id, account.id)
+                live?.clear(job.id) // eski bekleme notu canlı akışa karışmasın
+                runs.startJob(job.id)
+                if (isWeb) {
+                    // Web yanıtı akmaz; düğüm ayrıntısında en azından hangi hesapta ne beklendiği görünsün.
+                    live?.note(
+                        job.id,
+                        "${account.displayName}: web sohbeti açılıyor, prompt gönderiliyor ve yanıt bekleniyor " +
+                            "(uzun kodlarda 2-10 dk sürebilir; hata olursa sebebi burada görünür).",
+                    )
+                }
+                val startedAt = now()
+                val meter = TokenMeter()
+
+                try {
+                    val assets = mutableListOf<WebAsset>()
+                    val text = if (isWeb) {
+                        // Web sohbeti: PLAN düz metin ister; diğer düğümler dosya bloğu bekler.
+                        web!!.generate(account, item.body, expectFiles = job.kind != JobKind.PLAN, onAsset = { assets += it })
+                    } else {
+                        withContext(meter) { generator.generate(endpoint!!, account.modelId, credential!!, item.body, sinkFor(job)) }
+                    }
+                    if (text.isBlank()) {
+                        recordUsage(account, job, UsageOutcome.FAILED, startedAt, meter = meter)
+                        runs.failJob(job.id)
+                        return JobResult.Failed
+                    }
+                    // Ham zip ve ikili dosyalar çıktıdan ÖNCE yazılır: çökme olursa iş DONE sayılmaz, yeniden üretilir.
+                    if (assets.isNotEmpty()) runCatching { runs.saveAssets(job.id, assets.map { it.path to it.bytes }) }
+                    if (rules.isNotEmpty()) {
+                        val reasons = OutputRules.check(text, rules)
+                        if (reasons.isNotEmpty()) {
+                            // İstek başarılıydı (kota harcandı) ama çıktı kuralları sağlamıyor.
+                            recordUsage(account, job, UsageOutcome.SUCCESS, startedAt, meter = meter, prompt = item.body, output = text)
+                            if (qualityTries < retry.maxRetries) {
+                                qualityTries++
+                                if (retry.delayMs > 0) sleep(retry.delayMs)
+                                val base = workText(job, runs.getJobs(job.runId), attempt = qualityTries + 1) ?: item.body
+                                item = item.copy(
+                                    body = if (retry.feedback) base + OutputRules.feedback(reasons, qualityTries, retry.maxRetries) else base,
+                                )
+                                if (retry.switchAccount) {
+                                    manual = false
+                                    // Başka hesap yoksa aynı hesapla sürer (iş beklemeye düşmez).
+                                    if (pickAccount(job, false, tried) !is Pick.Use) tried -= account.id
+                                } else {
+                                    tried -= account.id
+                                }
                                 runs.requeueJob(job.id)
                                 continue
                             }
-
-                            is Pick.WaitUntil -> {
-                                runs.waitJob(job.id)
-                                return JobResult.Wait(next.untilMs)
-                            }
-
-                            Pick.None -> {
+                            if (retry.onExhausted == OnExhausted.STOP) {
                                 runs.failJob(job.id)
                                 return JobResult.Failed
                             }
+                            // CONTINUE: son çıktı kabul edilir.
+                            runs.completeJob(job.id, finish(text))
+                            return JobResult.Done
                         }
                     }
+                    runs.completeJob(job.id, finish(text))
+                    recordUsage(account, job, UsageOutcome.SUCCESS, startedAt, meter = meter, prompt = item.body, output = text)
+                    return JobResult.Done
+                } catch (e: AiGenerationException) {
+                    recordUsage(
+                        account,
+                        job,
+                        when (e.kind) {
+                            Kind.UNAUTHORIZED -> UsageOutcome.UNAUTHORIZED
+                            Kind.RATE_LIMITED -> UsageOutcome.RATE_LIMITED
+                            Kind.SERVER, Kind.NETWORK -> UsageOutcome.TRANSIENT
+                            else -> UsageOutcome.FAILED
+                        },
+                        startedAt,
+                        waitMs = if (e.kind == Kind.RATE_LIMITED) (e.waitUntil(now()) - now()).coerceAtLeast(0) else null,
+                        meter = meter,
+                    )
+                    // Sebep sessizce kaybolmasın: düğüm ayrıntısında SON başarısız denemenin hesabı ve sebebi görünür.
+                    live?.failure(job.id, failureNote(account, e))
+                    when (e.kind) {
+                        Kind.UNAUTHORIZED -> {
+                            // Hesap kapandı/oturum düştü: ERROR yap ve işi aynı turda havuzdaki diğer hesaba ver.
+                            accounts.markError(account.id)
+                            manual = false
+                        }
+
+                        Kind.RATE_LIMITED -> {
+                            val until = e.waitUntil(now())
+                            accounts.markWaiting(account.id, until)
+                            if (manual) {
+                                runs.waitJob(job.id)
+                                return JobResult.Wait(until)
+                            }
+                        }
+
+                        Kind.SERVER, Kind.NETWORK -> {
+                            // Kalite yeniden denemeleri de `attempts` sayacını artırır; hata sınırından düşülür.
+                            val attempts = ((runs.getJob(job.id)?.attempts ?: MAX_ATTEMPTS) - qualityTries).coerceAtLeast(0)
+                            if (attempts >= (retry.maxErrorAttempts ?: MAX_ATTEMPTS)) {
+                                runs.failJob(job.id)
+                                return JobResult.Failed
+                            }
+                            runs.requeueJob(job.id)
+                            // Önce havuzdaki başka hesabı dene (yedek model); hepsi denendiyse artan beklemeyle yeniden kuyruğa al.
+                            if (!manual && pickAccount(job, false, tried) is Pick.Use) continue
+                            return JobResult.Wait(now() + retryDelayMs(attempts))
+                        }
+
+                        else -> {
+                            // Kalıcı hata (bağlam aşımı, kesik çıktı, geçersiz istek, model yok): bu hesapla tekrar denemek
+                            // anlamsız, ama başka hesap/model başarabilir. Sıradaki hesaba geç; hepsi denendiyse işi düşür.
+                            manual = false
+                            when (val next = pickAccount(job, false, tried)) {
+                                is Pick.Use -> {
+                                    runs.requeueJob(job.id)
+                                    continue
+                                }
+
+                                is Pick.WaitUntil -> {
+                                    runs.waitJob(job.id)
+                                    return JobResult.Wait(next.untilMs)
+                                }
+
+                                Pick.Busy -> {
+                                    runs.requeueJob(job.id)
+                                    return JobResult.Wait(now() + BUSY_RETRY_MS)
+                                }
+
+                                Pick.None -> {
+                                    runs.failJob(job.id)
+                                    return JobResult.Failed
+                                }
+                            }
+                        }
+                    }
+                } catch (_: IllegalArgumentException) {
+                    recordUsage(account, job, UsageOutcome.FAILED, startedAt, meter = meter)
+                    runs.failJob(job.id)
+                    return JobResult.Failed
+                } finally {
+                    live?.clear(job.id) // kalıcı çıktı yazıldı (ya da iş düştü): canlı metin gerekmez
                 }
-            } catch (_: IllegalArgumentException) {
-                recordUsage(account, job, UsageOutcome.FAILED, startedAt, meter = meter)
-                runs.failJob(job.id)
-                return JobResult.Failed
             } finally {
-                live?.clear(job.id) // kalıcı çıktı yazıldı (ya da iş düştü): canlı metin gerekmez
+                busyAccounts.remove(account.id)
             }
         }
     }
@@ -655,7 +739,7 @@ class PromptDispatcher(
     private suspend fun pickAccount(job: Job, manual: Boolean, tried: Set<Long>): Pick {
         val t = now()
         if (manual) {
-            val id = job.accountId?.takeIf { it !in tried } ?: return Pick.None
+            val id = job.accountId?.takeIf { it !in tried && it !in busyAccounts } ?: return Pick.None
             val account = accounts.get(id) ?: return Pick.None
             if (!account.enabled || account.status == AccountStatus.ERROR) return Pick.None
             val until = account.waitUntil
@@ -665,15 +749,19 @@ class PromptDispatcher(
             return Pick.Use(account)
         }
 
-        val enabled = accounts.observeAll().first().filter { it.enabled }
+        val allEnabled = accounts.observeAll().first().filter { it.enabled }
+        val enabled = allEnabled.filter { it.id !in busyAccounts }
         val health = usage?.healthSnapshot().orEmpty()
         // Grafik düğümlerinde planlama sırasında güce göre seçilen hesap önceliklidir; kullanılamıyorsa
         // (bekleme/kota/devre kesici) seçici en uygun hesaba ya da en erken açılma zamanına geçer.
         val preferred = if (job.kind != JobKind.WORK || job.catalog != null) job.accountId else null
-        return when (val choice = AccountSelector.choose(enabled, health, tried, preferred, t)) {
-            is AccountSelector.Choice.Use -> Pick.Use(choice.account)
+        val choice = AccountSelector.choose(enabled, health, tried, preferred, t)
+        if (choice is AccountSelector.Choice.Use) return Pick.Use(choice.account)
+        // Kullanılabilir hesaplar yalnız meşgulse iş beklemeye/hataya DÜŞMEZ; hesap boşalınca denenir.
+        if (allEnabled.any { it.id in busyAccounts && it.id !in tried && it.status != AccountStatus.ERROR }) return Pick.Busy
+        return when (choice) {
             is AccountSelector.Choice.WaitUntil -> Pick.WaitUntil(choice.untilMs)
-            AccountSelector.Choice.None -> Pick.None
+            else -> Pick.None
         }
     }
 
@@ -688,6 +776,15 @@ class PromptDispatcher(
 
         /** Ön plan koruması yokken bir çalışma diliminden sonra bekleme. */
         const val YIELD_DELAY_MS = 5_000L
+
+        /** Run başka bir yürütücüde işlenirken yeniden yoklama aralığı. */
+        const val BUSY_DELAY_MS = 20_000L
+
+        /** Aynı anda çalışan en çok düğüm (açık web oturumu başına bellek yükü yüzünden sınırlı). */
+        const val MAX_PARALLEL = 6
+
+        /** Tüm uygun hesaplar meşgulken düğümün yeniden denenme aralığı. */
+        const val BUSY_RETRY_MS = 3_000L
 
         fun retryDelayMs(attempts: Int): Long = (RETRY_BASE_MS * attempts.coerceAtLeast(1)).coerceAtMost(MAX_RETRY_DELAY_MS)
 

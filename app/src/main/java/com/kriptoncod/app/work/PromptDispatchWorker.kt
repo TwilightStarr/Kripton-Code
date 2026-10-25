@@ -116,7 +116,8 @@ class PromptDispatchWorker(context: Context, params: WorkerParameters) : Corouti
             Result.success()
         } catch (e: CancellationException) {
             throw e // WorkManager durdurdu; zincir yeniden planlanır, RUNNING işler process() başında toparlanır
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            // Error türleri de (NoClassDefFoundError vb.) burada yakalanır; aksi hâlde işçi sessizce ölür ve run takılı kalırdı.
             // Sebep sessizce kaybolmasın: çökme günlüğüne yazılır (Ayarlar'dan görülür/paylaşılır).
             com.kriptoncod.app.data.crash.RunErrorLog.record(ctx, "worker", runId, null, null, e)
             if (runAttemptCount < MAX_WORKER_ATTEMPTS) {
