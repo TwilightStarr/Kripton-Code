@@ -211,6 +211,7 @@ class PromptDispatcher(
                                 stopCancelled = true
                                 break
                             }
+
                             else -> Unit
                         }
                         visited += job.id
@@ -498,7 +499,6 @@ class PromptDispatcher(
             }
             tried += account.id
             try {
-
                 if (account.authType == AuthType.KIMI && kimiCodes != null) {
                     return processKimiJob(job, account, item, finish)
                 }
