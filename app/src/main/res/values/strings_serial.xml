@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="serial_run_button">Seri modda çalıştır (tek sohbet)</string>
+    <string name="serial_launch_title">Seri Mod</string>
+    <string name="serial_launch_info">Promptlar tek bir AI hesabında, TEK sohbette sırayla gönderilir. Çıktı doğrudan repoya commit\'lenir; Actions hata ya da uyarı verirse günlük aynı sohbete iletilir. Temizse sonraki prompta geçilir. Sohbet yalnız prompt başında [[yeni-sohbet]] yazarsa değişir.</string>
+    <string name="serial_launch_account">AI hesabı (web oturumu)</string>
+    <string name="serial_launch_no_accounts">Web oturumuyla eklenmiş (Claude, ChatGPT, Kimi) etkin bir hesap yok.</string>
+    <string name="serial_launch_repo">Repo (commit\'ler varsayılan dala atılır)</string>
+    <string name="serial_launch_no_token">GitHub token tanımlı değil. Ayarlar bölümünden ekleyin.</string>
+    <string name="serial_launch_repo_error">Repolar yüklenemedi.</string>
+    <string name="serial_launch_start">Başlat</string>
+    <string name="serial_launch_failed">Başlatılamadı: %1$s</string>
+    <string name="serial_home_title">Seri mod çalışmaları</string>
+    <string name="serial_screen_title">Seri mod #%1$d</string>
+    <string name="serial_progress">Prompt %1$d / %2$d</string>
+    <string name="serial_status_running">Çalışıyor</string>
+    <string name="serial_status_paused">Duraklatıldı</string>
+    <string name="serial_status_waiting">Müdahale bekliyor</string>
+    <string name="serial_status_done">Tamamlandı</string>
+    <string name="serial_status_failed">Başarısız</string>
+    <string name="serial_status_cancelled">İptal edildi</string>
+    <string name="serial_phase_prompt">AI yanıtı alınıyor</string>
+    <string name="serial_phase_commit">Repoya commit</string>
+    <string name="serial_phase_ci">Actions bekleniyor</string>
+    <string name="serial_phase_fix">CI düzeltmesi (aynı sohbet)</string>
+    <string name="serial_pause">Duraklat</string>
+    <string name="serial_resume">Devam et</string>
+    <string name="serial_cancel">İptal et</string>
+    <string name="serial_delete">Kaydı sil</string>
+    <string name="serial_log_title">Günlük</string>
+</resources>

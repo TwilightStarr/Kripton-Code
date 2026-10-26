@@ -13,6 +13,9 @@ object WorkNames {
     /** CI izleme/düzeltme döngüsü işi. */
     fun ciLoop(runId: Long): String = "ci_loop_$runId"
 
+    /** Seri mod çalışmasının ön plan işçisi. */
+    fun serial(id: Long): String = "serial_run_$id"
+
     /** Kısmi sonucun onaylı GitHub gönderimi. */
     fun partialPush(runId: Long): String = "partial_push_$runId"
 }

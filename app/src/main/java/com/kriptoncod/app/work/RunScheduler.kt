@@ -59,6 +59,20 @@ class RunScheduler(
         inApp?.ensure(runId)
     }
 
+    /** Seri mod çalışmasının ön plan işçisini kurar (zaten varsa dokunmaz). */
+    fun startSerial(id: Long) {
+        val request = OneTimeWorkRequestBuilder<SerialWorker>()
+            .setInputData(workDataOf(SerialWorker.KEY_ID to id))
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .build()
+        workManager.enqueueUniqueWork(WorkNames.serial(id), ExistingWorkPolicy.KEEP, request)
+    }
+
+    fun cancelSerial(id: Long) {
+        workManager.cancelUniqueWork(WorkNames.serial(id))
+    }
+
     /** Çalışan worker'ın ardına, [delayMs] sonra çalışacak devam işi ekler. */
     fun resume(runId: Long, delayMs: Long) {
         workManager.enqueueUniqueWork(

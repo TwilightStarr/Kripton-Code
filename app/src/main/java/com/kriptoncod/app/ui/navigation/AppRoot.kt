@@ -178,6 +178,7 @@ fun AppRoot(
                                     onAddAi = { navController.navigate(AisRoutes.ADD) },
                                     onOpenRoute = { route -> navController.navigateTo(route) },
                                     onOpenRun = { id -> navController.navigate(ExtraRoutes.run(id)) },
+                                    onOpenSerial = { id -> navController.navigate(ExtraRoutes.serial(id)) },
                                     onOpenUsage = { navController.navigate(ExtraRoutes.USAGE) },
                                 )
                             }
@@ -277,7 +278,15 @@ fun AppRoot(
                                     onAddPrompt = { navController.navigate(PromptRoutes.addPrompt(setId)) },
                                     onEditPrompt = { promptId -> navController.navigate(PromptRoutes.editPrompt(setId, promptId)) },
                                     onRunStarted = { runId -> navController.navigate(ExtraRoutes.run(runId)) },
+                                    onSerialStarted = { id -> navController.navigate(ExtraRoutes.serial(id)) },
                                 )
+                            }
+                            composable(
+                                ExtraRoutes.SERIAL,
+                                arguments = listOf(navArgument(ExtraRoutes.ARG_SERIAL_ID) { type = NavType.LongType }),
+                            ) { entry ->
+                                val serialId = entry.arguments?.getLong(ExtraRoutes.ARG_SERIAL_ID) ?: return@composable
+                                com.kriptoncod.app.ui.screens.SerialRunScreen(id = serialId, container = container, onBack = { navController.popBackStack() })
                             }
                             composable(
                                 PromptRoutes.ADD_PROMPT,

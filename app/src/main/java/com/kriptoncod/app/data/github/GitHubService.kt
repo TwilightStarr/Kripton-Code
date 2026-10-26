@@ -256,6 +256,49 @@ class GitHubService(
         }
     }
 
+    /**
+     * [headSha] commit'i için TÜM workflow run'larını döndürür (bir commit birden çok workflow tetikleyebilir).
+     * Henüz run yoksa boş liste. Dal süzgeci kullanılmaz: ana dala doğrudan commit atılırken de çalışsın.
+     */
+    suspend fun listRunsForSha(token: String, repo: String, headSha: String): ApiResult<List<GitHubRun>> {
+        requireRepo(repo)
+        require(headSha.isNotEmpty() && headSha.all { it.isLetterOrDigit() }) { "Geçersiz commit kimliği" }
+        val u = url("repos/$repo/actions/runs", "head_sha" to headSha, "per_page" to "30")
+        return execute(token, "GET", u)
+            .flatMap { decode<RunsDto>(it) }
+            .map { dto ->
+                dto.workflowRuns.filter { it.headSha == headSha }
+                    .map { GitHubRun(it.id, it.status, it.conclusion, it.headSha, it.htmlUrl) }
+            }
+    }
+
+    /**
+     * [branch] ucundaki depo içeriğini zip olarak indirir (`zipball`). GitHub 302 ile geçici bir adrese yönlendirir;
+     * o adrese token GÖNDERİLMEZ. Zip'in tek üst klasörü (`owner-repo-sha/`) [com.kriptoncod.app.data.serial.RepoZip]
+     * ile soyulur.
+     */
+    suspend fun downloadRepoZip(token: String, repo: String, branch: String): ApiResult<ByteArray> {
+        requireRepo(repo)
+        requireBranch(branch)
+        val request = buildRequest(token, "GET", url("repos/$repo/zipball/$branch"), null)
+            ?: return ApiResult.Fail(ApiError.INVALID_KEY)
+        val first = send(request, MAX_LOG_BYTES).getOrElse { return it }
+        if (first.code in 200..299) return ApiResult.Ok(first.body)
+
+        val target = first.location?.let { first.requestUrl.resolve(it) ?: it.toHttpUrlOrNull() }
+            ?: return ApiResult.Fail(ApiError.BAD_RESPONSE, first.code)
+        if (target.scheme != "https" && apiBase.scheme == "https") {
+            return ApiResult.Fail(ApiError.BAD_RESPONSE, first.code)
+        }
+        val download = Request.Builder().url(target).header("User-Agent", USER_AGENT).get().build()
+        val second = send(download, MAX_LOG_BYTES).getOrElse { return it }
+        return if (second.code in 200..299) {
+            ApiResult.Ok(second.body)
+        } else {
+            ApiResult.Fail(ApiError.BAD_RESPONSE, second.code)
+        }
+    }
+
     // ------------------------------------------------------------------ iç yardımcılar
 
     suspend fun branchSha(token: String, repo: String, branch: String): ApiResult<String> = execute(token, "GET", url("repos/$repo/git/ref/heads/$branch"))

@@ -65,11 +65,24 @@ fun PromptSetScreen(
     onAddPrompt: () -> Unit,
     onEditPrompt: (Long) -> Unit,
     onRunStarted: (Long) -> Unit,
+    onSerialStarted: (Long) -> Unit = {},
 ) {
     val viewModel: PromptSetViewModel = viewModel(factory = rememberPromptSetViewModelFactory(setId))
     val state by viewModel.state.collectAsStateWithLifecycle()
     val container = com.kriptoncod.app.ui.ais.rememberContainer()
     var showRun by remember { mutableStateOf(false) }
+    var showSerial by remember { mutableStateOf(false) }
+    if (showSerial) {
+        SerialLaunchDialog(
+            setId = setId,
+            setName = state.setName,
+            onDismiss = { showSerial = false },
+            onStarted = { id ->
+                showSerial = false
+                onSerialStarted(id)
+            },
+        )
+    }
     if (showRun) {
         RunLaunchDialog(
             launch = { repo -> container.runLauncher.launch(setId, repo) },
@@ -84,6 +97,7 @@ fun PromptSetScreen(
     PromptSetContent(
         state = state,
         onRun = { showRun = true },
+        onSerialRun = { showSerial = true },
         onBack = onBack,
         onAddPrompt = onAddPrompt,
         onEditPrompt = onEditPrompt,
@@ -105,6 +119,7 @@ private fun PromptSetContent(
     onAddPrompt: () -> Unit,
     onEditPrompt: (Long) -> Unit,
     onRun: () -> Unit,
+    onSerialRun: () -> Unit,
     onMoveUp: (Long) -> Unit,
     onMoveDown: (Long) -> Unit,
     onAssign: (Long, Long, AssignmentMode) -> Unit,
@@ -171,6 +186,14 @@ private fun PromptSetContent(
                     KButton(
                         text = stringResource(R.string.run_launch),
                         onClick = onRun,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                item(key = "serial-run", span = { GridItemSpan(maxLineSpan) }) {
+                    KButton(
+                        text = stringResource(R.string.serial_run_button),
+                        onClick = onSerialRun,
+                        style = KButtonStyle.Outline,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }

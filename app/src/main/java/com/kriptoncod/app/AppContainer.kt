@@ -33,6 +33,14 @@ import com.kriptoncod.app.data.web.WebSessionStore
 import com.kriptoncod.app.data.web.WebViewChatDriver
 import com.kriptoncod.app.data.vault.AndroidKeystoreKeyVault
 import com.kriptoncod.app.data.vault.KeyVault
+import com.kriptoncod.app.data.serial.GitHubSerialGit
+import com.kriptoncod.app.data.serial.SerialEvent
+import com.kriptoncod.app.data.serial.SerialExecutor
+import com.kriptoncod.app.data.serial.SerialGit
+import com.kriptoncod.app.data.serial.SerialLauncher
+import com.kriptoncod.app.data.serial.SerialRunner
+import com.kriptoncod.app.data.serial.SerialStore
+import com.kriptoncod.app.work.RunNotifier
 import com.kriptoncod.app.data.run.AccountHealthChecker
 import com.kriptoncod.app.data.run.CiFixer
 import com.kriptoncod.app.data.run.CredentialProvider
@@ -200,6 +208,39 @@ class AppContainer(context: Context) {
             com.kriptoncod.app.data.crash.RunErrorLog.record(appContext, "in-app", runId, null, null, error)
         }
     }
+    // --- Seri mod (tek AI, tek sohbet, sıralı) ---
+    val serialStore: SerialStore by lazy { SerialStore(File(appContext.filesDir, "serial")) }
+    val serialGit: SerialGit by lazy { GitHubSerialGit(githubService, githubTokenStore) }
+    val serialRunner: SerialRunner by lazy {
+        SerialRunner(
+            store = serialStore,
+            account = { id -> aiAccountRepository.get(id) },
+            driver = webChatDriver,
+            git = serialGit,
+            notify = { state, event ->
+                val (kind, title) = when (event) {
+                    SerialEvent.DONE -> RunNotifier.KIND_DONE to "Seri mod tamamlandı"
+                    SerialEvent.NEEDS_USER -> RunNotifier.KIND_FAILED to "Seri mod müdahale bekliyor"
+                    SerialEvent.QUOTA_WAIT -> RunNotifier.KIND_WAITING to "Seri mod kota bekliyor"
+                }
+                runCatching {
+                    RunNotifier.event(appContext, state.id, kind, title, state.message.ifBlank { state.name })
+                }
+            },
+        )
+    }
+    val serialExecutor: SerialExecutor by lazy {
+        SerialExecutor(appScope, serialStore, { serialRunner }) { id, error ->
+            com.kriptoncod.app.data.crash.RunErrorLog.record(appContext, "serial", id, null, null, error)
+        }
+    }
+    val serialLauncher: SerialLauncher by lazy {
+        SerialLauncher(promptRepository, serialStore, serialGit, start = { id ->
+            runScheduler.startSerial(id)
+            serialExecutor.ensure(id)
+        })
+    }
+
     val runGraphBuilder: RunGraphBuilder by lazy { RunGraphBuilder(runRepository, aiAccountRepository) }
     val runLauncher: RunLauncher by lazy { RunLauncher(promptRepository, runRepository, runScheduler, runGraphBuilder) }
 
@@ -229,6 +270,9 @@ class AppContainer(context: Context) {
                 runScheduler.ensureAccountHealthCheck()
                 // Süreç öldürüldüyse yarım kalan run'ların dağıtımını/CI izlemesini yeniden başlat.
                 runWatchdogSweep()
+                serialExecutor.resumeAll()
+                serialStore.observeAll().value.filter { it.status == com.kriptoncod.app.data.serial.SerialStatus.RUNNING }
+                    .forEach { runScheduler.startSerial(it.id) }
             }
         }
     }

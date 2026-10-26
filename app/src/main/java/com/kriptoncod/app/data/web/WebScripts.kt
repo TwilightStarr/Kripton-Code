@@ -47,8 +47,81 @@ object WebScripts {
     fun runChat(sel: SiteSelectors, prompt: String): String {
         val cfg = json.encodeToString(sel)
         val p = json.encodeToString(prompt)
-        return "(function(cfg,prompt){$CHAT_BODY})($cfg,$p);"
+        return "(function(cfg,prompt,peek){$CHAT_BODY})($cfg,$p,false);"
     }
+
+    /**
+     * Mesaj GÖNDERMEDEN sohbetteki son asistan yanıtını okur: üretim sürüyorsa bitmesini bekler. Sohbette hiç asistan
+     * yanıtı yoksa boş metinli "ok" döner. Sonucu [POLL] ile okunur (runChat ile aynı biçim).
+     */
+    fun peekChat(sel: SiteSelectors): String {
+        val cfg = json.encodeToString(sel)
+        return "(function(cfg,prompt,peek){$CHAT_BODY})($cfg,\"\",true);"
+    }
+
+    /** Dosya parçalarını biriktirmeye başlar (büyük dizgiler tek seferde köprüden geçmesin diye parça parça taşınır). */
+    const val ATTACH_BEGIN = "window.__krup={parts:[]};'ok'"
+
+    /** [b64] bir dosya diliminin base64 metnidir (yalnız A-Za-z0-9+/=). */
+    fun attachChunk(b64: String): String = "(function(){if(!window.__krup)return 'none';window.__krup.parts.push(" +
+        json.encodeToString(b64) + ");return 'ok';})()"
+
+    /** Biriken parçalardan dosyayı kurup sayfadaki dosya girdisine verir; sonuç `window.__kra` ile [ATTACH_POLL]'dan okunur. */
+    fun attachFinish(sel: SiteSelectors, name: String, mime: String): String {
+        val cfg = json.encodeToString(sel)
+        val n = json.encodeToString(name)
+        val m = json.encodeToString(mime)
+        return "(function(cfg,name,mime){$ATTACH_BODY})($cfg,$n,$m);"
+    }
+
+    /** Ekleme yoklaması: bitmediyse boş, bittiyse "OK" ya da "FAIL". */
+    const val ATTACH_POLL = "(function(){var d=window.__kra;return d&&d.done?(d.ok?'OK':'FAIL'):'';})()"
+
+    private val ATTACH_BODY = """
+    window.__kra = {done:false, ok:false};
+    var sleep = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
+    var pick = function(sels){ for (var i=0;i<sels.length;i++){ try{ var e=document.querySelector(sels[i]); if(e) return e; }catch(x){} } return null; };
+    (async function(){
+      try {
+        var parts = (window.__krup && window.__krup.parts) || [];
+        var chunks = [];
+        for (var i=0;i<parts.length;i++){
+          var bin = atob(parts[i]); var arr = new Uint8Array(bin.length);
+          for (var j=0;j<bin.length;j++) arr[j] = bin.charCodeAt(j);
+          chunks.push(arr);
+        }
+        var file = new File(chunks, name, {type: mime});
+        var inp = null;
+        for (var k=0;k<20 && !inp;k++){ inp = pick(cfg.fileInput); if(!inp) await sleep(500); }
+        if (!inp) { window.__krup = null; window.__kra.done = true; return; }
+        var dt = new DataTransfer(); dt.items.add(file);
+        inp.files = dt.files;
+        inp.dispatchEvent(new Event('input', {bubbles:true}));
+        inp.dispatchEvent(new Event('change', {bubbles:true}));
+        window.__krup = null;
+        var short = name.length > 18 ? name.substring(0, 18) : name;
+        var seen = false;
+        for (var t=0;t<90 && !seen;t++){
+          await sleep(1000);
+          var body = document.body ? (document.body.innerText || '') : '';
+          if (body.indexOf(short) >= 0) seen = true;
+        }
+        if (!seen) { window.__kra.done = true; return; }
+        // Yükleme bitene kadar (gönder düğmesi etkin) bekle.
+        var ready = 0;
+        for (var u=0;u<120 && ready < 3;u++){
+          await sleep(1000);
+          var b = pick(cfg.send);
+          if (b && !b.disabled && b.getAttribute('aria-disabled') !== 'true') ready++; else ready = 0;
+        }
+        window.__kra.ok = ready >= 3;
+        window.__kra.done = true;
+      } catch (e) {
+        window.__krup = null;
+        window.__kra.done = true;
+      }
+    })();
+    """.trimIndent()
 
     private val CHAT_BODY = """
     window.__kr = {done:false, result:null};
@@ -134,18 +207,21 @@ object WebScripts {
           return finish({status: login ? 'needs_login' : 'error', text:'', files:[]});
         }
         var before = assistantCount();
-        var beforeLinks = {}; downloadLinks(document).forEach(function(h){ beforeLinks[h]=1; });
-        setInput(el, prompt);
-        await sleep(600);
-        var btn = null;
-        for (var k=0;k<20 && !btn;k++){
-          var b = pick(cfg.send);
-          if (b && !b.disabled && b.getAttribute('aria-disabled') !== 'true') btn = b; else await sleep(500);
+        if (peek && before === 0) return finish({status:'ok', text:'', files:[], truncated:false});
+        var beforeLinks = {}; if (!peek) downloadLinks(document).forEach(function(h){ beforeLinks[h]=1; });
+        if (!peek) {
+          setInput(el, prompt);
+          await sleep(600);
+          var btn = null;
+          for (var k=0;k<20 && !btn;k++){
+            var b = pick(cfg.send);
+            if (b && !b.disabled && b.getAttribute('aria-disabled') !== 'true') btn = b; else await sleep(500);
+          }
+          if (btn) btn.click();
+          else el.dispatchEvent(new KeyboardEvent('keydown', {key:'Enter', code:'Enter', keyCode:13, which:13, bubbles:true}));
         }
-        if (btn) btn.click();
-        else el.dispatchEvent(new KeyboardEvent('keydown', {key:'Enter', code:'Enter', keyCode:13, which:13, bubbles:true}));
 
-        var start = Date.now(), lastText = '', stable = 0, started = false;
+        var start = Date.now(), lastText = '', stable = 0, started = !!peek;
         while (Date.now() - start < cfg.timeoutMs){
           await sleep(1000);
           var lim = limitText();

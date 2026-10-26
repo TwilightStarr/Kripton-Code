@@ -31,6 +31,8 @@ data class SiteSelectors(
     /** Giriş alanı bulunamazsa oturum düşmüş sayılan URL parçaları. */
     val loginUrlHints: List<String> = listOf("/login", "/auth", "signin", "accounts.google.com", "/sign-in"),
     val timeoutMs: Long = 12 * 60 * 1000L,
+    /** Dosya ekleme girdisi (gizli olabilir); seri modda projenin zip'ini sohbete eklemek için. */
+    val fileInput: List<String> = listOf("input[type=file]"),
 )
 
 object WebSelectors {

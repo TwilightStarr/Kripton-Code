@@ -64,6 +64,7 @@ fun HomeScreen(
     onAddAi: () -> Unit,
     onOpenRoute: (Route) -> Unit,
     onOpenRun: (Long) -> Unit,
+    onOpenSerial: (Long) -> Unit = {},
     onOpenUsage: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -131,6 +132,7 @@ fun HomeScreen(
         if (accounts.isNotEmpty()) UsageCard(accounts, usage, onOpenUsage)
     }
     val guide: @Composable () -> Unit = {
+        SerialRunsSection(container = container, onOpen = onOpenSerial)
         if (nextAction != null) {
             NodeCard(modifier = Modifier.fillMaxWidth().appear(3)) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {

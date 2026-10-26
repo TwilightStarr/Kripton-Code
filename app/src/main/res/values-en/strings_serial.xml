@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="serial_run_button">Run in serial mode (single chat)</string>
+    <string name="serial_launch_title">Serial mode</string>
+    <string name="serial_launch_info">Prompts are sent one by one to a single AI account in ONE chat. Output is committed straight to the repo; if Actions reports errors or warnings the log is pasted into the same chat. When clean, the next prompt starts. The chat only changes when a prompt starts with [[new-chat]].</string>
+    <string name="serial_launch_account">AI account (web session)</string>
+    <string name="serial_launch_no_accounts">No enabled web-session account (Claude, ChatGPT, Kimi).</string>
+    <string name="serial_launch_repo">Repo (commits go to the default branch)</string>
+    <string name="serial_launch_no_token">No GitHub token set. Add one in Settings.</string>
+    <string name="serial_launch_repo_error">Could not load repos.</string>
+    <string name="serial_launch_start">Start</string>
+    <string name="serial_launch_failed">Could not start: %1$s</string>
+    <string name="serial_home_title">Serial mode runs</string>
+    <string name="serial_screen_title">Serial run #%1$d</string>
+    <string name="serial_progress">Prompt %1$d / %2$d</string>
+    <string name="serial_status_running">Running</string>
+    <string name="serial_status_paused">Paused</string>
+    <string name="serial_status_waiting">Needs your input</string>
+    <string name="serial_status_done">Done</string>
+    <string name="serial_status_failed">Failed</string>
+    <string name="serial_status_cancelled">Cancelled</string>
+    <string name="serial_phase_prompt">Waiting for AI reply</string>
+    <string name="serial_phase_commit">Committing to repo</string>
+    <string name="serial_phase_ci">Waiting for Actions</string>
+    <string name="serial_phase_fix">CI fix (same chat)</string>
+    <string name="serial_pause">Pause</string>
+    <string name="serial_resume">Resume</string>
+    <string name="serial_cancel">Cancel</string>
+    <string name="serial_delete">Delete record</string>
+    <string name="serial_log_title">Log</string>
+</resources>

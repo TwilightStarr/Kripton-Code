@@ -67,4 +67,10 @@ object ExtraRoutes {
     const val USAGE = "usage"
 
     fun run(runId: Long): String = "run/$runId"
+
+    /** Seri mod (tek sohbet) çalışması. */
+    const val ARG_SERIAL_ID = "serialId"
+    const val SERIAL = "serial/{$ARG_SERIAL_ID}"
+
+    fun serial(id: Long): String = "serial/$id"
 }

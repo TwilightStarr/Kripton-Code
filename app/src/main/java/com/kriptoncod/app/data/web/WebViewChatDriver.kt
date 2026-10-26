@@ -51,13 +51,27 @@ class WebViewChatDriver(
 
     private fun profileName(accountId: Long) = "kripton-acc-$accountId"
 
-    override suspend fun open(account: AiAccount, provider: WebProvider): WebChatSession {
+    override suspend fun open(account: AiAccount, provider: WebProvider): WebChatSession = openAt(account, provider, provider.chatUrl)
+
+    /** [chatUrl] bu sağlayıcıya ait bir https adresiyse O sohbeti açar; değilse yeni sohbet. */
+    override suspend fun resume(account: AiAccount, provider: WebProvider, chatUrl: String?): WebChatSession {
+        val target = chatUrl?.takeIf { isProviderUrl(provider, it) } ?: provider.chatUrl
+        return openAt(account, provider, target)
+    }
+
+    private fun isProviderUrl(provider: WebProvider, url: String): Boolean {
+        val uri = runCatching { java.net.URI(url) }.getOrNull() ?: return false
+        val host = uri.host ?: return false
+        return uri.scheme == "https" && provider.hostSuffixes.any { host == it || host.endsWith(".$it") }
+    }
+
+    private suspend fun openAt(account: AiAccount, provider: WebProvider, startUrl: String): WebChatSession {
         val saved = sessions.load(account.id)?.takeIf { !it.isEmpty }
             ?: throw AiGenerationException(Kind.UNAUTHORIZED)
         val profiled = profilesSupported()
         val lock = if (profiled) accountLocks.getOrPut(account.id) { Mutex() } else globalLock
         lock.lock()
-        val s = ChatSession(account, provider, WebSelectors.load(provider, selectorsFile), lock, profiled)
+        val s = ChatSession(account, provider, WebSelectors.load(provider, selectorsFile), lock, profiled, startUrl)
         try {
             s.start(saved)
         } catch (t: Throwable) {
@@ -73,6 +87,7 @@ class WebViewChatDriver(
         private val selectors: SiteSelectors,
         private val lock: Mutex,
         private val profiled: Boolean,
+        private val startUrl: String,
     ) : WebChatSession {
 
         private var cookieManager: CookieManager = CookieManager.getInstance()
@@ -100,10 +115,10 @@ class WebViewChatDriver(
             }
             WebCookies.clearAll(cookieManager, webStorage)
             WebCookies.restore(saved, cookieManager)
-            load(provider.chatUrl)
+            load(startUrl)
             if (saved.localStorage.isNotEmpty()) {
                 WebCookies.evalString(webView!!, WebScripts.writeLocalStorage(saved.localStorage))
-                load(provider.chatUrl) // anahtarlar yazıldı; sayfa onlarla yeniden açılır
+                load(startUrl) // anahtarlar yazıldı; sayfa onlarla yeniden açılır
             }
         }
 
@@ -152,6 +167,16 @@ class WebViewChatDriver(
         override suspend fun send(prompt: String): WebReply {
             val wv = webView ?: return WebReply(WebReply.Status.ERROR)
             WebCookies.evalString(wv, WebScripts.runChat(selectors, prompt))
+            return pollReply(wv)
+        }
+
+        override suspend fun peekLast(): WebReply? {
+            val wv = webView ?: return null
+            WebCookies.evalString(wv, WebScripts.peekChat(selectors))
+            return pollReply(wv)
+        }
+
+        private suspend fun pollReply(wv: WebView): WebReply {
             val deadline = System.currentTimeMillis() + selectors.timeoutMs + 150_000L
             while (System.currentTimeMillis() < deadline) {
                 delay(POLL_MS)
@@ -162,6 +187,41 @@ class WebViewChatDriver(
                 return ReplyParser.parse(text)
             }
             return WebReply(WebReply.Status.TIMEOUT)
+        }
+
+        override suspend fun chatUrl(): String? {
+            val wv = webView ?: return null
+            val url = withContext(Dispatchers.Main) { wv.url } ?: return null
+            if (!isProviderUrl(provider, url)) return null
+            val uri = runCatching { java.net.URI(url) }.getOrNull() ?: return null
+            val path = uri.path.orEmpty().trimEnd('/')
+            val home = runCatching { java.net.URI(provider.chatUrl).path.orEmpty() }.getOrDefault("").trimEnd('/')
+            // Ana sayfa / "yeni sohbet" sayfası: sohbet henüz oluşmadı.
+            if (path.isEmpty() || path == home) return null
+            return url.substringBefore('#')
+        }
+
+        override suspend fun attach(name: String, bytes: ByteArray): Boolean {
+            val wv = webView ?: return false
+            if (bytes.isEmpty()) return false
+            WebCookies.evalString(wv, WebScripts.ATTACH_BEGIN)
+            var off = 0
+            while (off < bytes.size) {
+                val end = minOf(off + ATTACH_CHUNK_BYTES, bytes.size)
+                val b64 = Base64.encodeToString(bytes.copyOfRange(off, end), Base64.NO_WRAP)
+                val r = WebCookies.unquote(WebCookies.evalString(wv, WebScripts.attachChunk(b64)))
+                if (r != "ok") return false
+                off = end
+            }
+            WebCookies.evalString(wv, WebScripts.attachFinish(selectors, name, "application/zip"))
+            val deadline = System.currentTimeMillis() + ATTACH_TIMEOUT_MS
+            while (System.currentTimeMillis() < deadline) {
+                delay(1_000)
+                val st = WebCookies.unquote(WebCookies.evalString(wv, WebScripts.ATTACH_POLL))
+                if (st.isEmpty()) continue
+                return st == "OK"
+            }
+            return false
         }
 
         override suspend fun download(url: String): WebFile? {
@@ -283,5 +343,7 @@ class WebViewChatDriver(
         const val DOWNLOAD_TIMEOUT_MS = 30L * 60_000L // yalnız ağdan inmesi için; takılmayı sonlandırır
         const val CHUNK_BYTES = 1L * 1024 * 1024
         const val CHUNK_TIMEOUT_MS = 60_000L
+        const val ATTACH_CHUNK_BYTES = 96 * 1024
+        const val ATTACH_TIMEOUT_MS = 6L * 60_000L
     }
 }
