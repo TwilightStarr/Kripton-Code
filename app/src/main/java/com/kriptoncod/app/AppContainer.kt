@@ -208,6 +208,7 @@ class AppContainer(context: Context) {
             com.kriptoncod.app.data.crash.RunErrorLog.record(appContext, "in-app", runId, null, null, error)
         }
     }
+
     // --- Seri mod (tek AI, tek sohbet, sıralı) ---
     val serialStore: SerialStore by lazy { SerialStore(File(appContext.filesDir, "serial")) }
     val serialGit: SerialGit by lazy { GitHubSerialGit(githubService, githubTokenStore) }

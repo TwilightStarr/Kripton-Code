@@ -14,8 +14,7 @@ object SerialMarkers {
 
     private const val ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
-    fun newNonce(random: () -> Int = { (Math.random() * Int.MAX_VALUE).toInt() }): String =
-        buildString { repeat(6) { append(ALPHABET[random().mod(ALPHABET.length)]) } }
+    fun newNonce(random: () -> Int = { (Math.random() * Int.MAX_VALUE).toInt() }): String = buildString { repeat(6) { append(ALPHABET[random().mod(ALPHABET.length)]) } }
 
     fun begin(nonce: String) = "KRIPTON-BASLA-$nonce"
 

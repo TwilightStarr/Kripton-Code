@@ -424,8 +424,7 @@ class SerialRunner(
 
     private fun limited(text: String?) = AiGenerationException(Kind.RATE_LIMITED, retryAfterMs = LimitParser.waitMs(text, now()))
 
-    private fun clean(policy: WebOutputPolicy, text: String): String =
-        OutputCleaner.clean(text, policy.aggressiveThinking, policy.specialTokens, policy.toolSections)
+    private fun clean(policy: WebOutputPolicy, text: String): String = OutputCleaner.clean(text, policy.aggressiveThinking, policy.specialTokens, policy.toolSections)
 
     // ------------------------------------------------------------------------------------------- çıktı çıkarma
 

@@ -145,8 +145,11 @@ fun SerialLaunchDialog(
                 Text(stringResource(R.string.serial_launch_repo), style = MaterialTheme.typography.labelLarge)
                 when {
                     noToken -> Text(stringResource(R.string.serial_launch_no_token), style = MaterialTheme.typography.bodySmall, color = k.muted)
+
                     repoError -> Text(stringResource(R.string.serial_launch_repo_error), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+
                     repos == null -> KriptonLoader()
+
                     else -> repos.orEmpty().forEach { r ->
                         KChip(
                             label = r.fullName,
