@@ -76,8 +76,7 @@ object SerialDirectives {
  */
 object SerialPlanner {
 
-    fun plan(items: List<PromptItem>, nowMs: Long = System.currentTimeMillis(), runId: Long = 0L): List<SerialPrompt> =
-        planEntries(items.sortedBy { it.order }.map { it.title to it.body }, nowMs, runId)
+    fun plan(items: List<PromptItem>, nowMs: Long = System.currentTimeMillis(), runId: Long = 0L): List<SerialPrompt> = planEntries(items.sortedBy { it.order }.map { it.title to it.body }, nowMs, runId)
 
     /**
      * Zip kataloglarını (katalog sırasıyla, katalog içi prompt sırasıyla) seri adımlara çevirir.

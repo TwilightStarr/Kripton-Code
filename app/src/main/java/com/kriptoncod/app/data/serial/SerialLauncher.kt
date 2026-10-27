@@ -23,8 +23,7 @@ class SerialLauncher(
     }
 
     /** @return yeni çalışmanın kimliği. [InvalidSetup]: set boş. [SerialGitException]: repo/token sorunu. */
-    suspend fun launch(setId: Long, setName: String, repo: String, accountId: Long): Long =
-        launchPlan(setName, repo, accountId, plan(setId))
+    suspend fun launch(setId: Long, setName: String, repo: String, accountId: Long): Long = launchPlan(setName, repo, accountId, plan(setId))
 
     /**
      * Hazır (önizlemede düzenlenmiş) planı başlatır. [InvalidSetup]: plan boş.
