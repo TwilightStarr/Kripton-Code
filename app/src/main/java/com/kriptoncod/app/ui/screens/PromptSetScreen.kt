@@ -74,8 +74,8 @@ fun PromptSetScreen(
     var showSerial by remember { mutableStateOf(false) }
     if (showSerial) {
         SerialLaunchDialog(
-            setId = setId,
             setName = state.setName,
+            loadPlan = { container.serialLauncher.plan(setId) },
             onDismiss = { showSerial = false },
             onStarted = { id ->
                 showSerial = false

@@ -12,24 +12,41 @@ class SerialLauncher(
 ) {
     class InvalidSetup(message: String) : Exception(message)
 
-    /** @return yeni çalışmanın kimliği. [InvalidSetup]: set boş. [SerialGitException]: repo/token sorunu. */
-    suspend fun launch(setId: Long, setName: String, repo: String, accountId: Long): Long {
+    /**
+     * Setten çalışma planını (önizleme için) üretir; hiçbir şey başlatmaz.
+     * [InvalidSetup]: set boş.
+     */
+    suspend fun plan(setId: Long): List<SerialPrompt> {
         val plan = SerialPlanner.plan(prompts.getItems(setId), now())
         if (plan.isEmpty()) throw InvalidSetup("Prompt setinde gönderilecek prompt yok.")
+        return plan
+    }
+
+    /** @return yeni çalışmanın kimliği. [InvalidSetup]: set boş. [SerialGitException]: repo/token sorunu. */
+    suspend fun launch(setId: Long, setName: String, repo: String, accountId: Long): Long =
+        launchPlan(setName, repo, accountId, plan(setId))
+
+    /**
+     * Hazır (önizlemede düzenlenmiş) planı başlatır. [InvalidSetup]: plan boş.
+     * @return yeni çalışmanın kimliği.
+     */
+    suspend fun launchPlan(name: String, repo: String, accountId: Long, plan: List<SerialPrompt>): Long {
+        val clean = plan.filter { it.body.isNotBlank() }
+        if (clean.isEmpty()) throw InvalidSetup("Gönderilecek prompt yok.")
         val branch = git.defaultBranch(repo)
         val state = store.create { id ->
             SerialState(
                 id = id,
                 createdAt = now(),
-                name = setName,
+                name = name,
                 repo = repo,
                 branch = branch,
                 accountId = accountId,
-                prompts = plan,
+                prompts = clean,
                 needsProject = true,
             )
         }
-        store.log(state.id, "Başlatıldı: ${plan.size} prompt → $repo@$branch")
+        store.log(state.id, "Başlatıldı: ${clean.size} prompt → $repo@$branch")
         start(state.id)
         return state.id
     }

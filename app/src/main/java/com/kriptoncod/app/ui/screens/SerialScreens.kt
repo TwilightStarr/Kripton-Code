@@ -37,6 +37,7 @@ import com.kriptoncod.app.R
 import com.kriptoncod.app.data.github.GitHubRepo
 import com.kriptoncod.app.data.providers.ApiResult
 import com.kriptoncod.app.data.serial.SerialPhase
+import com.kriptoncod.app.data.serial.SerialPrompt
 import com.kriptoncod.app.data.serial.SerialState
 import com.kriptoncod.app.data.serial.SerialStatus
 import com.kriptoncod.app.data.vault.KeyVaultException
@@ -79,11 +80,15 @@ private fun phaseText(p: SerialPhase): String = when (p) {
     SerialPhase.FIX -> stringResource(R.string.serial_phase_fix)
 }
 
-/** Prompt setini seri modda başlatmak için hesap ve repo seçtirir. Başarılıysa [onStarted] yeni kimlikle çağrılır. */
+/**
+ * Seri modda başlatmak için hesap ve repo seçtirir, ardından [loadPlan]'ın ürettiği adımları ÖNİZLEME ekranında
+ * ayarlatır; çalışma yalnız oradaki "Başlat" ile başlar. Başarılıysa [onStarted] yeni kimlikle çağrılır.
+ * [loadPlan]: kaynak neyse (prompt seti, zip...) adımları üretir; boşsa ya da hata verirse mesajı gösterilir.
+ */
 @Composable
 fun SerialLaunchDialog(
-    setId: Long,
     setName: String,
+    loadPlan: suspend () -> List<SerialPrompt>,
     onDismiss: () -> Unit,
     onStarted: (Long) -> Unit,
 ) {
@@ -100,7 +105,9 @@ fun SerialLaunchDialog(
     var repo by remember { mutableStateOf<String?>(null) }
     var accountId by remember { mutableStateOf<Long?>(null) }
     var starting by remember { mutableStateOf(false) }
+    var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var preview by remember { mutableStateOf<List<SerialPrompt>?>(null) }
 
     LaunchedEffect(Unit) {
         try {
@@ -119,8 +126,39 @@ fun SerialLaunchDialog(
     }
     val chosenAccount = accountId ?: webAccounts.firstOrNull()?.id
 
+    val plan = preview
+    if (plan != null) {
+        SerialPreviewDialog(
+            initial = plan,
+            provider = webAccounts.firstOrNull { it.id == chosenAccount }?.let { WebProvider.fromId(it.providerId) },
+            starting = starting,
+            error = error,
+            onBack = {
+                error = null
+                preview = null
+            },
+            onStart = { finalPlan ->
+                val r = repo ?: return@SerialPreviewDialog
+                val a = chosenAccount ?: return@SerialPreviewDialog
+                starting = true
+                error = null
+                scope.launch {
+                    try {
+                        onStarted(container.serialLauncher.launchPlan(setName, r, a, finalPlan))
+                    } catch (c: CancellationException) {
+                        throw c
+                    } catch (e: Exception) {
+                        error = e.message ?: e.toString()
+                        starting = false
+                    }
+                }
+            },
+        )
+        return
+    }
+
     AlertDialog(
-        onDismissRequest = { if (!starting) onDismiss() },
+        onDismissRequest = { if (!loading) onDismiss() },
         containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 0.dp,
         title = { Text(stringResource(R.string.serial_launch_title)) },
@@ -166,27 +204,27 @@ fun SerialLaunchDialog(
         },
         confirmButton = {
             TextButton(
-                enabled = !starting && repo != null && chosenAccount != null,
+                enabled = !loading && repo != null && chosenAccount != null,
                 onClick = {
-                    val r = repo ?: return@TextButton
-                    val a = chosenAccount ?: return@TextButton
-                    starting = true
+                    loading = true
                     error = null
                     scope.launch {
                         try {
-                            onStarted(container.serialLauncher.launch(setId, setName, r, a))
+                            // Hiçbir şey başlatılmaz: yalnız adımlar hazırlanır ve önizleme ekranı açılır.
+                            preview = loadPlan()
                         } catch (c: CancellationException) {
                             throw c
                         } catch (e: Exception) {
                             error = e.message ?: e.toString()
-                            starting = false
+                        } finally {
+                            loading = false
                         }
                     }
                 },
-            ) { Text(stringResource(R.string.serial_launch_start)) }
+            ) { Text(stringResource(R.string.serial_launch_preview)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !starting) { Text(stringResource(R.string.action_cancel)) }
+            TextButton(onClick = onDismiss, enabled = !loading) { Text(stringResource(R.string.action_cancel)) }
         },
     )
 }

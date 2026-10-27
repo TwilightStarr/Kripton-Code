@@ -265,6 +265,7 @@ fun AppRoot(
                                 PromptsScreen(
                                     onOpenSet = { id -> navController.navigate(PromptRoutes.set(id)) },
                                     onRunStarted = { id -> navController.navigate(ExtraRoutes.run(id)) },
+                                    onSerialStarted = { id -> navController.navigate(ExtraRoutes.serial(id)) },
                                 )
                             }
                             composable(

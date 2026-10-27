@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.kriptoncod.app.domain.AccountStatus
 import com.kriptoncod.app.domain.Catalog
+import com.kriptoncod.app.data.serial.SerialPlanner
 import com.kriptoncod.app.domain.CatalogParser
 import com.kriptoncod.app.ui.ais.rememberContainer
 import java.util.zip.ZipInputStream
@@ -64,7 +65,7 @@ import com.kriptoncod.app.ui.prompts.rememberPromptsViewModelFactory
 import com.kriptoncod.app.ui.theme.KriptonTheme
 
 @Composable
-fun PromptsScreen(onOpenSet: (Long) -> Unit, onRunStarted: (Long) -> Unit = {}) {
+fun PromptsScreen(onOpenSet: (Long) -> Unit, onRunStarted: (Long) -> Unit = {}, onSerialStarted: (Long) -> Unit = {}) {
     val viewModel: PromptsViewModel = viewModel(factory = rememberPromptsViewModelFactory())
     val state by viewModel.state.collectAsStateWithLifecycle()
     val container = rememberContainer()
@@ -73,6 +74,9 @@ fun PromptsScreen(onOpenSet: (Long) -> Unit, onRunStarted: (Long) -> Unit = {}) 
     val accounts by container.aiAccountRepository.observeAll()
         .collectAsStateWithLifecycle(initialValue = emptyList())
     var zipCatalogs by remember { mutableStateOf<List<Catalog>?>(null) }
+
+    /** Zip için seçilen çalıştırma biçimi; null: henüz seçilmedi (önce sorulur). true: seri mod, false: paralel. */
+    var zipSerial by remember { mutableStateOf<Boolean?>(null) }
     val pickZip = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             scope.launch {
@@ -97,6 +101,7 @@ fun PromptsScreen(onOpenSet: (Long) -> Unit, onRunStarted: (Long) -> Unit = {}) 
                     }
                 }
                 if (parsed.any { it.prompts.isNotEmpty() }) {
+                    zipSerial = null
                     zipCatalogs = parsed
                 } else {
                     Toast.makeText(context, R.string.zip_run_invalid, Toast.LENGTH_LONG).show()
@@ -104,16 +109,55 @@ fun PromptsScreen(onOpenSet: (Long) -> Unit, onRunStarted: (Long) -> Unit = {}) 
             }
         }
     }
+    val zipSerialName = stringResource(R.string.serial_zip_name)
     zipCatalogs?.let { cats ->
-        RunLaunchDialog(
-            launch = { repo -> container.runLauncher.launchCatalogs(cats, repo) },
-            hasAccounts = accounts.any { it.enabled && it.status != AccountStatus.ERROR },
-            onDismiss = { zipCatalogs = null },
-            onStarted = { id ->
-                zipCatalogs = null
-                onRunStarted(id)
-            },
-        )
+        when (zipSerial) {
+            null -> AlertDialog(
+                onDismissRequest = { zipCatalogs = null },
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp,
+                title = { Text(stringResource(R.string.serial_zip_mode_title)) },
+                text = { Text(stringResource(R.string.serial_zip_mode_info), style = MaterialTheme.typography.bodyMedium) },
+                confirmButton = {
+                    TextButton(onClick = { zipSerial = true }) { Text(stringResource(R.string.serial_zip_mode_serial)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { zipSerial = false }) { Text(stringResource(R.string.serial_zip_mode_parallel)) }
+                },
+            )
+
+            true -> SerialLaunchDialog(
+                setName = zipSerialName,
+                loadPlan = {
+                    SerialPlanner.planCatalogs(cats).also {
+                        if (it.isEmpty()) throw IllegalStateException(context.getString(R.string.zip_run_invalid))
+                    }
+                },
+                onDismiss = {
+                    zipCatalogs = null
+                    zipSerial = null
+                },
+                onStarted = { id ->
+                    zipCatalogs = null
+                    zipSerial = null
+                    onSerialStarted(id)
+                },
+            )
+
+            false -> RunLaunchDialog(
+                launch = { repo -> container.runLauncher.launchCatalogs(cats, repo) },
+                hasAccounts = accounts.any { it.enabled && it.status != AccountStatus.ERROR },
+                onDismiss = {
+                    zipCatalogs = null
+                    zipSerial = null
+                },
+                onStarted = { id ->
+                    zipCatalogs = null
+                    zipSerial = null
+                    onRunStarted(id)
+                },
+            )
+        }
     }
     PromptsContent(
         onRunFromZip = { pickZip.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")) },

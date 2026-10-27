@@ -92,4 +92,25 @@ class SerialPureTest {
         val again = RepoZip.read(RepoZip.toZip(p.files))
         assertEquals(setOf("a.txt", "src/b.kt"), again.files.keys)
     }
+
+    @Test
+    fun planner_turns_zip_catalogs_into_ordered_steps_with_directives() {
+        val cats = listOf(
+            com.kriptoncod.app.domain.Catalog(
+                "A",
+                listOf(
+                    com.kriptoncod.app.domain.CatalogPrompt("bir", "Birinci"),
+                    com.kriptoncod.app.domain.CatalogPrompt("iki", "[[yeni-sohbet]]\n[[dosyasız]]\nİkinci"),
+                ),
+            ),
+            com.kriptoncod.app.domain.Catalog("B", listOf(com.kriptoncod.app.domain.CatalogPrompt("üç", "Üçüncü"))),
+        )
+        val plan = SerialPlanner.planCatalogs(cats, nowMs = 0L)
+        assertEquals(3, plan.size)
+        assertEquals("A · iki", plan[1].title)
+        assertTrue(plan[1].newChat)
+        assertFalse(plan[1].expectFiles)
+        assertEquals("İkinci", plan[1].body)
+        assertFalse(plan[2].newChat)
+    }
 }
