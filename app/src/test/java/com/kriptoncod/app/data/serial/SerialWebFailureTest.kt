@@ -67,8 +67,7 @@ class SerialWebFailureTest {
         )
     }
 
-    private fun runner(store: SerialStore, session: WebChatSession) =
-        SerialRunner(store, { account }, ScriptedWebDriver(session), StubGit(), sleep = { }, errorDelayMs = { 0L })
+    private fun runner(store: SerialStore, session: WebChatSession) = SerialRunner(store, { account }, ScriptedWebDriver(session), StubGit(), sleep = { }, errorDelayMs = { 0L })
 
     @Test
     fun message_sent_but_reply_unreadable_is_not_resent_blindly() = runBlocking {
