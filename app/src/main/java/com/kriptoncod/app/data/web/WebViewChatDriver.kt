@@ -92,7 +92,8 @@ class WebViewChatDriver(
         private val lock: Mutex,
         private val profiled: Boolean,
         private val startUrl: String,
-    ) : WebChatSession, WebMonitorHandle {
+    ) : WebChatSession,
+        WebMonitorHandle {
 
         private var cookieManager: CookieManager = CookieManager.getInstance()
         private var webStorage: WebStorage = WebStorage.getInstance()
