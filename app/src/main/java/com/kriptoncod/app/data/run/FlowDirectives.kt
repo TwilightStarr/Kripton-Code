@@ -100,7 +100,7 @@ data class DirectiveIssue(val code: IssueCode, val arg: String)
 
 object FlowDirectivesParser {
 
-    private val LINE = Regex("""^\s*\[\[\s*([\p{L}-]+)\s*:\s*(.*?)\s*]]\s*$""")
+    private val LINE = Regex("""^\s*\[\[\s*([\p{L}-]+)\s*:\s*(.*?)\s*\]\]\s*$""")
     private val NO = setOf("hayır", "hayir", "hayır.", "no", "false", "yok", "0")
     private val YES = setOf("evet", "yes", "true", "1", "var", "e")
     private val NAME = Regex("""^[\p{L}_][\p{L}\p{N}_.-]*$""")

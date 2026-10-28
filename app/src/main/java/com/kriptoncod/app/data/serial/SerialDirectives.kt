@@ -18,7 +18,7 @@ object SerialDirectives {
 
     data class Parsed(val body: String, val newChat: Boolean, val expectFiles: Boolean)
 
-    private val LINE = Regex("""^\s*\[\[\s*([\p{L}-]+)\s*(?::\s*(.*?))?\s*]]\s*$""")
+    private val LINE = Regex("""^\s*\[\[\s*([\p{L}-]+)\s*(?::\s*(.*?))?\s*\]\]\s*$""")
     private val NEW_CHAT = setOf("yeni-sohbet", "yeni-sohbet-aç", "new-chat", "newchat")
     private val NO_FILES = setOf("dosyasız", "dosyasiz", "no-files", "nofiles")
     private val OFF = setOf("hayır", "hayir", "no", "false", "0", "yok")
@@ -76,7 +76,8 @@ object SerialDirectives {
  */
 object SerialPlanner {
 
-    fun plan(items: List<PromptItem>, nowMs: Long = System.currentTimeMillis(), runId: Long = 0L): List<SerialPrompt> = planEntries(items.sortedBy { it.order }.map { it.title to it.body }, nowMs, runId)
+    fun plan(items: List<PromptItem>, nowMs: Long = System.currentTimeMillis(), runId: Long = 0L): List<SerialPrompt> =
+        planEntries(items.sortedBy { it.order }.map { it.title to it.body }, nowMs, runId)
 
     /**
      * Zip kataloglarını (katalog sırasıyla, katalog içi prompt sırasıyla) seri adımlara çevirir.

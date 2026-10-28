@@ -40,7 +40,7 @@ object PromptTemplate {
         val default: String? = null,
     )
 
-    private val TOKEN = Regex("""(\\)?\{\{([^{}\n]+?)}}""")
+    private val TOKEN = Regex("""(\\)?\{\{([^{}\n]+?)\}\}""")
     private val NAME = Regex("""^[\p{L}_][\p{L}\p{N}_.-]*$""")
 
     private val PREFIXES: Map<String, Kind> = mapOf(
