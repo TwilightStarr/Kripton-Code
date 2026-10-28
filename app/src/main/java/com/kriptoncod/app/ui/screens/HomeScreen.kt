@@ -66,12 +66,14 @@ fun HomeScreen(
     onOpenRun: (Long) -> Unit,
     onOpenSerial: (Long) -> Unit = {},
     onOpenUsage: () -> Unit = {},
+    onOpenWebMonitor: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val container = remember { (context.applicationContext as KriptonCodApp).container }
     val accounts by container.aiAccountRepository.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
     val sets by container.promptRepository.observeSets().collectAsStateWithLifecycle(initialValue = emptyList())
     val runs by container.runRepository.observeRuns().collectAsStateWithLifecycle(initialValue = emptyList())
+    val liveWeb by container.webMonitor.entries.collectAsStateWithLifecycle()
     // Son 24 saatin hesap başına kullanımı; akış bir kez kurulur (pencere o an sabitlenir).
     val usageFlow = remember(container) { container.usageRepository.observeSummary() }
     val usage by usageFlow.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -105,6 +107,10 @@ fun HomeScreen(
         )
     }
     val banner: @Composable () -> Unit = {
+        // Açık web sohbeti varsa AI sayfasına tek dokunuşla geç.
+        if (liveWeb.any { it.isLive }) {
+            WebMonitorButton(container = container, onClick = onOpenWebMonitor, modifier = Modifier.fillMaxWidth().appear(1))
+        }
         activeRun?.let { r ->
             NodeCard(modifier = Modifier.fillMaxWidth().appear(1), accent = NodeAccent.Green, onClick = { onOpenRun(r.id) }) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {

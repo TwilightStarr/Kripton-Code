@@ -20,6 +20,7 @@ Android için kod odaklı, çoklu-AI üretim aracı. Büyük bir işi ayrıntıl
 - **Geçmiş:** Üretilen çıktılar ve hazırlanan zip dosyaları cihazda saklanır.
 - **GitHub + CI döngüsü:** Çıktıyı yeni bir dala tek commit olarak gönderir, Actions sonucunu bekler, hata varsa log özetini AI'a verip düzeltmeyi dener.
 - **Canlı akış:** API hesaplarında düğüm çıktısı üretilirken yazı yazı akar (SSE, `okhttp-sse`); iş bitince kalıcı çıktı devralır. Akışı desteklemeyen sağlayıcıda otomatik olarak tek yanıta düşer. Web oturumu hesapları akıtılmaz.
+- **Canlı web:** Web oturumlu hesaplarla (Claude, ChatGPT, Kimi) akış ya da seri mod çalışırken **Canlı web** ekranından açık sohbet sayfasını istediğin an görürsün: promptun sayfaya girip girmediğini, AI'ın çıktı verip vermediğini (yanıt uzunluğu, "x sn'dir yeni çıktı yok" uyarısı) ve her turun prompt/yanıtını kontrol edebilirsin. Sayfa varsayılan olarak yalnız izlenir (dokunma kapalı); kayıt yalnız bellekte tutulur. Run, seri mod ve ana ekrandaki **Canlı web** düğmesinden açılır.
 - **Bildirimden denetim ve ana ekran widget'ı:** Süren çalışma bildiriminde **Duraklat / İptal**, duraklatılmışta **Devam et / İptal** düğmeleri vardır. Jetpack Glance widget'ı çalışan run'ın durumunu, ilerlemesini ve üretilen düğümü uygulamayı açmadan gösterir.
 - **İki dilli arayüz:** Türkçe (varsayılan) ve İngilizce (`values-en`); Android 13+ ta uygulama başına dil seçilebilir.
 - **Yerel çökme günlüğü (ACRA):** Çökme ayrıntısı yalnızca cihazda saklanır, ağa hiçbir şey gönderilmez; Ayarlar'dan paylaşılabilir/silinebilir.

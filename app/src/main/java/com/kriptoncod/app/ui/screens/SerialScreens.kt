@@ -260,7 +260,7 @@ fun SerialRunsSection(container: AppContainer, onOpen: (Long) -> Unit) {
 
 /** Bir seri çalışmanın canlı durumu, günlüğü ve denetim düğmeleri. */
 @Composable
-fun SerialRunScreen(id: Long, container: AppContainer, onBack: () -> Unit) {
+fun SerialRunScreen(id: Long, container: AppContainer, onBack: () -> Unit, onOpenWebMonitor: () -> Unit = {}) {
     val all by container.serialStore.observeAll().collectAsStateWithLifecycle()
     val s: SerialState? = all.firstOrNull { it.id == id }
     val k = KriptonTheme.colors
@@ -333,6 +333,8 @@ fun SerialRunScreen(id: Long, container: AppContainer, onBack: () -> Unit) {
                 )
             }
         }
+        // Seri mod tek sohbette ilerler; promptun girildiğini ve AI'ın çıktı verdiğini sayfadan görmek için.
+        WebMonitorButton(container = container, onClick = onOpenWebMonitor, modifier = Modifier.fillMaxWidth())
         Text(stringResource(R.string.serial_log_title), style = MaterialTheme.typography.titleSmall)
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             s.log.takeLast(120).reversed().forEach { line ->

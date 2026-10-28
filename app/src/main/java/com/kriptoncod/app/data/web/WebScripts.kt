@@ -44,6 +44,21 @@ object WebScripts {
             ".map(function(e){return e.value||e.getAttribute('data-key')||'';}).join(' ');" +
             "var m=t.match(/AIza[0-9A-Za-z_\\-]{35}/);return m?m[0]:'';})()"
 
+    /**
+     * Ekrana eklenmemiş WebView'da sayfa "gizli" sayılır: requestAnimationFrame durur, bazı siteler girdiyi çizmez.
+     * Belge başlangıcında enjekte edilir; sayfayı görünür gösterir ve rAF'ye zamanlayıcı yedeği ekler.
+     */
+    const val VISIBILITY_SHIM =
+        "(function(){try{" +
+            "Object.defineProperty(document,'hidden',{configurable:true,get:function(){return false;}});" +
+            "Object.defineProperty(document,'visibilityState',{configurable:true,get:function(){return 'visible';}});" +
+            "document.hasFocus=function(){return true;};" +
+            "var raf=window.requestAnimationFrame.bind(window),caf=window.cancelAnimationFrame.bind(window),dead={};" +
+            "window.requestAnimationFrame=function(cb){var fired=false,id=raf(function(t){if(!fired&&!dead[id]){fired=true;delete dead[id];cb(t);}});" +
+            "setTimeout(function(){if(!fired&&!dead[id]){fired=true;cb(performance.now());}},100);return id;};" +
+            "window.cancelAnimationFrame=function(i){dead[i]=true;caf(i);};" +
+            "}catch(e){}})();"
+
     fun runChat(sel: SiteSelectors, prompt: String): String {
         val cfg = json.encodeToString(sel)
         val p = json.encodeToString(prompt)
@@ -164,6 +179,35 @@ object WebScripts {
       return '';
     }
 
+    var sentFlag = false, sendHow = 'none';
+    function pickVisible(sels){
+      for (var i=0;i<sels.length;i++){ try{ var l=document.querySelectorAll(sels[i]); for (var j=0;j<l.length;j++){ if (visible(l[j])) return l[j]; } }catch(x){} }
+      return pick(sels);
+    }
+    function countSel(sels){ return sels.map(function(s){ try{ return s+'='+document.querySelectorAll(s).length; }catch(x){ return s+'=err'; } }).join(' | '); }
+    function pageTail(n){ var b=''; try{ b=(document.body?document.body.innerText:'')||''; }catch(x){} b=b.replace(/\s+/g,' ').trim(); return b.slice(-n); }
+    function diag(){
+      try {
+        return 'url=' + location.href + '\ninput: ' + countSel(cfg.input) + '\nsend: ' + countSel(cfg.send) + '\nstop: ' + countSel(cfg.stop) +
+          '\nassistant: ' + countSel(cfg.assistant) + '\nsendHow=' + sendHow + ' visibility=' + document.visibilityState + '\npage: ' + pageTail(400);
+      } catch(x){ return 'diag-error ' + x; }
+    }
+    function tailLimit(){ var t = pageTail(500); for (var j=0;j<limitRes.length;j++) if (limitRes[j].test(t)) return t; return ''; }
+    function sendNear(el){
+      var node = el;
+      for (var up=0; up<7 && node; up++){
+        node = node.parentElement; if (!node) break;
+        var bs = Array.prototype.slice.call(node.querySelectorAll('button,[role=button]'));
+        for (var i=bs.length-1;i>=0;i--){
+          var b = bs[i];
+          if (!visible(b) || b.disabled || b.getAttribute('aria-disabled') === 'true') continue;
+          var label = ((b.getAttribute('aria-label')||'') + ' ' + (b.getAttribute('data-testid')||'') + ' ' + (b.innerText||'')).toLowerCase();
+          if (/send|submit|gönder|gonder|发送/.test(label)) return b;
+        }
+      }
+      return null;
+    }
+
     function lastAssistant(){ var l = pickAll(cfg.assistant); return l.length ? l[l.length-1] : null; }
     function assistantCount(){ return pickAll(cfg.assistant).length; }
 
@@ -200,11 +244,12 @@ object WebScripts {
     (async function(){
       try {
         var el = null;
-        for (var i=0;i<60 && !el;i++){ el = pick(cfg.input); if(!el) await sleep(750); }
+        for (var i=0;i<60 && !el;i++){ el = pickVisible(cfg.input); if(!el) await sleep(750); }
         if (!el){
           var u = lower(location.href);
           var login = cfg.loginUrlHints.some(function(h){ return u.indexOf(h) >= 0; });
-          return finish({status: login ? 'needs_login' : 'error', text:'', files:[]});
+          if (!login){ var tl0 = tailLimit(); if (tl0) return finish({status:'rate_limited', text:'', files:[], limit: tl0}); }
+          return finish({status: login ? 'needs_login' : 'error', reason: login ? 'login' : 'no_input', text:'', files:[], diag: diag()});
         }
         var before = assistantCount();
         if (peek && before === 0) return finish({status:'ok', text:'', files:[], truncated:false});
@@ -217,8 +262,14 @@ object WebScripts {
             var b = pick(cfg.send);
             if (b && !b.disabled && b.getAttribute('aria-disabled') !== 'true') btn = b; else await sleep(500);
           }
+          if (btn) sendHow = 'button';
+          if (!btn){ btn = sendNear(el); if (btn) sendHow = 'fallback_button'; }
           if (btn) btn.click();
-          else el.dispatchEvent(new KeyboardEvent('keydown', {key:'Enter', code:'Enter', keyCode:13, which:13, bubbles:true}));
+          else {
+            sendHow = 'enter';
+            el.dispatchEvent(new KeyboardEvent('keydown', {key:'Enter', code:'Enter', keyCode:13, which:13, bubbles:true}));
+          }
+          sentFlag = true;
         }
 
         var start = Date.now(), lastText = '', stable = 0, started = !!peek;
@@ -230,7 +281,14 @@ object WebScripts {
           var generating = !!stopEl && visible(stopEl);
           var cnt = assistantCount();
           if (cnt > before || generating) started = true;
-          if (!started) { if (Date.now() - start > 90000) return finish({status:'error', text:'', files:[]}); continue; }
+          if (!started) {
+            if (Date.now() - start > 90000){
+              var tl1 = tailLimit();
+              if (tl1) return finish({status:'rate_limited', text:'', files:[], limit: tl1});
+              return finish({status:'error', reason:'not_started', sent:sentFlag, text:'', files:[], diag: diag()});
+            }
+            continue;
+          }
           var node = lastAssistant();
           var text = node ? toMd(node) : '';
           if (generating){ stable = 0; lastText = text; continue; }
@@ -245,9 +303,10 @@ object WebScripts {
             return finish({status:'ok', text:text, files:uniq, truncated:trunc});
           }
         }
-        finish({status:'timeout', text:lastText, files:[]});
+        finish({status:'timeout', reason: assistantCount() === 0 ? 'assistant_selector_miss' : 'timeout', sent:sentFlag, text:lastText, files:[], diag: diag()});
       } catch (e) {
-        finish({status:'error', text:String(e), files:[]});
+        var dg = ''; try { dg = 'exception: ' + String(e) + '\n' + diag(); } catch(x){ dg = 'exception: ' + String(e); }
+        finish({status:'error', reason:'exception', sent:sentFlag, text:'', files:[], diag: dg});
       }
     })();
     """.trimIndent()

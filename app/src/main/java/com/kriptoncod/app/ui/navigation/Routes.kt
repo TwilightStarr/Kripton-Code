@@ -66,6 +66,9 @@ object ExtraRoutes {
     const val PERMISSIONS = "permissions"
     const val USAGE = "usage"
 
+    /** Açık web sohbetlerini (akış ve seri mod) canlı izleme ekranı. */
+    const val WEB_MONITOR = "webmonitor"
+
     fun run(runId: Long): String = "run/$runId"
 
     /** Seri mod (tek sohbet) çalışması. */

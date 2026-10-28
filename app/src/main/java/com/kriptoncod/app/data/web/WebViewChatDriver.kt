@@ -5,6 +5,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.util.Base64
 import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.webkit.CookieManager
 import android.webkit.WebStorage
 import androidx.webkit.ProfileStore
@@ -40,6 +42,8 @@ class WebViewChatDriver(
     context: Context,
     private val sessions: WebSessionStore,
     private val selectorsFile: File? = null,
+    /** Açık oturumları "Canlı web" ekranına bildirir; null ise izleme yapılmaz. */
+    private val monitor: WebMonitor? = null,
 ) : WebChatDriver {
 
     private val appContext = context.applicationContext
@@ -88,7 +92,7 @@ class WebViewChatDriver(
         private val lock: Mutex,
         private val profiled: Boolean,
         private val startUrl: String,
-    ) : WebChatSession {
+    ) : WebChatSession, WebMonitorHandle {
 
         private var cookieManager: CookieManager = CookieManager.getInstance()
         private var webStorage: WebStorage = WebStorage.getInstance()
@@ -99,11 +103,20 @@ class WebViewChatDriver(
 
         private var base: WebSession? = null
 
+        /** [WebMonitor] kaydı; izleme kapalıysa ya da henüz açılmadıysa -1. */
+        private var monitorId: Long = -1L
+
+        private inline fun mon(block: (WebMonitor, Long) -> Unit) {
+            val m = monitor
+            val id = monitorId
+            if (m != null && id >= 0) block(m, id)
+        }
+
         suspend fun start(saved: WebSession) {
             base = saved
             withContext(Dispatchers.Main) {
-                // WebView oluşturulur oluşturulmaz (herhangi bir yükleme öncesi) hesabın profiline bağlanır.
-                val wv = createWebView()
+                // Profil, WebView'a ayar/yükleme gibi HİÇBİR çağrı yapılmadan önce bağlanır (aksi hâlde setProfile reddedilebilir).
+                val wv = WebView(appContext)
                 if (profiled) {
                     val name = profileName(account.id)
                     val profile = ProfileStore.getInstance().getOrCreateProfile(name)
@@ -111,7 +124,9 @@ class WebViewChatDriver(
                     cookieManager = profile.cookieManager
                     webStorage = profile.webStorage
                 }
+                configureWebView(wv)
                 webView = wv
+                monitorId = monitor?.open(account.id, account.displayName, provider, this@ChatSession) ?: -1L
             }
             WebCookies.clearAll(cookieManager, webStorage)
             WebCookies.restore(saved, cookieManager)
@@ -120,11 +135,11 @@ class WebViewChatDriver(
                 WebCookies.evalString(webView!!, WebScripts.writeLocalStorage(saved.localStorage))
                 load(startUrl) // anahtarlar yazıldı; sayfa onlarla yeniden açılır
             }
+            mon { m, id -> m.ready(id) }
         }
 
         @SuppressLint("SetJavaScriptEnabled")
-        private fun createWebView(): WebView {
-            val wv = WebView(appContext)
+        private fun configureWebView(wv: WebView): WebView {
             WebUserAgent.apply(wv.settings)
             wv.settings.apply {
                 javaScriptEnabled = true
@@ -144,16 +159,27 @@ class WebViewChatDriver(
                     return scheme != "https" && scheme != "about" && scheme != "blob"
                 }
             }
+            // Ekrana eklenmemiş WebView'da sayfa "gizli" sayılır; görünür gösterilir (bkz. WebScripts.VISIBILITY_SHIM).
+            runCatching {
+                if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+                    WebViewCompat.addDocumentStartJavaScript(wv, WebScripts.VISIBILITY_SHIM, setOf("*"))
+                }
+            }
             // Ekran dışı ama ölçülü: getBoundingClientRect / görünürlük kontrolleri çalışsın.
             wv.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
-            wv.measure(
-                View.MeasureSpec.makeMeasureSpec(1280, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(2000, View.MeasureSpec.EXACTLY),
-            )
-            wv.layout(0, 0, 1280, 2000)
+            layoutOffscreen(wv)
             wv.onResume()
             wv.resumeTimers()
             return wv
+        }
+
+        /** Ekrana eklenmemiş WebView'ı sabit 1280x2000 olarak ölçüp yerleştirir. */
+        private fun layoutOffscreen(wv: WebView) {
+            wv.measure(
+                View.MeasureSpec.makeMeasureSpec(VIEW_W, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(VIEW_H, View.MeasureSpec.EXACTLY),
+            )
+            wv.layout(0, 0, VIEW_W, VIEW_H)
         }
 
         private suspend fun load(url: String) {
@@ -165,29 +191,62 @@ class WebViewChatDriver(
         }
 
         override suspend fun send(prompt: String): WebReply {
-            val wv = webView ?: return WebReply(WebReply.Status.ERROR)
+            val wv = webView ?: return WebReply(WebReply.Status.ERROR, reason = "no_webview")
+            mon { m, id -> m.promptSent(id, prompt) }
             WebCookies.evalString(wv, WebScripts.runChat(selectors, prompt))
-            return pollReply(wv)
+            return pollReply(wv).also { r -> mon { m, id -> m.replied(id, r) } }
         }
 
         override suspend fun peekLast(): WebReply? {
             val wv = webView ?: return null
+            mon { m, id -> m.promptSent(id, "", peek = true) }
             WebCookies.evalString(wv, WebScripts.peekChat(selectors))
-            return pollReply(wv)
+            return pollReply(wv).also { r -> mon { m, id -> m.replied(id, r) } }
         }
 
         private suspend fun pollReply(wv: WebView): WebReply {
             val deadline = System.currentTimeMillis() + selectors.timeoutMs + 150_000L
+            var tick = 0
             while (System.currentTimeMillis() < deadline) {
                 delay(POLL_MS)
                 val raw = WebCookies.evalString(wv, WebScripts.POLL)
                 val text = WebCookies.unquote(raw)
-                if (text.isEmpty()) continue
-                if (text == "LOST") return WebReply(WebReply.Status.ERROR)
+                if (text.isEmpty()) {
+                    if (monitor != null && ++tick % LIVE_EVERY == 0) probeLive(wv)
+                    continue
+                }
+                if (text == "LOST") return WebReply(WebReply.Status.ERROR, reason = "lost")
                 return ReplyParser.parse(text)
             }
-            return WebReply(WebReply.Status.TIMEOUT)
+            return WebReply(WebReply.Status.TIMEOUT, reason = "poll_timeout")
         }
+
+        /** Yanıt beklenirken sayfadan yalnız okuma yapar; "AI çıktı veriyor mu" bilgisini izleme ekranına verir. */
+        private suspend fun probeLive(wv: WebView) {
+            val p = WebLiveProbe.parse(WebCookies.unquote(WebCookies.evalString(wv, WebLiveProbe.script(selectors)))) ?: return
+            mon { m, id -> m.live(id, p.generating, p.chars, p.tail) }
+        }
+
+        // --- WebMonitorHandle (yalnız ana iş parçacığı) ---
+
+        override fun mount(host: ViewGroup) {
+            val wv = webView ?: return
+            (wv.parent as? ViewGroup)?.removeView(wv)
+            // Sabit 1280x2000: otomasyon masaüstü düzenine göre yazıldı, izleme sırasında sayfa yeniden düzenlenmemeli.
+            host.addView(wv, FrameLayout.LayoutParams(VIEW_W, VIEW_H))
+        }
+
+        override fun unmount(host: ViewGroup) {
+            val wv = webView
+            if (wv != null && wv.parent === host) host.removeView(wv)
+            if (wv != null && wv.parent == null) {
+                wv.scaleX = 1f
+                wv.scaleY = 1f
+                layoutOffscreen(wv)
+            }
+        }
+
+        override fun currentUrl(): String? = webView?.url
 
         override suspend fun chatUrl(): String? {
             val wv = webView ?: return null
@@ -320,11 +379,14 @@ class WebViewChatDriver(
             if (!released.compareAndSet(false, true)) return
             val wv = webView
             webView = null
+            mon { m, id -> m.close(id) }
             try {
                 if (wv != null) {
                     // Ana iş parçacığında yok et; çerez deposunu hemen temizle (hesaplar karışmasın).
                     android.os.Handler(android.os.Looper.getMainLooper()).post {
                         runCatching {
+                            // "Canlı web" ekranında açıksa önce oradan çıkar; ekrana bağlı WebView yok edilmez.
+                            (wv.parent as? ViewGroup)?.removeView(wv)
                             wv.stopLoading()
                             wv.destroy()
                         }
@@ -340,6 +402,9 @@ class WebViewChatDriver(
         const val PAGE_LOAD_TIMEOUT_MS = 60_000L
         const val SETTLE_MS = 2_500L
         const val POLL_MS = 1_500L
+        const val LIVE_EVERY = 2 // her 2 yoklamada (~3 sn) bir canlı durum okunur
+        const val VIEW_W = 1280
+        const val VIEW_H = 2000
         const val DOWNLOAD_TIMEOUT_MS = 30L * 60_000L // yalnız ağdan inmesi için; takılmayı sonlandırır
         const val CHUNK_BYTES = 1L * 1024 * 1024
         const val CHUNK_TIMEOUT_MS = 60_000L

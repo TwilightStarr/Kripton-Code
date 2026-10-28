@@ -27,6 +27,7 @@ import com.kriptoncod.app.data.repo.RunRepository
 import com.kriptoncod.app.data.repo.UsageRepository
 import com.kriptoncod.app.data.settings.ThemeStore
 import com.kriptoncod.app.data.web.WebChatDriver
+import com.kriptoncod.app.data.web.WebMonitor
 import com.kriptoncod.app.data.web.WebPacer
 import com.kriptoncod.app.data.web.WebSessionGenerator
 import com.kriptoncod.app.data.web.WebSessionStore
@@ -131,8 +132,11 @@ class AppContainer(context: Context) {
 
     /** Hesap başına çerez/oturum kasası (KeyVault, `web-session-<id>`). */
     val webSessionStore: WebSessionStore by lazy { WebSessionStore(keyVault) }
+
+    /** Açık web sohbetlerinin canlı kaydı; "Canlı web" ekranı bunu izler (akış ve seri mod ortak). */
+    val webMonitor: WebMonitor by lazy { WebMonitor() }
     val webChatDriver: WebChatDriver by lazy {
-        WebViewChatDriver(appContext, webSessionStore, File(appContext.filesDir, "web-selectors.json"))
+        WebViewChatDriver(appContext, webSessionStore, File(appContext.filesDir, "web-selectors.json"), webMonitor)
     }
     val webSessionGenerator: WebSessionGenerator by lazy { WebSessionGenerator(webChatDriver, WebPacer()) }
 

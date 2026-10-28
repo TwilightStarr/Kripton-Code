@@ -44,6 +44,9 @@ object ReplyParser {
             fileUrls = files.distinct(),
             limitText = (o["limit"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() },
             truncated = (o["truncated"] as? JsonPrimitive)?.booleanOrNull == true,
+            reason = (o["reason"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() },
+            sent = (o["sent"] as? JsonPrimitive)?.booleanOrNull == true,
+            diag = (o["diag"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() },
         )
     }
 }

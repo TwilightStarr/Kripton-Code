@@ -5,6 +5,11 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
+### Eklendi (Canlı web)
+- **Canlı web ekranı:** akış ve seri modda açık olan web sohbetlerinin (Claude, ChatGPT, Kimi) sayfası istenen an izlenebilir. Oturum başına durum (sayfa açılıyor / prompt gönderiliyor / AI çıktı veriyor / yanıt alındı / sorun), son promptun uzunluğu ve ne kadar önce gönderildiği, AI çıktısının uzunluğu ve takılma uyarısı (60 sn yeni çıktı yok), her turun prompt ve yanıt özeti gösterilir. Sayfa sabit 1280x2000 düzeninde ölçeklenerek gösterilir (otomasyon bozulmaz); dokunma varsayılan kapalıdır. Kapanan oturumların kaydı (son 8) kalır; hiçbir şey diske yazılmaz.
+- Yanıt beklenirken sayfadan yalnız okuyan hafif bir yoklama (`WebLiveProbe`) ~3 sn'de bir çalışır.
+- Run, seri mod ve ana ekrana **Canlı web** düğmesi eklendi.
+
 ### Eklendi (hesapların aynı anda çalışması)
 - Bir run artık hazır düğümleri **aynı anda** yürütür: açık ve hatasız hesap sayısı kadar (en çok `PromptDispatcher.MAX_PARALLEL` = 6) düğüm paralel çalışır; bir hesapta aynı anda tek düğüm vardır. Tüm hesaplar meşgulse düğüm hataya/beklemeye düşmez, hesap boşalınca başlar. Bağımlılıklar (`[[girdi:]]`, birleştirmeler) aynen korunur.
 - **Web oturumları paralel**: WebView sürümü çoklu profili destekliyorsa her hesap kendi profilinde (ayrı çerez/depo) açılır; desteklenmiyorsa eski sıralı davranış sürer.

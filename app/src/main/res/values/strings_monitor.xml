@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Canlı web: açık web sohbetlerini (akış ve seri mod) izleme ekranı -->
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="web_monitor_title">Canlı web</string>
+    <string name="web_monitor_button">Canlı web</string>
+    <string name="web_monitor_button_count" tools:ignore="PluralsCandidate">Canlı web (%1$d açık)</string>
+    <string name="web_monitor_live_count" tools:ignore="PluralsCandidate">%1$d açık</string>
+    <string name="web_monitor_empty_title">Açık web oturumu yok</string>
+    <string name="web_monitor_empty_msg">Web oturumlu bir hesapla (Claude, ChatGPT, Kimi) akış ya da seri çalışma sürerken burada AI sayfasını görürsün. Promptun girilip girilmediğini ve AI\'ın çıktı verip vermediğini istediğin an kontrol edebilirsin.</string>
+    <string name="web_monitor_tab_page">Sayfa</string>
+    <string name="web_monitor_tab_turns">Prompt ve yanıt</string>
+
+    <string name="web_phase_opening">Sayfa açılıyor</string>
+    <string name="web_phase_ready">Hazır, prompt bekliyor</string>
+    <string name="web_phase_sending">Prompt gönderiliyor</string>
+    <string name="web_phase_generating">AI çıktı veriyor</string>
+    <string name="web_phase_replied">Yanıt alındı</string>
+    <string name="web_phase_problem">Sorun</string>
+    <string name="web_phase_closed">Kapandı</string>
+
+    <string name="web_monitor_opened">Açıldı: %1$s önce</string>
+    <string name="web_monitor_no_prompt">Henüz sayfaya prompt gönderilmedi.</string>
+    <string name="web_monitor_last_prompt" tools:ignore="PluralsCandidate">Son prompt: %1$d karakter, %2$s önce</string>
+    <string name="web_monitor_output" tools:ignore="PluralsCandidate">AI çıktısı: %1$d karakter</string>
+    <string name="web_monitor_output_none">AI henüz çıktı vermedi.</string>
+    <string name="web_monitor_stalled">%1$s\'dir yeni çıktı yok</string>
+    <string name="web_monitor_growing">Çıktı akıyor</string>
+    <string name="web_monitor_url">Adres: %1$s</string>
+
+    <string name="web_monitor_zoom_fit">Sığdır</string>
+    <string name="web_monitor_zoom_50">0,5×</string>
+    <string name="web_monitor_zoom_100">1×</string>
+    <string name="web_monitor_touch_off">Dokunma kapalı</string>
+    <string name="web_monitor_touch_on">Dokunma açık</string>
+    <string name="web_monitor_touch_warn">Dokunma açıkken sayfaya yazdığın ya da tıkladığın şey çalışan işi bozabilir. Yalnız iş takıldığında kullan.</string>
+    <string name="web_monitor_page_gone">Oturum kapandı, canlı sayfa yok. Son prompt ve yanıta \"Prompt ve yanıt\" sekmesinden bakabilirsin.</string>
+    <string name="web_monitor_clear">Kapananları temizle</string>
+    <string name="web_monitor_privacy">Bu kayıt yalnız bellekte tutulur; uygulama kapanınca silinir.</string>
+
+    <string name="web_monitor_turn_title">Tur %1$d · %2$s</string>
+    <string name="web_monitor_peek">Mesaj gönderilmedi; sohbetteki son yanıt okundu.</string>
+    <string name="web_monitor_prompt_label">Sayfaya yazılan prompt (%1$d karakter)</string>
+    <string name="web_monitor_prompt_cut">İlk %1$d karakter gösteriliyor.</string>
+    <string name="web_monitor_reply_label">Yanıt (%1$d karakter)</string>
+    <string name="web_monitor_reply_waiting">Yanıt bekleniyor…</string>
+    <string name="web_monitor_reply_files" tools:ignore="PluralsCandidate">%1$d dosya bağlantısı</string>
+    <string name="web_monitor_status_ok">Yanıt tamam</string>
+    <string name="web_monitor_status_problem">Sorun: %1$s</string>
+    <string name="web_monitor_show_all">Tümünü göster</string>
+    <string name="web_monitor_show_less">Kısalt</string>
+    <string name="web_monitor_sec">%1$d sn</string>
+    <string name="web_monitor_min">%1$d dk %2$d sn</string>
+</resources>

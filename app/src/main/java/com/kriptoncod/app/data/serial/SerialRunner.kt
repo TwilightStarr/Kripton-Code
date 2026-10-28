@@ -56,6 +56,9 @@ class SerialRunner(
     /** Kullanıcıdan başka çare yok. */
     private class NeedUser(message: String) : Exception(message)
 
+    /** Web sayfası beklenen biçimde yanıt vermedi (seçici/DOM sorunu, sayfa yenilenmesi, zaman aşımı); nedeni [reply]'de. */
+    private class WebFailure(val reply: WebReply) : Exception(reply.reason ?: "web")
+
     private class Ctx(val id: Long) {
         var session: WebChatSession? = null
     }
@@ -149,6 +152,8 @@ class SerialRunner(
         var maybeSent = priorNonce != null
         var reconcile = priorNonce != null
         var unauthorized = 0
+        var domFailures = 0
+        var unconfirmed: WebReply? = null
 
         store.update(id) {
             it.copy(message = if (fix) "Düzeltme AI'a gönderiliyor…" else "AI yanıtı bekleniyor…")
@@ -173,6 +178,17 @@ class SerialRunner(
                     }
                 }
 
+                // Mesaj sayfaya gönderildi ama yanıtı hiç okuyamadık (çoğunlukla seçici bozuk ya da kota/uyarı sayfası):
+                // aynı mesajı körlemesine tekrar göndermek sohbeti ve kotayı boşa harcar. Kullanıcıya bırakılır.
+                val stuck = unconfirmed
+                if (!delivered && stuck != null) {
+                    throw NeedUser(
+                        "Mesaj ${provider.displayName} sohbetine gönderildi ama yanıt okunamadı (${stuck.reason}). " +
+                            "Aynı mesajı tekrar tekrar göndermemek için durdum. Sohbeti açıp bakın; yanıt oradaysa sayfa seçicileri " +
+                            "bozulmuştur (web-selectors.json). Günlükte ayrıntı var. Devam et'e basarsanız mesaj yeniden gönderilir.",
+                    )
+                }
+
                 // 2) İlk mesaj (yeni sohbetteyse projenin güncel hâliyle birlikte).
                 if (!delivered) {
                     maybeSent = true
@@ -180,6 +196,8 @@ class SerialRunner(
                     val reply = turn(session, message)
                     step = accept(session, policy, nonce, id, step, reply, binaries)
                     delivered = true
+                    domFailures = 0
+                    unconfirmed = null
                 }
 
                 // 3) Yanıt gerçekten bitene kadar (bitiş işareti + kapanmış kod blokları).
@@ -235,6 +253,25 @@ class SerialRunner(
                         sleepChecked(id, d)
                     }
                 }
+            } catch (e: WebFailure) {
+                closeSession(ctx)
+                val r = e.reply
+                maybeSent = maybeSent || r.sent
+                reconcile = maybeSent || delivered
+                if (r.sent && !delivered) unconfirmed = r
+                // Sayfa yenilenmesi ("lost") ve zaman aşımı geçicidir; seçici/DOM sorunları ise kendiliğinden düzelmez.
+                val domProblem = r.reason != null && r.reason != "lost" && r.reason != "poll_timeout"
+                if (domProblem) domFailures++
+                store.log(id, "Sayfa hatası [${r.reason ?: r.status}]" + (r.diag?.let { ":\n$it" } ?: ""))
+                if (domFailures >= MAX_DOM_FAILURES) {
+                    throw NeedUser(
+                        "Web sayfası $domFailures kez beklenen biçimde yanıt vermedi (${r.reason}). Büyük olasılıkla ${provider.displayName} " +
+                            "arayüzü değişti: günlükteki seçici eşleşme sayılarına bakıp web-selectors.json ile düzeltin ya da yeniden giriş yapın.",
+                    )
+                }
+                val d = errorDelayMs()
+                store.update(id) { it.copy(message = "Sayfa hatası (${r.reason ?: r.status}); ${d / 1000} sn sonra yeniden denenecek.") }
+                sleepChecked(id, d)
             } catch (e: SerialGitException) {
                 if (e.fatal) throw NeedUser(e.message.orEmpty())
                 val d = errorDelayMs()
@@ -418,7 +455,7 @@ class SerialRunner(
 
             WebReply.Status.NEEDS_LOGIN -> throw AiGenerationException(Kind.UNAUTHORIZED)
 
-            WebReply.Status.TIMEOUT, WebReply.Status.ERROR -> throw AiGenerationException(Kind.NETWORK)
+            WebReply.Status.TIMEOUT, WebReply.Status.ERROR -> throw WebFailure(reply)
         }
     }
 
@@ -588,6 +625,7 @@ class SerialRunner(
         const val MAX_WARN_ROUNDS = 3
         const val MAX_GIT_FAILURES = 12
         const val MAX_UNAUTHORIZED = 3
+        const val MAX_DOM_FAILURES = 3
         private const val SHORT_LIMIT_TEXT = 400
         private const val MIN_WAIT_MS = 60_000L
         private const val MAX_QUOTA_WAIT_MS = 24L * 3_600_000L

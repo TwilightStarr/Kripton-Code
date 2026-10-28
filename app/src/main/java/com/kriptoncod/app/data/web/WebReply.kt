@@ -9,6 +9,12 @@ data class WebReply(
     val limitText: String? = null,
     /** Sağlayıcı yanıtı uzunluk/araç sınırında kesti. */
     val truncated: Boolean = false,
+    /** Hata nedeni kodu (no_input, not_started, lost, exception...); yalnız ERROR/TIMEOUT'ta dolu olabilir. */
+    val reason: String? = null,
+    /** Mesaj sayfaya gerçekten gönderildi mi (gönder tıklandı ya da Enter basıldı). Yeniden gönderimi önlemek içindir. */
+    val sent: Boolean = false,
+    /** Seçici eşleşme sayıları, adres ve sayfa metninin sonu; yalnız tanı içindir. */
+    val diag: String? = null,
 ) {
     enum class Status { OK, NEEDS_LOGIN, RATE_LIMITED, TIMEOUT, ERROR }
 }

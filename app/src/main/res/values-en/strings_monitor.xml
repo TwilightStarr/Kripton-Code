@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Live web: monitor screen for open web chats (flow and serial mode) -->
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="web_monitor_title">Live web</string>
+    <string name="web_monitor_button">Live web</string>
+    <string name="web_monitor_button_count" tools:ignore="PluralsCandidate">Live web (%1$d open)</string>
+    <string name="web_monitor_live_count" tools:ignore="PluralsCandidate">%1$d open</string>
+    <string name="web_monitor_empty_title">No open web session</string>
+    <string name="web_monitor_empty_msg">While a flow or serial run is using a web-session account (Claude, ChatGPT, Kimi), you can see the AI page here. Check at any time whether the prompt was entered and whether the AI is producing output.</string>
+    <string name="web_monitor_tab_page">Page</string>
+    <string name="web_monitor_tab_turns">Prompt and reply</string>
+
+    <string name="web_phase_opening">Opening page</string>
+    <string name="web_phase_ready">Ready, waiting for a prompt</string>
+    <string name="web_phase_sending">Sending prompt</string>
+    <string name="web_phase_generating">AI is producing output</string>
+    <string name="web_phase_replied">Reply received</string>
+    <string name="web_phase_problem">Problem</string>
+    <string name="web_phase_closed">Closed</string>
+
+    <string name="web_monitor_opened">Opened %1$s ago</string>
+    <string name="web_monitor_no_prompt">No prompt has been sent to the page yet.</string>
+    <string name="web_monitor_last_prompt" tools:ignore="PluralsCandidate">Last prompt: %1$d characters, %2$s ago</string>
+    <string name="web_monitor_output" tools:ignore="PluralsCandidate">AI output: %1$d characters</string>
+    <string name="web_monitor_output_none">The AI has not produced output yet.</string>
+    <string name="web_monitor_stalled">No new output for %1$s</string>
+    <string name="web_monitor_growing">Output is streaming</string>
+    <string name="web_monitor_url">Address: %1$s</string>
+
+    <string name="web_monitor_zoom_fit">Fit</string>
+    <string name="web_monitor_zoom_50">0.5×</string>
+    <string name="web_monitor_zoom_100">1×</string>
+    <string name="web_monitor_touch_off">Touch off</string>
+    <string name="web_monitor_touch_on">Touch on</string>
+    <string name="web_monitor_touch_warn">While touch is on, anything you type or tap on the page can disturb the running job. Use it only when the job is stuck.</string>
+    <string name="web_monitor_page_gone">The session closed, so there is no live page. See the last prompt and reply in the \"Prompt and reply\" tab.</string>
+    <string name="web_monitor_clear">Clear closed</string>
+    <string name="web_monitor_privacy">This record is kept in memory only and is cleared when the app closes.</string>
+
+    <string name="web_monitor_turn_title">Turn %1$d · %2$s</string>
+    <string name="web_monitor_peek">No message was sent; the last reply in the chat was read.</string>
+    <string name="web_monitor_prompt_label">Prompt typed into the page (%1$d characters)</string>
+    <string name="web_monitor_prompt_cut">Showing the first %1$d characters.</string>
+    <string name="web_monitor_reply_label">Reply (%1$d characters)</string>
+    <string name="web_monitor_reply_waiting">Waiting for the reply…</string>
+    <string name="web_monitor_reply_files" tools:ignore="PluralsCandidate">%1$d file links</string>
+    <string name="web_monitor_status_ok">Reply complete</string>
+    <string name="web_monitor_status_problem">Problem: %1$s</string>
+    <string name="web_monitor_show_all">Show all</string>
+    <string name="web_monitor_show_less">Show less</string>
+    <string name="web_monitor_sec">%1$d s</string>
+    <string name="web_monitor_min">%1$d min %2$d s</string>
+</resources>

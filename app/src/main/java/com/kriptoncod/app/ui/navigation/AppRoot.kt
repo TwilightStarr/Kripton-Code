@@ -60,6 +60,7 @@ import com.kriptoncod.app.ui.screens.AccountEditorScreen
 import com.kriptoncod.app.ui.screens.AisScreen
 import com.kriptoncod.app.ui.screens.GitHubSettingsScreen
 import com.kriptoncod.app.ui.screens.UsageScreen
+import com.kriptoncod.app.ui.screens.WebMonitorScreen
 import com.kriptoncod.app.ui.screens.HistoryScreen
 import com.kriptoncod.app.ui.screens.HomeScreen
 import com.kriptoncod.app.ui.screens.PermissionScreen
@@ -180,7 +181,11 @@ fun AppRoot(
                                     onOpenRun = { id -> navController.navigate(ExtraRoutes.run(id)) },
                                     onOpenSerial = { id -> navController.navigate(ExtraRoutes.serial(id)) },
                                     onOpenUsage = { navController.navigate(ExtraRoutes.USAGE) },
+                                    onOpenWebMonitor = { navController.navigate(ExtraRoutes.WEB_MONITOR) },
                                 )
+                            }
+                            composable(ExtraRoutes.WEB_MONITOR) {
+                                WebMonitorScreen(container = container, onBack = { navController.popBackStack() })
                             }
                             composable(ExtraRoutes.USAGE) {
                                 AdaptiveFrame(Adaptive.FormMaxWidth) { UsageScreen(onBack = { navController.popBackStack() }) }
@@ -287,7 +292,12 @@ fun AppRoot(
                                 arguments = listOf(navArgument(ExtraRoutes.ARG_SERIAL_ID) { type = NavType.LongType }),
                             ) { entry ->
                                 val serialId = entry.arguments?.getLong(ExtraRoutes.ARG_SERIAL_ID) ?: return@composable
-                                com.kriptoncod.app.ui.screens.SerialRunScreen(id = serialId, container = container, onBack = { navController.popBackStack() })
+                                com.kriptoncod.app.ui.screens.SerialRunScreen(
+                                    id = serialId,
+                                    container = container,
+                                    onBack = { navController.popBackStack() },
+                                    onOpenWebMonitor = { navController.navigate(ExtraRoutes.WEB_MONITOR) },
+                                )
                             }
                             composable(
                                 PromptRoutes.ADD_PROMPT,
@@ -312,7 +322,12 @@ fun AppRoot(
                                 arguments = listOf(navArgument(ExtraRoutes.ARG_RUN_ID) { type = NavType.LongType }),
                             ) { entry ->
                                 val runId = entry.arguments?.getLong(ExtraRoutes.ARG_RUN_ID) ?: return@composable
-                                RunScreen(runId = runId, container = container, onBack = { navController.popBackStack() })
+                                RunScreen(
+                                    runId = runId,
+                                    container = container,
+                                    onBack = { navController.popBackStack() },
+                                    onOpenWebMonitor = { navController.navigate(ExtraRoutes.WEB_MONITOR) },
+                                )
                             }
                             composable(ExtraRoutes.GITHUB) {
                                 AdaptiveFrame(Adaptive.FormMaxWidth) { GitHubSettingsScreen(container = container, onBack = { navController.popBackStack() }) }

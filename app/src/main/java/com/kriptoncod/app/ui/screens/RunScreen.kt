@@ -95,6 +95,7 @@ fun RunScreen(
     runId: Long,
     container: AppContainer,
     onBack: () -> Unit,
+    onOpenWebMonitor: () -> Unit = {},
 ) {
     val k = KriptonTheme.colors
     val context = LocalContext.current
@@ -279,6 +280,8 @@ fun RunScreen(
                 )
             }
         }
+        // Web oturumlu hesaplar çalışırken AI sayfasını canlı görmek için.
+        WebMonitorButton(container = container, onClick = onOpenWebMonitor, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(8.dp))
 
         // Telefon: sekmeli tek bölme (Grafik | Akış | Dosyalar). Tablet/yatay: üç bölme yan yana
