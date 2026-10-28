@@ -154,7 +154,7 @@ class WebMonitor(
     fun live(id: Long, generating: Boolean, chars: Int, tail: String) = change(id) { e ->
         if (e.phase != WebPhase.SENDING && e.phase != WebPhase.GENERATING) return@change e
         val grew = chars != e.liveChars
-        val busy = generating || grew && chars > 0
+        val busy = generating || (grew && chars > 0)
         e.copy(
             phase = if (busy) WebPhase.GENERATING else e.phase,
             liveChars = chars,
