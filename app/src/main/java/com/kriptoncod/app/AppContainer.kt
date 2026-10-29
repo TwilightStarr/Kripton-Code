@@ -138,12 +138,10 @@ class AppContainer(context: Context) {
     val webChatDriver: WebChatDriver by lazy {
         WebViewChatDriver(appContext, webSessionStore, File(appContext.filesDir, "web-selectors.json"), webMonitor)
     }
-
     /** "AI sohbetleri": web arayüzünü istediği an elle açma (liste -> sohbet). */
     val webChatHub: com.kriptoncod.app.data.web.WebChatHub by lazy {
         com.kriptoncod.app.data.web.WebChatHub(webChatDriver, webMonitor, webSessionStore, onLoggedIn = { id -> aiAccountRepository.markReady(id) })
     }
-
     /** AI yanıtlarının ilk durağı (ham yazılır, sonra yalnız kod kalır). */
     val rawReplyLog: com.kriptoncod.app.data.files.RawReplyLog by lazy { com.kriptoncod.app.data.files.RawReplyLog(File(appContext.filesDir, "raw")) }
     val webSessionGenerator: WebSessionGenerator by lazy { WebSessionGenerator(webChatDriver, WebPacer(), rawLog = rawReplyLog) }

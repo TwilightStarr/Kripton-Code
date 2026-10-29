@@ -56,8 +56,6 @@ private class LeakCrashLogListener(private val app: Application) : EventListener
                     val msg = a.exception.message.orEmpty().take(200)
                     if (markSeen("fail:$msg")) report("leak-analysis-failed", "Sızıntı analizi başarısız: $msg", a.exception.stackTraceToString())
                 }
-
-                else -> Unit
             }
         }
     }
@@ -90,9 +88,7 @@ private class LeakCrashLogListener(private val app: Application) : EventListener
         val nm = NotificationManagerCompat.from(app)
         if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(app, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
+        ) return
         if (!nm.areNotificationsEnabled()) return
         val channel = NotificationChannel(CHANNEL, app.getString(R.string.debug_error_channel), NotificationManager.IMPORTANCE_LOW)
         app.getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)

@@ -96,7 +96,8 @@ class WebSessionGenerator(
             return reply
         }
 
-        override suspend fun download(url: String): WebFile? = inner.download(url)?.also { f -> runCatching { log.saveFile(tag, f.name, f.bytes) } }
+        override suspend fun download(url: String): WebFile? =
+            inner.download(url)?.also { f -> runCatching { log.saveFile(tag, f.name, f.bytes) } }
     }
 
     private fun clean(policy: WebOutputPolicy, text: String): String = OutputCleaner.clean(text, policy.aggressiveThinking, policy.specialTokens, policy.toolSections)

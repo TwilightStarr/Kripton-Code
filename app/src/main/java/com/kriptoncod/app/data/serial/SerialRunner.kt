@@ -660,11 +660,10 @@ class SerialRunner(
 
         /** Mevcut Actions sonucunu AI'a verilecek nota çevirir; temiz ve uyarısız ise (ya da sonuç yoksa) null. */
         internal fun existingCiNote(ci: CiResult?): String? = when (ci) {
-            is CiResult.Failed ->
-                "[Kripton] The latest GitHub Actions run on this branch FAILED. Below are ALL build errors and warnings, complete " +
-                    "and unabridged. Fix every error first (and the warnings if possible) as part of your work.\n\n" +
-                    "ERRORS:\n" + CiLogScan.render(ci.errors) +
-                    (if (ci.warnings.isEmpty()) "" else "\n\nWARNINGS:\n" + CiLogScan.render(ci.warnings))
+            is CiResult.Failed -> "[Kripton] The latest GitHub Actions run on this branch FAILED. Below are ALL build errors and warnings, complete " +
+                "and unabridged. Fix every error first (and the warnings if possible) as part of your work.\n\n" +
+                "ERRORS:\n" + CiLogScan.render(ci.errors) +
+                (if (ci.warnings.isEmpty()) "" else "\n\nWARNINGS:\n" + CiLogScan.render(ci.warnings))
 
             is CiResult.Passed -> if (ci.warnings.isEmpty()) {
                 null

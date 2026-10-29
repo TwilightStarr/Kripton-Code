@@ -647,15 +647,7 @@ private fun WorkspacePane(
         Modifier
             .offset { IntOffset((rect.left + dragOffset.x).roundToInt(), (rect.top + dragOffset.y).roundToInt()) }
             .size(with(density) { rect.width.toDp() }, with(density) { rect.height.toDp() })
-            .zIndex(
-                if (reordering) {
-                    3f
-                } else if (focused || maximized) {
-                    2f
-                } else {
-                    0f
-                },
-            )
+            .zIndex(if (reordering) 3f else if (focused || maximized) 2f else 0f)
             .graphicsLayer {
                 alpha = appear.value * (if (reordering) 0.92f else 1f)
                 val s = (0.94f + 0.06f * appear.value) * (if (reordering) 1.02f else 1f)

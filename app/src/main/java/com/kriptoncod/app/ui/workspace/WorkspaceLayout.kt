@@ -1,9 +1,7 @@
 package com.kriptoncod.app.ui.workspace
 
-/**
- * Çalışma alanının (aynı anda birden çok AI web arayüzü) yerleşim mantığı. Hiçbir Android/Compose türüne bağlı değildir;
- * bu yüzden birim testle doğrulanır. Ekran bu dosyadan çıkan dikdörtgenleri animasyonla uygular.
- */
+// Çalışma alanının (aynı anda birden çok AI web arayüzü) yerleşim mantığı. Hiçbir Android/Compose türüne bağlı değildir;
+// bu yüzden birim testle doğrulanır. Ekran bu dosyadan çıkan dikdörtgenleri animasyonla uygular.
 
 /** Tablette bir sayfada en fazla bu kadar AI görünür; fazlası sonraki sayfaya geçer. */
 const val PANES_PER_PAGE = 4
@@ -37,7 +35,8 @@ enum class LayoutPreset(val key: String) {
     }
 }
 
-fun pageCount(total: Int, perPage: Int = PANES_PER_PAGE): Int = if (total <= 0) 1 else (total + perPage - 1) / perPage
+fun pageCount(total: Int, perPage: Int = PANES_PER_PAGE): Int =
+    if (total <= 0) 1 else (total + perPage - 1) / perPage
 
 /** [page] (0 tabanlı) sayfadaki öğeler; sayfa sınırın dışındaysa en yakın geçerli sayfa kullanılır. */
 fun <T> pageItems(items: List<T>, page: Int, perPage: Int = PANES_PER_PAGE): List<T> {
@@ -61,19 +60,16 @@ data class PaneBox(val x: Float, val y: Float, val w: Float, val h: Float)
  */
 fun slotGroups(count: Int, sidebar: Boolean = false): List<List<Int>> = when (count.coerceIn(0, PANES_PER_PAGE)) {
     0 -> emptyList()
-
     1 -> listOf(listOf(0))
-
     2 -> listOf(listOf(0), listOf(1))
-
     3 -> listOf(listOf(0), listOf(1, 2))
-
     // Yan şerit: ilk pencere tek başına, kalan hepsi ikinci sütunda alt alta.
     else -> if (sidebar) listOf(listOf(0), listOf(1, 2, 3)) else listOf(listOf(0, 1), listOf(2, 3))
 }
 
 /** Grupların ana eksendeki doğal çarpanı: yan şerit düzeninde ilk grup [SIDEBAR_RATIO] kat geniştir. */
-private fun groupBias(groupCount: Int, sidebar: Boolean): List<Float> = List(groupCount) { if (sidebar && groupCount > 1 && it == 0) SIDEBAR_RATIO else 1f }
+private fun groupBias(groupCount: Int, sidebar: Boolean): List<Float> =
+    List(groupCount) { if (sidebar && groupCount > 1 && it == 0) SIDEBAR_RATIO else 1f }
 
 /**
  * Sayfadaki pencerelerin dikdörtgenlerini hesaplar.
@@ -181,6 +177,7 @@ private fun normalized(values: List<Float>): MutableList<Float> {
 /** Bir sayfa sayısı değişince (pencere kapatılınca) geçerli sayfayı sınırlar içinde tutar. */
 fun clampPage(page: Int, total: Int, perPage: Int = PANES_PER_PAGE): Int = page.coerceIn(0, pageCount(total, perPage) - 1)
 
+
 // ---------------------------------------------------------------------------------------------------------------
 // Sabitleme (pin): bir pencere her sayfada görünür; diğerleri kalan yerlerde sayfalanır.
 // ---------------------------------------------------------------------------------------------------------------
@@ -215,15 +212,13 @@ fun <T> pageOfItem(open: List<T>, pinned: T?, id: T, perPage: Int = PANES_PER_PA
 // ---------------------------------------------------------------------------------------------------------------
 
 /** (x, y) noktasını içeren pencerenin sırası; hiçbirinin içinde değilse null. */
-fun paneAt(boxes: List<PaneBox>, x: Float, y: Float): Int? = boxes.indexOfFirst { x >= it.x && x < it.x + it.w && y >= it.y && y < it.y + it.h }.takeIf { it >= 0 }
+fun paneAt(boxes: List<PaneBox>, x: Float, y: Float): Int? =
+    boxes.indexOfFirst { x >= it.x && x < it.x + it.w && y >= it.y && y < it.y + it.h }.takeIf { it >= 0 }
 
 /** [list] içinde [a] ve [b]'nin yerini değiştirir; ikisi de yoksa ya da aynıysa liste aynen döner. */
 fun <T> swapItems(list: List<T>, a: T, b: T): List<T> {
     val ia = list.indexOf(a)
     val ib = list.indexOf(b)
     if (ia < 0 || ib < 0 || ia == ib) return list
-    return list.toMutableList().also {
-        it[ia] = b
-        it[ib] = a
-    }
+    return list.toMutableList().also { it[ia] = b; it[ib] = a }
 }

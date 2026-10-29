@@ -60,16 +60,14 @@
 
         <!--
             ACRA'nın ek dosya sağlayıcısı kullanılmaz (yalnız yerel yazıcı LocalCrashSender var, ek dosya yok), bu yüzden
-            kapatılır. Eskiden tools:node="remove" kullanılıyordu; birim test manifestinde kütüphane bildirimi
-            olmadığından her derlemede "no other declaration present" uyarısı veriyordu. "merge" ile hem uygulama
-            derlemesinde kütüphanenin bildirimi devre dışı kalır hem de uyarı çıkmaz.
+            kapatılır. Uygulama bildirimi kütüphanenin aynı adlı bildiriminin üstüne birleşir (tools:node işareti yok:
+            birim test manifestinde kütüphane bildirimi olmadığından işaret her derlemede uyarı veriyordu).
         -->
         <provider
             android:name="org.acra.attachment.AcraContentProvider"
             android:authorities="${applicationId}.acra"
             android:enabled="false"
-            android:exported="false"
-            tools:node="merge" />
+            android:exported="false" />
 
         <!-- Bildirimdeki Duraklat / Devam et / İptal düğmeleri (yalnız uygulamanın kendi PendingIntent'leri). -->
         <receiver
