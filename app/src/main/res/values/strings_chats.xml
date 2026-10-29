@@ -20,4 +20,5 @@
     <string name="web_chats_busy">Bu hesap şu an bir çalışmada. İş bozulmasın diye sayfa burada açılmaz; Canlı web\'den izleyebilirsin.</string>
     <string name="web_chats_open_monitor">Canlı web\'i aç</string>
     <string name="web_chats_no_account">Bu hesap bulunamadı ya da web arayüzü yok.</string>
+    <string name="web_chats_pick">Bir AI seç; web arayüzü burada açılır.</string>
 </resources>

@@ -19,4 +19,5 @@
     <string name="web_chats_busy">This account is running a job right now. The page is not opened here so the job is not disturbed; you can watch it in Live web.</string>
     <string name="web_chats_open_monitor">Open Live web</string>
     <string name="web_chats_no_account">This account was not found or has no web interface.</string>
+    <string name="web_chats_pick">Pick an AI; its web interface opens here.</string>
 </resources>

@@ -4,7 +4,8 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import com.kriptoncod.app.domain.ThemePreference
 
-// Sade temalar: nötr zemin + tek bir zümrüt vurgu. Koyu ve açık sürüm aynı kimliği taşır.
+// Tek renkli (gri-beyaz) temalar: logo gibi gümüş/beyaz tonlar. Koyu sürümün zemini AMOLED için saf siyahtır.
+// Yalnız hata rengi (kırmızı) işlevsel olarak renkli kalır.
 
 @Immutable
 class KriptonColors(
@@ -36,36 +37,36 @@ internal class ThemeSpec(
 )
 
 internal object Palette {
-    /** Koyu: derin nötr zemin + zümrüt vurgu. */
+    /** Koyu (AMOLED): saf siyah zemin + gümüş/beyaz vurgu; yüzeyler siyahtan yalnız birkaç kademe açık. */
     val Dark = ThemeSpec(
         isDark = true,
-        background = Color(0xFF0E0F11),
-        surface = Color(0xFF16171A),
-        raised = Color(0xFF1E2024),
-        border = Color(0xFF30333A),
-        text = Color(0xFFEDEEF0),
-        muted = Color(0xFF9A9FA8),
-        accent = Color(0xFF4ADE9B),
-        onAccent = Color(0xFF04130B),
-        success = Color(0xFF4ADE9B),
-        successFill = Color(0xFF13251C),
+        background = Color(0xFF000000),
+        surface = Color(0xFF0B0B0C),
+        raised = Color(0xFF151516),
+        border = Color(0xFF2E2E31),
+        text = Color(0xFFF1F1F2),
+        muted = Color(0xFF8D8D92),
+        accent = Color(0xFFE4E4E7),
+        onAccent = Color(0xFF000000),
+        success = Color(0xFFC4C4C9),
+        successFill = Color(0xFF111112),
         danger = Color(0xFFF2706B),
-        dangerFill = Color(0xFF2E1A1A),
+        dangerFill = Color(0xFF1F0F0F),
     )
 
-    /** Açık: kırık beyaz zemin + koyu zümrüt vurgu (beyaz üstünde okunur). */
+    /** Açık: kırık beyaz zemin + grafit vurgu (beyaz üstünde okunur). */
     val Light = ThemeSpec(
         isDark = false,
-        background = Color(0xFFF7F8F9),
+        background = Color(0xFFF5F5F6),
         surface = Color(0xFFFFFFFF),
-        raised = Color(0xFFEEF0F2),
-        border = Color(0xFFD3D8DE),
-        text = Color(0xFF16181B),
-        muted = Color(0xFF626973),
-        accent = Color(0xFF0B8A57),
+        raised = Color(0xFFECECEE),
+        border = Color(0xFFD2D2D6),
+        text = Color(0xFF121213),
+        muted = Color(0xFF68686E),
+        accent = Color(0xFF2B2B2F),
         onAccent = Color(0xFFFFFFFF),
-        success = Color(0xFF0B8A57),
-        successFill = Color(0xFFE1F4EA),
+        success = Color(0xFF4A4A50),
+        successFill = Color(0xFFE6E6E9),
         danger = Color(0xFFD13B34),
         dangerFill = Color(0xFFFCE8E7),
     )

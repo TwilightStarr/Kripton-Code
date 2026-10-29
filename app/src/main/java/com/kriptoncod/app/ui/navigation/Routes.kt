@@ -71,6 +71,9 @@ object ExtraRoutes {
 
     /** "AI sohbetleri": WhatsApp benzeri liste; satıra dokununca o AI'ın web arayüzü açılır. */
     const val WEB_CHATS = "webchats"
+
+    /** Çalışma alanı (tablet): birden çok AI web arayüzü aynı anda, sayfa başına en çok 4. */
+    const val WEB_WORKSPACE = "webworkspace"
     const val ARG_CHAT_ACCOUNT = "chatAccountId"
     const val WEB_CHAT = "webchat/{$ARG_CHAT_ACCOUNT}"
 

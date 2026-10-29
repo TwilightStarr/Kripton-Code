@@ -2,6 +2,6 @@
 <resources>
     <color name="ic_launcher_background">#000000</color>
     <!-- Pencere zemini sistem temasına uyar (values-night koyu). Açılış ekranı her zaman koyu markalı zemindir. -->
-    <color name="window_background">#F7F8F9</color>
-    <color name="splash_background">#0E0F11</color>
+    <color name="window_background">#F5F5F6</color>
+    <color name="splash_background">#000000</color>
 </resources>

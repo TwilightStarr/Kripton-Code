@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationDrawerItem
@@ -38,6 +40,9 @@ fun SideNavigation(
     expanded: Boolean,
     isSelected: (Route) -> Boolean,
     onNavigate: (Route) -> Unit,
+    /** Yalnız tablet gezinmesinde görünen "AI sohbetleri" sekmesi. */
+    chatsSelected: Boolean,
+    onOpenChats: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
     val k = KriptonTheme.colors
@@ -77,6 +82,21 @@ fun SideNavigation(
                         ),
                     )
                 }
+                NavigationDrawerItem(
+                    label = { Text(stringResource(R.string.web_chats_title), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    selected = chatsSelected,
+                    onClick = onOpenChats,
+                    icon = { Icon(Icons.Filled.Email, contentDescription = null) },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
+                    colors = NavigationDrawerItemDefaults.colors(
+                        selectedContainerColor = k.nodeFill,
+                        unselectedContainerColor = scheme.surface,
+                        selectedIconColor = scheme.primary,
+                        selectedTextColor = scheme.primary,
+                        unselectedIconColor = k.muted,
+                        unselectedTextColor = k.muted,
+                    ),
+                )
             }
         } else {
             NavigationRail(
@@ -103,6 +123,20 @@ fun SideNavigation(
                         ),
                     )
                 }
+                NavigationRailItem(
+                    selected = chatsSelected,
+                    onClick = onOpenChats,
+                    icon = { Icon(Icons.Filled.Email, contentDescription = null) },
+                    label = { Text(stringResource(R.string.web_chats_title), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    alwaysShowLabel = true,
+                    colors = NavigationRailItemDefaults.colors(
+                        indicatorColor = k.nodeFill,
+                        selectedIconColor = scheme.primary,
+                        selectedTextColor = scheme.primary,
+                        unselectedIconColor = k.muted,
+                        unselectedTextColor = k.muted,
+                    ),
+                )
             }
         }
         VerticalDivider(thickness = 1.5.dp, color = k.nodeBorder)

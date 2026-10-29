@@ -1,3 +1,34 @@
+# Tema: gri-beyaz (gümüş) tonlar + AMOLED saf siyah
+- Zümrüt yeşil vurgu kaldırıldı; tüm vurgu, durum ("tamamlandı", "canlı", "önerilen") ve rozet renkleri logo gibi gri/beyaz tonlara çevrildi. Yalnız hata rengi kırmızı kalır.
+- Koyu temanın zemini saf siyah (#000000): AMOLED ekranda pikseller kapanır. Kartlar/yüzeyler siyahtan birkaç kademe açık gri; Material "tint" kapatıldı, menü ve iletişim kutuları griye boyanmaz.
+- Açılış ekranı, pencere zemini ve widget siyah/gümüşe uyarlandı; AI sağlayıcı avatarları gri-beyaz farklı tonlarla ayrışır.
+- Açık tema korundu (beyaz/grafit).
+
+# Çalışma alanı: düzen kaydetme, hazır düzenler, sabitleme, yer değiştirme
+- **Düzen kaydetme:** açık AI'lar, pencere boyutları, sabit pencere, hazır düzen ve "Odağı büyüt" seçimi saklanır; çalışma alanı açılınca aynı düzen gelir. Silinmiş hesapların pencereleri geri gelmez; bozuk kayıt çökmeye değil boş düzene yol açar.
+- **Hazır düzenler** (üstte "Düzenler"): "Eşit böl" ve "Biri büyük, diğerleri yan şeritte" (sayfadaki ilk pencere büyük, kalanlar yan şeritte alt alta; boyut tutamacı bu düzende de çalışır).
+- **Sabitleme (pin):** pencere başlığındaki iğne ile bir AI her sayfada görünür; diğerleri kalan yerlerde sayfalanır.
+- **Yer değiştirme:** başlığı sürükleyip başka pencerenin üstüne bırakınca iki pencere yer değiştirir (boyutlar yuvada kalır). Sabit pencere sürüklenmez.
+- **Çift dokunuşla tam ekran:** başlığa çift dokunmak büyütür / geri alır.
+- **Bildirim rozeti:** başka sayfadaki bir AI yanıtını bitirince (ya da sorunla bitince) o sayfanın noktasında küçük bir işaret çıkar; sayfaya geçince kaybolur. Durum bilgisi WebMonitor'dan gelir.
+
+# Web arayüzünde dosya yükleme
+- WebView'a dosya seçici (`onShowFileChooser`) bağlandı: sayfadaki "dosya ekle / yükle" düğmesi artık sistemin dosya seçicisini açar, seçilen dosyalar sayfaya verilir (AI sohbetleri ve tam ekran Canlı web'de, dokunma açıkken).
+- Seçici yalnız ekranda görünen sayfada açılır; otomasyon (zip ekleme) etkilenmez. Seçici iptal edilirse ya da ekrandan çıkılırsa bekleyen istek kapatılır, düğme yeniden çalışır.
+
+# LeakCanary bildirimleri yerine çökme günlüğü (yalnız debug)
+- LeakCanary'nin kendi bildirimleri ve toast'ları kapatıldı.
+- Uygulama sızıntısı ya da analiz hatası bulununca ayrıntı **Ayarlar > Çökme günlüğü**ne yazılır ve tek bir kısa bildirim çıkar: "Hata tespit edildi — Ayarlar > Çökme günlüğü bölümüne bakarak hatayı görebilirsiniz."
+- Aynı sızıntı bir daha bildirilmez/kaydedilmez (kalıcı imza listesi); bildirim sabit kimlikli olduğu için yığılmaz. Sistem/kütüphane sızıntıları sayılmaz.
+- Release derlemesinde etkisi yok (`src/debug` ve `src/release` içindeki `DebugTools`).
+
+# Çökme düzeltmesi (PatternSyntaxException)
+- Android'in ICU düzenli ifade motoru `}}` gibi kaçışsız kapanış süslü parantezini reddediyor (`PromptTemplate` başlatılırken çökme). Şablon deseni tamamen kaçışlı hâle getirildi: `\{\{([^\{\}\n]+?)\}\}`. Kodda başka kaçışsız süslü parantezli desen kalmadı (tüm Regex'ler tarandı).
+
+# AI sohbetleri: tablet düzeni
+- Tablette (≥600dp) AI sohbetleri iki bölmeli: solda liste, sağda seçilen AI'ın web arayüzü. Başka AI seçilince önceki sayfa kapanır (çerezler kaydedilir), yenisi açılır.
+- Yan çubuğa (ray ve geniş çekmece) **AI sohbetleri** sekmesi eklendi; sohbet açıkken de yan çubuk görünür. Telefon düzeni değişmedi.
+
 # AI sohbetleri (WhatsApp benzeri)
 - Ana ekrandaki **AI sohbetleri** düğmesi: web hesaplarının (Claude, ChatGPT, Kimi) listesi; avatar, ad, durum, açık olana yeşil nokta.
 - Satıra dokununca o AI'ın web arayüzü ekranı dolduracak boyutta (donanım katmanlı, akıcı kaydırma, klavyeyle yeniden boyutlanır) açılır.

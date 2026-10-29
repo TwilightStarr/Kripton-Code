@@ -40,7 +40,8 @@ private fun ThemeSpec.toColorScheme() = (if (isDark) darkColorScheme() else ligh
     onSurface = text,
     surfaceVariant = raised,
     onSurfaceVariant = muted,
-    surfaceTint = accent,
+    // Yükseltilmiş yüzeyler (menü, iletişim kutusu) vurgu rengiyle boyanmaz; AMOLED siyahı korunur.
+    surfaceTint = Color.Transparent,
     surfaceBright = raised,
     surfaceDim = background,
     surfaceContainerLowest = background,

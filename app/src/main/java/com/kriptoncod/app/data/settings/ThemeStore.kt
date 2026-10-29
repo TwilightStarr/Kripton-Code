@@ -67,7 +67,17 @@ class ThemeStore(private val context: Context) {
         context.settingsDataStore.edit { it[WEB_WARNING_ACCEPTED] = value }
     }
 
+    // ---- Çalışma alanı düzeni (açık AI'lar, boyutlar, sabit pencere); metin biçimi WorkspaceCodec'te ----
+    val workspaceLayoutFlow: Flow<String?> = context.settingsDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[WORKSPACE_LAYOUT] }
+
+    suspend fun setWorkspaceLayout(value: String) {
+        context.settingsDataStore.edit { it[WORKSPACE_LAYOUT] = value }
+    }
+
     private companion object {
+        val WORKSPACE_LAYOUT = stringPreferencesKey("workspace_layout")
         val WEB_WARNING_ACCEPTED = booleanPreferencesKey("web_warning_accepted")
         val ANIMATIONS = booleanPreferencesKey("animations")
         val NOTIFY = booleanPreferencesKey("notify_events")

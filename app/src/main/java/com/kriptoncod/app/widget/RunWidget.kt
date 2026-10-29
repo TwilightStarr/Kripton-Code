@@ -55,12 +55,13 @@ class RunWidget : GlanceAppWidget() {
     }
 
     private companion object {
-        val BG = ColorProvider(Color(0xFF111418))
-        val FG = ColorProvider(Color(0xFFE6E8EB))
-        val MUTED = ColorProvider(Color(0xFF9AA3AD))
-        val ACCENT = ColorProvider(Color(0xFF4C8DFF))
-        val TRACK = ColorProvider(Color(0xFF2A3038))
+        val BG = ColorProvider(Color(0xFF050506))
+        val FG = ColorProvider(Color(0xFFEDEDEF))
+        val MUTED = ColorProvider(Color(0xFF8D8D92))
+        val ACCENT = ColorProvider(Color(0xFFD9D9DD))
+        val TRACK = ColorProvider(Color(0xFF242427))
         val DANGER = ColorProvider(Color(0xFFB3261E))
+        val ON_ACCENT = ColorProvider(Color(0xFF050506))
         val ON_COLOR = ColorProvider(Color(0xFFFFFFFF))
     }
 
@@ -120,13 +121,13 @@ class RunWidget : GlanceAppWidget() {
                     androidx.glance.Button(
                         text = context.getString(R.string.notif_action_pause),
                         onClick = actionRunCallback<PauseRunAction>(params),
-                        colors = ButtonDefaults.buttonColors(backgroundColor = ACCENT, contentColor = ON_COLOR),
+                        colors = ButtonDefaults.buttonColors(backgroundColor = ACCENT, contentColor = ON_ACCENT),
                     )
                 } else if (run.canResume) {
                     androidx.glance.Button(
                         text = context.getString(R.string.notif_action_resume),
                         onClick = actionRunCallback<ResumeRunAction>(params),
-                        colors = ButtonDefaults.buttonColors(backgroundColor = ACCENT, contentColor = ON_COLOR),
+                        colors = ButtonDefaults.buttonColors(backgroundColor = ACCENT, contentColor = ON_ACCENT),
                     )
                 }
                 if (run.canCancel) {

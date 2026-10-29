@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Çalışma alanı: tablette birden çok AI web arayüzünü aynı anda açma -->
+<resources>
+    <string name="ws_title">Çalışma alanı</string>
+    <string name="ws_open_button">Çalışma alanı</string>
+    <string name="ws_empty">Üstten bir AI seç; web arayüzü burada açılır. Bir sayfada 4 AI görünür, fazlası sonraki sayfaya geçer.</string>
+    <string name="ws_page">Sayfa %1$d/%2$d</string>
+    <string name="ws_prev">Önceki sayfa</string>
+    <string name="ws_next">Sonraki sayfa</string>
+    <string name="ws_close">Kapat</string>
+    <string name="ws_resize">Boyutu değiştirmek için sürükle</string>
+    <string name="ws_grow_focus">Odağı büyüt</string>
+    <string name="ws_reset">Düzeni sıfırla</string>
+    <string name="ws_presets">Düzenler</string>
+    <string name="ws_preset_equal">Eşit böl</string>
+    <string name="ws_preset_sidebar">Biri büyük, diğerleri yan şeritte</string>
+    <string name="ws_pin">Sabitle (her sayfada görünsün)</string>
+    <string name="ws_unpin">Sabitlemeyi kaldır</string>
+    <string name="ws_drag_title">Yerini değiştirmek için başlığı sürükle; tam ekran için çift dokun</string>
+    <string name="ws_page_new_reply">Sayfa %1$d: yeni yanıt var</string>
+    <string name="ws_page_n">Sayfa %1$d</string>
+</resources>

@@ -5,6 +5,20 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
+### Değişti (tema)
+- Zümrüt yeşil vurgu kaldırıldı; tüm vurgu, durum ("tamamlandı", "canlı", "önerilen") ve rozet renkleri logo gibi gri/beyaz tonlara çevrildi. Yalnız hata rengi kırmızı kalır.
+- Koyu temanın zemini saf siyah (#000000): AMOLED ekranda pikseller kapanır. Kartlar/yüzeyler siyahtan birkaç kademe açık gri; Material "tint" kapatıldı, menü ve iletişim kutuları griye boyanmaz.
+- Açılış ekranı, pencere zemini ve widget siyah/gümüşe uyarlandı; AI sağlayıcı avatarları gri-beyaz farklı tonlarla ayrışır.
+- Açık tema korundu (beyaz/grafit).
+
+### Eklendi (çalışma alanı)
+- **Düzen kaydetme:** açık AI'lar, pencere boyutları, sabit pencere, hazır düzen ve "Odağı büyüt" seçimi saklanır; çalışma alanı açılınca aynı düzen gelir. Silinmiş hesapların pencereleri geri gelmez; bozuk kayıt çökmeye değil boş düzene yol açar.
+- **Hazır düzenler** (üstte "Düzenler"): "Eşit böl" ve "Biri büyük, diğerleri yan şeritte" (sayfadaki ilk pencere büyük, kalanlar yan şeritte alt alta; boyut tutamacı bu düzende de çalışır).
+- **Sabitleme (pin):** pencere başlığındaki iğne ile bir AI her sayfada görünür; diğerleri kalan yerlerde sayfalanır.
+- **Yer değiştirme:** başlığı sürükleyip başka pencerenin üstüne bırakınca iki pencere yer değiştirir (boyutlar yuvada kalır). Sabit pencere sürüklenmez.
+- **Çift dokunuşla tam ekran:** başlığa çift dokunmak büyütür / geri alır.
+- **Bildirim rozeti:** başka sayfadaki bir AI yanıtını bitirince (ya da sorunla bitince) o sayfanın noktasında küçük bir işaret çıkar; sayfaya geçince kaybolur. Durum bilgisi WebMonitor'dan gelir.
+
 ### Eklendi (Canlı web)
 - **Canlı web ekranı:** akış ve seri modda açık olan web sohbetlerinin (Claude, ChatGPT, Kimi) sayfası istenen an izlenebilir. Oturum başına durum (sayfa açılıyor / prompt gönderiliyor / AI çıktı veriyor / yanıt alındı / sorun), son promptun uzunluğu ve ne kadar önce gönderildiği, AI çıktısının uzunluğu ve takılma uyarısı (60 sn yeni çıktı yok), her turun prompt ve yanıt özeti gösterilir. Sayfa sabit 1280x2000 düzeninde ölçeklenerek gösterilir (otomasyon bozulmaz); dokunma varsayılan kapalıdır. Kapanan oturumların kaydı (son 8) kalır; hiçbir şey diske yazılmaz.
 - Yanıt beklenirken sayfadan yalnız okuyan hafif bir yoklama (`WebLiveProbe`) ~3 sn'de bir çalışır.

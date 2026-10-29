@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="debug_error_channel">Error alerts</string>
+    <string name="debug_error_title">Error detected</string>
+    <string name="debug_error_text">Check Settings > Crash log to see the error.</string>
+</resources>

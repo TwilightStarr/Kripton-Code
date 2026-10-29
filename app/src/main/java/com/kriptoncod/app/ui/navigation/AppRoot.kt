@@ -62,6 +62,7 @@ import com.kriptoncod.app.ui.screens.GitHubSettingsScreen
 import com.kriptoncod.app.ui.screens.UsageScreen
 import com.kriptoncod.app.ui.screens.WebChatScreen
 import com.kriptoncod.app.ui.screens.WebChatsScreen
+import com.kriptoncod.app.ui.screens.WebWorkspaceScreen
 import com.kriptoncod.app.ui.screens.WebMonitorScreen
 import com.kriptoncod.app.ui.screens.HistoryScreen
 import com.kriptoncod.app.ui.screens.HomeScreen
@@ -105,8 +106,11 @@ fun AppRoot(
     val backStack by navController.currentBackStackEntryAsState()
     val scheme = MaterialTheme.colorScheme
     val currentRoute = backStack?.destination?.route
-    val showNav = currentRoute == null || Route.entries.any { it.path == currentRoute }
     val windowClass = rememberWindowClass()
+    // Tablette "AI sohbetleri" (liste + sohbet yan yana) da yan çubukla birlikte görünür.
+    val onChats = currentRoute == ExtraRoutes.WEB_CHATS || currentRoute == ExtraRoutes.WEB_CHAT || currentRoute == ExtraRoutes.WEB_WORKSPACE
+    val showNav = currentRoute == null || Route.entries.any { it.path == currentRoute } ||
+        (onChats && windowClass != WindowClass.Compact)
     val showBottomBar = showNav && windowClass == WindowClass.Compact
     val showSideNav = showNav && windowClass != WindowClass.Compact
 
@@ -163,6 +167,8 @@ fun AppRoot(
                             expanded = windowClass == WindowClass.Expanded,
                             isSelected = { route -> backStack?.destination?.hierarchy?.any { it.route == route.path } == true },
                             onNavigate = { route -> navController.navigateTo(route) },
+                            chatsSelected = onChats,
+                            onOpenChats = { navController.navigateTo(ExtraRoutes.WEB_CHATS) },
                         )
                     }
                     Box(Modifier.weight(1f).fillMaxHeight()) {
@@ -195,6 +201,15 @@ fun AppRoot(
                                     container = container,
                                     onBack = { navController.popBackStack() },
                                     onOpenChat = { id -> navController.navigate(ExtraRoutes.webChat(id)) },
+                                    onOpenMonitor = { navController.navigate(ExtraRoutes.WEB_MONITOR) },
+                                    onOpenWorkspace = { navController.navigate(ExtraRoutes.WEB_WORKSPACE) },
+                                )
+                            }
+                            composable(ExtraRoutes.WEB_WORKSPACE) {
+                                WebWorkspaceScreen(
+                                    container = container,
+                                    onBack = { navController.popBackStack() },
+                                    onOpenMonitor = { navController.navigate(ExtraRoutes.WEB_MONITOR) },
                                 )
                             }
                             composable(
@@ -202,12 +217,24 @@ fun AppRoot(
                                 arguments = listOf(navArgument(ExtraRoutes.ARG_CHAT_ACCOUNT) { type = NavType.LongType }),
                             ) { entry ->
                                 val id = entry.arguments?.getLong(ExtraRoutes.ARG_CHAT_ACCOUNT) ?: return@composable
-                                WebChatScreen(
-                                    accountId = id,
-                                    container = container,
-                                    onBack = { navController.popBackStack() },
-                                    onOpenMonitor = { navController.navigate(ExtraRoutes.WEB_MONITOR) },
-                                )
+                                if (windowClass == WindowClass.Compact) {
+                                    WebChatScreen(
+                                        accountId = id,
+                                        container = container,
+                                        onBack = { navController.popBackStack() },
+                                        onOpenMonitor = { navController.navigate(ExtraRoutes.WEB_MONITOR) },
+                                    )
+                                } else {
+                                    // Telefondan tablet düzenine geçildi: liste + seçili sohbet yan yana.
+                                    WebChatsScreen(
+                                        container = container,
+                                        onBack = { navController.popBackStack() },
+                                        onOpenChat = { chatId -> navController.navigate(ExtraRoutes.webChat(chatId)) },
+                                        onOpenMonitor = { navController.navigate(ExtraRoutes.WEB_MONITOR) },
+                                        initialSelected = id,
+                                        onOpenWorkspace = { navController.navigate(ExtraRoutes.WEB_WORKSPACE) },
+                                    )
+                                }
                             }
                             composable(ExtraRoutes.USAGE) {
                                 AdaptiveFrame(Adaptive.FormMaxWidth) { UsageScreen(onBack = { navController.popBackStack() }) }
@@ -399,8 +426,10 @@ private fun backIn(): EnterTransition = fadeIn(tween(220, delayMillis = 90, easi
 
 private fun backOut(): ExitTransition = fadeOut(tween(90, easing = FastOutLinearInEasing)) + slideOutHorizontally(tween(260, easing = FastOutSlowInEasing)) { it / SLIDE_FRACTION }
 
-private fun NavHostController.navigateTo(route: Route) {
-    navigate(route.path) {
+private fun NavHostController.navigateTo(route: Route): Unit = navigateTo(route.path)
+
+private fun NavHostController.navigateTo(path: String): Unit {
+    navigate(path) {
         popUpTo(graph.findStartDestination().id) { saveState = true }
         launchSingleTop = true
         restoreState = true

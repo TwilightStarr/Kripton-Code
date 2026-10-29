@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="debug_error_channel">Hata uyarıları</string>
+    <string name="debug_error_title">Hata tespit edildi</string>
+    <string name="debug_error_text">Ayarlar > Çökme günlüğü bölümüne bakarak hatayı görebilirsiniz.</string>
+</resources>

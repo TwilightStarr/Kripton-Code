@@ -295,6 +295,7 @@ private fun LivePage(handle: WebMonitorHandle?, fullscreen: Boolean, onFullscree
     val context = LocalContext.current
     // AndroidView'ın factory'si bir kez çalışır; bu yüzden kap sabit, gösterilen oturum update'te değişir.
     val host = remember { MonitorHost(context) }
+    WebFileChooserEffect()
     var zoom by rememberSaveable { mutableIntStateOf(0) } // 0 sığdır, 1 = 0,5x, 2 = 1x
     var interactive by rememberSaveable { mutableStateOf(false) }
     var started by remember { mutableStateOf(true) }

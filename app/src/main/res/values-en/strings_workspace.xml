@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ws_title">Workspace</string>
+    <string name="ws_open_button">Workspace</string>
+    <string name="ws_empty">Pick an AI above; its web interface opens here. A page shows 4 AIs; more continue on the next page.</string>
+    <string name="ws_page">Page %1$d/%2$d</string>
+    <string name="ws_prev">Previous page</string>
+    <string name="ws_next">Next page</string>
+    <string name="ws_close">Close</string>
+    <string name="ws_resize">Drag to resize</string>
+    <string name="ws_grow_focus">Grow focused</string>
+    <string name="ws_reset">Reset layout</string>
+    <string name="ws_presets">Layouts</string>
+    <string name="ws_preset_equal">Split evenly</string>
+    <string name="ws_preset_sidebar">One large, others in a side strip</string>
+    <string name="ws_pin">Pin (keep visible on every page)</string>
+    <string name="ws_unpin">Unpin</string>
+    <string name="ws_drag_title">Drag the title to reorder; double-tap for full screen</string>
+    <string name="ws_page_new_reply">Page %1$d: new reply</string>
+    <string name="ws_page_n">Page %1$d</string>
+</resources>

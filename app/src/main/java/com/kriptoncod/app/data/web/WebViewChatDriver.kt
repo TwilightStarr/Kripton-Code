@@ -13,6 +13,9 @@ import androidx.webkit.ProfileStore
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import java.util.concurrent.ConcurrentHashMap
+import android.net.Uri
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -57,7 +60,8 @@ class WebViewChatDriver(
 
     override suspend fun open(account: AiAccount, provider: WebProvider): WebChatSession = openAt(account, provider, provider.chatUrl)
 
-    override suspend fun openInteractive(account: AiAccount, provider: WebProvider): WebChatSession = openAt(account, provider, provider.chatUrl, interactive = true)
+    override suspend fun openInteractive(account: AiAccount, provider: WebProvider): WebChatSession =
+        openAt(account, provider, provider.chatUrl, interactive = true)
 
     /** [chatUrl] bu sağlayıcıya ait bir https adresiyse O sohbeti açar; değilse yeni sohbet. */
     override suspend fun resume(account: AiAccount, provider: WebProvider, chatUrl: String?): WebChatSession {
@@ -96,8 +100,7 @@ class WebViewChatDriver(
         private val startUrl: String,
         /** true: giriş sayfasına düşmek hata sayılmaz (kullanıcı elle giriş yapar). */
         private val interactive: Boolean = false,
-    ) : WebChatSession,
-        WebMonitorHandle {
+    ) : WebChatSession, WebMonitorHandle {
 
         private var cookieManager: CookieManager = CookieManager.getInstance()
         private var webStorage: WebStorage = WebStorage.getInstance()
@@ -177,6 +180,20 @@ class WebViewChatDriver(
                 override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                     val scheme = request?.url?.scheme.orEmpty()
                     return scheme != "https" && scheme != "about" && scheme != "blob"
+                }
+            }
+            // "Dosya ekle": sayfa dosya seçici isterse, WebView ekranda görünüyorsa sistemin seçicisi açılır.
+            wv.webChromeClient = object : WebChromeClient() {
+                override fun onShowFileChooser(
+                    webView: WebView?,
+                    filePathCallback: ValueCallback<Array<Uri>>?,
+                    fileChooserParams: FileChooserParams?,
+                ): Boolean {
+                    val cb = filePathCallback ?: return false
+                    val params = fileChooserParams ?: return false
+                    val h = WebFileChooser.handler
+                    if (h == null || webView?.parent == null) return false
+                    return h(params, cb)
                 }
             }
             // Ekrana eklenmemiş WebView'da sayfa "gizli" sayılır; görünür gösterilir (bkz. WebScripts.VISIBILITY_SHIM).
