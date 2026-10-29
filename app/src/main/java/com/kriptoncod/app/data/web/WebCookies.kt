@@ -22,18 +22,41 @@ import kotlinx.serialization.json.jsonObject
 
 /** Tüm WebView'lar tek çerez deposunu paylaşır; hesaplar arası izolasyon burada sağlanır. */
 object WebUserAgent {
+    /**
+     * Cihazın WebView'ının sürümü okunamazsa kullanılan Chrome ana sürümü. Siteler eski tarayıcıyı ("This browser is out of date")
+     * yalnız kullanıcı-aracısındaki sürümden anlar; bu yüzden sabit eski bir sürüm yerine GERÇEK WebView sürümü kullanılır.
+     */
+    const val FALLBACK_MAJOR = 142
+    private const val MIN_MAJOR = 120
+    private val CHROME = Regex("Chrome/(\\d+)")
+
     /** Giriş ve sohbet WebView'ları AYNI kullanıcı-aracısını kullanmalı (oturum/bot kontrolü buna bağlı). */
-    const val DESKTOP =
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+    @Volatile
+    var DESKTOP: String = desktopUa(FALLBACK_MAJOR)
+        private set
+
+    fun desktopUa(major: Int): String =
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/$major.0.0.0 Safari/537.36"
+
+    /** [ua] içindeki Chrome ana sürümü; yoksa ya da gerçekçi değilse [FALLBACK_MAJOR]. */
+    fun majorOf(ua: String?): Int {
+        val m = ua?.let { CHROME.find(it)?.groupValues?.get(1)?.toIntOrNull() } ?: return FALLBACK_MAJOR
+        return if (m >= MIN_MAJOR) m else FALLBACK_MAJOR
+    }
 
     /**
      * Giriş ve sohbet WebView'larının ayarı. Google/diğer siteler "uygulama içi tarayıcı"yı üç yerden anlar:
      * kullanıcı-aracısı, `X-Requested-With: <paket adı>` başlığı ve `Sec-CH-UA` ipuçları ("Android WebView").
-     * Üçü de masaüstü Chrome ile tutarlı hâle getirilir. Desteklenmeyen sürümlerde sessizce atlanır.
+     * Üçü de masaüstü Chrome ile tutarlı hâle getirilir. Sürüm numarası cihazdaki gerçek WebView'dan alınır.
+     * Desteklenmeyen sürümlerde sessizce atlanır.
      */
     @SuppressLint("RestrictedApi")
     fun apply(settings: WebSettings) {
-        settings.userAgentString = DESKTOP
+        // Ayar henüz ezilmemişse varsayılan kullanıcı-aracısı gerçek WebView sürümünü taşır.
+        val major = majorOf(runCatching { settings.userAgentString }.getOrNull())
+        val ua = desktopUa(major)
+        DESKTOP = ua
+        settings.userAgentString = ua
         runCatching {
             if (WebViewFeature.isFeatureSupported(WebViewFeature.REQUESTED_WITH_HEADER_ALLOW_LIST)) {
                 WebSettingsCompat.setRequestedWithHeaderOriginAllowList(settings, emptySet())
@@ -41,14 +64,15 @@ object WebUserAgent {
         }
         runCatching {
             if (WebViewFeature.isFeatureSupported(WebViewFeature.USER_AGENT_METADATA)) {
+                val full = "$major.0.0.0"
                 val brands = listOf(
-                    UserAgentMetadata.BrandVersion.Builder().setBrand("Chromium").setMajorVersion("130").setFullVersion("130.0.0.0").build(),
-                    UserAgentMetadata.BrandVersion.Builder().setBrand("Google Chrome").setMajorVersion("130").setFullVersion("130.0.0.0").build(),
+                    UserAgentMetadata.BrandVersion.Builder().setBrand("Chromium").setMajorVersion("$major").setFullVersion(full).build(),
+                    UserAgentMetadata.BrandVersion.Builder().setBrand("Google Chrome").setMajorVersion("$major").setFullVersion(full).build(),
                     UserAgentMetadata.BrandVersion.Builder().setBrand("Not?A_Brand").setMajorVersion("99").setFullVersion("99.0.0.0").build(),
                 )
                 val meta = UserAgentMetadata.Builder()
                     .setBrandVersionList(brands)
-                    .setFullVersion("130.0.0.0")
+                    .setFullVersion(full)
                     .setPlatform("Linux")
                     .setPlatformVersion("6.5.0")
                     .setArchitecture("x86")

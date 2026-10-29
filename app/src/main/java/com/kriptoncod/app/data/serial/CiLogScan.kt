@@ -40,8 +40,13 @@ object CiLogScan {
         "runner image", "set-output", "save-state", "add-path", "set-env",
     )
 
-    const val MAX_ERRORS = 120
-    const val MAX_WARNINGS = 80
+    /** Sınır YOK: hata ve uyarıların tamamı AI'a verilir (yinelenen satırlar zaten tekilleştirilir). */
+    const val MAX_ERRORS = Int.MAX_VALUE
+    const val MAX_WARNINGS = Int.MAX_VALUE
+
+    /** Gradle'ın hata gerekçesi bölümü (`* What went wrong:` ... `* Try:`); satırları birlikte anlam taşır. */
+    private val WRONG_START = Regex("^\\s*\\* What went wrong:", RegexOption.IGNORE_CASE)
+    private val WRONG_END = Regex("^\\s*\\* (Try|Get more help|Exception is):", RegexOption.IGNORE_CASE)
 
     /** [zip] bir Actions log arşividir (adım başına bir `.txt`). Okunamayan/kesik arşivde elde olanla devam edilir. */
     fun scan(zip: ByteArray): Result {
@@ -72,9 +77,20 @@ object CiLogScan {
     }
 
     private fun classify(source: String, text: String, errors: MutableSet<String>, warnings: MutableSet<String>) {
+        var inWrong = false
         for (raw in text.lineSequence()) {
             val line = TIMESTAMP.replace(ANSI.replace(raw, ""), "").trimEnd()
             if (line.isBlank()) continue
+            if (inWrong && WRONG_END.containsMatchIn(line)) inWrong = false
+            if (inWrong) {
+                errors += "[$source] $line"
+                continue
+            }
+            if (WRONG_START.containsMatchIn(line)) {
+                inWrong = true
+                errors += "[$source] $line"
+                continue
+            }
             val lower = line.lowercase()
             when {
                 ERROR.containsMatchIn(line) -> errors += "[$source] $line"
@@ -83,9 +99,15 @@ object CiLogScan {
         }
     }
 
-    /** AI'a yapıştırılacak metin; [maxChars] aşılırsa sondan kesilir (ilk satırlar en önemlisidir). */
-    fun render(lines: List<String>, maxChars: Int = 24_000): String {
+    /**
+     * AI'a yapıştırılacak metin. Varsayılan olarak KESİLMEZ; yalnız sohbetin kaldıramayacağı dev boyutta ([MAX_RENDER_CHARS]) sondan
+     * kesilir ve ne kadarının atıldığı açıkça yazılır (ilk satırlar en önemlisidir).
+     */
+    fun render(lines: List<String>, maxChars: Int = MAX_RENDER_CHARS): String {
         val text = CiLogSummarizer.redact(lines.joinToString("\n"))
-        return if (text.length <= maxChars) text else text.take(maxChars).trimEnd() + "\n… (kısaltıldı)"
+        return if (text.length <= maxChars) text else text.take(maxChars).trimEnd() + "\n… (kısaltıldı: ${text.length - maxChars} karakter daha var)"
     }
+
+    /** Bir sohbet mesajına sığabilecek en büyük günlük boyutu (karakter). */
+    const val MAX_RENDER_CHARS = 400_000
 }

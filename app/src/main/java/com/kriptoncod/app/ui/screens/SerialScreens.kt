@@ -1,5 +1,8 @@
 package com.kriptoncod.app.ui.screens
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,7 +58,9 @@ import com.kriptoncod.app.ui.components.NodeAccent
 import com.kriptoncod.app.ui.components.NodeCard
 import com.kriptoncod.app.ui.theme.KriptonTheme
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 private fun statusText(s: SerialStatus): String = when (s) {
@@ -264,6 +270,30 @@ fun SerialRunScreen(id: Long, container: AppContainer, onBack: () -> Unit, onOpe
     val all by container.serialStore.observeAll().collectAsStateWithLifecycle()
     val s: SerialState? = all.firstOrNull { it.id == id }
     val k = KriptonTheme.colors
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val rawTag = com.kriptoncod.app.data.serial.SerialRunner.rawTagOf(id)
+    // AI'ın bu çalışmada verdiği çıktılar (özgün zip'ler + ham yanıtlardan ayıklanan kod) tek zip olarak kullanıcıya sunulur.
+    val saveOutputs = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val ok = withContext(Dispatchers.IO) {
+                    try {
+                        val bytes = container.rawReplyLog.bundle(rawTag) ?: return@withContext false
+                        val out = context.contentResolver.openOutputStream(uri) ?: return@withContext false
+                        out.use { it.write(bytes) }
+                        true
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        false
+                    }
+                }
+                Toast.makeText(context, if (ok) R.string.serial_outputs_saved else R.string.serial_outputs_failed, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    val outputCount = remember(s?.updatedAt) { container.rawReplyLog.files(rawTag).size }
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -326,12 +356,21 @@ fun SerialRunScreen(id: Long, container: AppContainer, onBack: () -> Unit, onOpe
                     text = stringResource(R.string.serial_delete),
                     onClick = {
                         container.serialStore.delete(id)
+                        container.rawReplyLog.delete(rawTag)
                         onBack()
                     },
                     style = KButtonStyle.Outline,
                     modifier = Modifier.weight(1f),
                 )
             }
+        }
+        if (outputCount > 0) {
+            KButton(
+                text = stringResource(R.string.serial_outputs_save, outputCount),
+                onClick = { saveOutputs.launch("KriptonCod-seri-$id-ai-ciktilari.zip") },
+                style = KButtonStyle.Outline,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
         // Seri mod tek sohbette ilerler; promptun girildiğini ve AI'ın çıktı verdiğini sayfadan görmek için.
         WebMonitorButton(container = container, onClick = onOpenWebMonitor, modifier = Modifier.fillMaxWidth())

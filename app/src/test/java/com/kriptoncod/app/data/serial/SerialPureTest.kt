@@ -72,6 +72,44 @@ class SerialPureTest {
     }
 
     @Test
+    fun ci_scan_has_no_cap_on_errors_and_warnings() {
+        val log = (1..500).joinToString("\n") { "e: F$it.kt: ($it, 1) Unresolved reference: x$it" } + "\n" +
+            (1..300).joinToString("\n") { "w: G$it.kt: ($it, 1) 'y$it' is deprecated" }
+        val r = CiLogScan.scanText(log)
+        assertEquals(500, r.errors.size)
+        assertEquals(300, r.warnings.size)
+        val rendered = CiLogScan.render(r.errors + r.warnings)
+        assertTrue(rendered.contains("Unresolved reference: x500"))
+        assertTrue(rendered.contains("'y300' is deprecated"))
+    }
+
+    @Test
+    fun ci_scan_keeps_the_whole_gradle_what_went_wrong_block() {
+        val log = """
+            FAILURE: Build failed with an exception.
+            * What went wrong:
+            Execution failed for task ':app:compileDebugKotlin'.
+            > A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers
+               > Compilation error. See log for more details
+            * Try:
+            > Run with --stacktrace option to get the stack trace.
+        """.trimIndent()
+        val r = CiLogScan.scanText(log)
+        assertTrue(r.errors.any { it.contains("Execution failed for task ':app:compileDebugKotlin'") })
+        assertTrue(r.errors.any { it.contains("Compilation error. See log for more details") })
+    }
+
+    @Test
+    fun existing_failed_ci_is_given_to_the_ai_complete() {
+        val note = SerialRunner.existingCiNote(CiResult.Failed(listOf("[b] e: A.kt: (1, 1) boom"), listOf("[b] w: B.kt: (2, 2) 'x' is deprecated")))
+        assertTrue(note!!.contains("FAILED"))
+        assertTrue(note.contains("boom"))
+        assertTrue(note.contains("is deprecated"))
+        assertEquals(null, SerialRunner.existingCiNote(CiResult.Passed(emptyList())))
+        assertEquals(null, SerialRunner.existingCiNote(null))
+    }
+
+    @Test
     fun ci_scan_clean_log_is_clean() {
         assertTrue(CiLogScan.scanText("Run flutter build apk\nBuilt build/app.apk").clean)
     }

@@ -48,6 +48,14 @@ class GitHubService(
     },
 ) {
 
+    /**
+     * Büyük repo zip'i ve Actions günlüğü indirmeleri için: normal API çağrılarının 2 dakikalık sınırı eksik inmeye yol açmasın.
+     * Ana istemcinin ayarları (yönlendirme kapalı vb.) korunur; yalnız süreler uzar.
+     */
+    private val downloadClient: OkHttpClient by lazy {
+        client.newBuilder().readTimeout(5, TimeUnit.MINUTES).callTimeout(20, TimeUnit.MINUTES).build()
+    }
+
     // ------------------------------------------------------------------ kullanıcı / repo
 
     /** Token'ı doğrular (`GET /user`). */
@@ -238,7 +246,7 @@ class GitHubService(
         requireRepo(repo)
         val request = buildRequest(token, "GET", url("repos/$repo/actions/runs/$runId/logs"), null)
             ?: return ApiResult.Fail(ApiError.INVALID_KEY)
-        val first = send(request, MAX_LOG_BYTES).getOrElse { return it }
+        val first = send(request, MAX_LOG_BYTES, downloadClient).getOrElse { return it }
         if (first.code in 200..299) return ApiResult.Ok(first.body)
 
         val target = first.location?.let { first.requestUrl.resolve(it) ?: it.toHttpUrlOrNull() }
@@ -248,7 +256,7 @@ class GitHubService(
         }
         // Kimlik bilgisi olmadan: geçici adres imzalıdır.
         val download = Request.Builder().url(target).header("User-Agent", USER_AGENT).get().build()
-        val second = send(download, MAX_LOG_BYTES).getOrElse { return it }
+        val second = send(download, MAX_LOG_BYTES, downloadClient).getOrElse { return it }
         return if (second.code in 200..299) {
             ApiResult.Ok(second.body)
         } else {
@@ -282,7 +290,7 @@ class GitHubService(
         requireBranch(branch)
         val request = buildRequest(token, "GET", url("repos/$repo/zipball/$branch"), null)
             ?: return ApiResult.Fail(ApiError.INVALID_KEY)
-        val first = send(request, MAX_LOG_BYTES).getOrElse { return it }
+        val first = send(request, MAX_LOG_BYTES, downloadClient).getOrElse { return it }
         if (first.code in 200..299) return ApiResult.Ok(first.body)
 
         val target = first.location?.let { first.requestUrl.resolve(it) ?: it.toHttpUrlOrNull() }
@@ -291,7 +299,7 @@ class GitHubService(
             return ApiResult.Fail(ApiError.BAD_RESPONSE, first.code)
         }
         val download = Request.Builder().url(target).header("User-Agent", USER_AGENT).get().build()
-        val second = send(download, MAX_LOG_BYTES).getOrElse { return it }
+        val second = send(download, MAX_LOG_BYTES, downloadClient).getOrElse { return it }
         return if (second.code in 200..299) {
             ApiResult.Ok(second.body)
         } else {
@@ -343,8 +351,8 @@ class GitHubService(
         return ApiResult.Ok(reply.body.toString(Charsets.UTF_8))
     }
 
-    private suspend fun send(request: Request, maxBytes: Long): ApiResult<Reply> = try {
-        client.newCall(request).await().use { response ->
+    private suspend fun send(request: Request, maxBytes: Long, http: OkHttpClient = client): ApiResult<Reply> = try {
+        http.newCall(request).await().use { response ->
             classify(
                 Reply(
                     code = response.code,

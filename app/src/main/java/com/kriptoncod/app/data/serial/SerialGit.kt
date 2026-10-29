@@ -44,6 +44,12 @@ interface SerialGit {
 
     /** [sha] commit'inin tüm workflow'ları bitene kadar bekler ve günlükleri tarar. */
     suspend fun awaitCi(repo: String, sha: String, shouldStop: () -> Boolean): CiResult
+
+    /**
+     * [branch] ucunda ZATEN tamamlanmış bir Actions çalıştırması varsa onun sonucu (bekleme yok); hiç run yoksa, run sürüyorsa ya da
+     * sorgu başarısızsa null. Yeni sohbet açılırken AI'ın mevcut build hatalarını baştan görmesi içindir.
+     */
+    suspend fun existingCi(repo: String, branch: String): CiResult? = null
 }
 
 class GitHubSerialGit(
@@ -75,13 +81,32 @@ class GitHubSerialGit(
     }
 
     override suspend fun snapshot(repo: String, branch: String): Map<String, ByteArray> = when (val r = github.downloadRepoZip(token(), repo, branch)) {
-        is ApiResult.Ok -> try {
-            RepoZip.read(r.value).files
-        } catch (e: java.io.IOException) {
-            throw SerialGitException(false, "Repo zip'i okunamadı.")
+        is ApiResult.Ok -> {
+            val files = try {
+                RepoZip.read(r.value).files
+            } catch (e: java.io.IOException) {
+                throw SerialGitException(false, "Repo zip'i okunamadı (eksik/bozuk indirme); yeniden denenecek.")
+            }
+            // Boş sonuç eksik inmiş bir arşivin belirtisidir; boş proje AI'a "eksiksiz proje" diye verilmesin.
+            if (files.isEmpty()) throw SerialGitException(false, "Repo zip'i boş geldi; yeniden denenecek.")
+            files
         }
 
         is ApiResult.Fail -> throw fail(r, "repo indirme")
+    }
+
+    override suspend fun existingCi(repo: String, branch: String): CiResult? {
+        val token = token()
+        val sha = when (val r = github.branchSha(token, repo, branch)) {
+            is ApiResult.Ok -> r.value
+            is ApiResult.Fail -> return null
+        }
+        val runs = when (val r = github.listRunsForSha(token, repo, sha)) {
+            is ApiResult.Ok -> r.value
+            is ApiResult.Fail -> return null
+        }
+        if (runs.isEmpty() || runs.any { !it.isCompleted }) return null
+        return evaluate(token, repo, runs)
     }
 
     override suspend fun commit(repo: String, branch: String, message: String, files: List<GitHubFile>): String {
@@ -150,16 +175,16 @@ class GitHubSerialGit(
             warnings += scan.warnings
             if (bad) {
                 errors += scan.errors.ifEmpty {
-                    // Hata satırı bulunamadı: günlüğün özeti/sonu verilir ki AI neyin patladığını görebilsin.
-                    val tail = CiLogSummarizer.summarize(bytes, 4_000)
-                    listOf("[run ${run.id}] workflow sonucu: ${run.conclusion}") + tail.lines().filter { it.isNotBlank() }.takeLast(40)
+                    // Hata satırı bulunamadı: günlüğün sonu verilir ki AI neyin patladığını görebilsin.
+                    val tail = CiLogSummarizer.summarize(bytes)
+                    listOf("[run ${run.id}] workflow sonucu: ${run.conclusion}") + tail.lines().filter { it.isNotBlank() }.takeLast(400)
                 }
             } else {
-                // Başarılı run'da hata satırı olsa bile (ör. "continue-on-error" adımları) yalnız uyarı sayılır.
-                warnings += scan.errors.map { "$it (başarılı run'da)" }.take(10)
+                // Başarılı run'da hata satırı olsa bile (ör. "continue-on-error" adımları) yalnız uyarı sayılır; hiçbiri atlanmaz.
+                warnings += scan.errors.map { "$it (başarılı run'da)" }
             }
         }
-        val w = warnings.distinct().take(CiLogScan.MAX_WARNINGS)
+        val w = warnings.distinct()
         return if (failed) CiResult.Failed(errors.distinct(), w) else CiResult.Passed(w)
     }
 

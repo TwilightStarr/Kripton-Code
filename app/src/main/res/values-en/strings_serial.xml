@@ -55,4 +55,7 @@
     <string name="serial_zip_mode_info">Serial: prompts go one by one in a single chat, and you can preview and adjust them before starting. Parallel: prompts are spread across accounts by catalog.</string>
     <string name="serial_zip_mode_serial">Serial (with preview)</string>
     <string name="serial_zip_mode_parallel">Parallel</string>
+    <string name="serial_outputs_save">Save AI outputs as zip (%1$d files)</string>
+    <string name="serial_outputs_saved">AI outputs saved.</string>
+    <string name="serial_outputs_failed">Could not save AI outputs.</string>
 </resources>

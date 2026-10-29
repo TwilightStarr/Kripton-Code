@@ -39,8 +39,14 @@ object WebLiveProbe {
             "function vis(e){var r=e.getBoundingClientRect();return r.width>0&&r.height>0;}" +
             "var g=all(cfg.stop).some(vis);" +
             "var a=all(cfg.assistant);" +
-            "var t=a.length?(a[a.length-1].innerText||''):'';" +
-            "return JSON.stringify({g:g,n:a.length,c:t.length,t:t.slice(-300)});" +
+            "var last=a.length?a[a.length-1]:null;" +
+            "var t=last?(last.innerText||''):'';" +
+            // Düğme, simge ve ekran-okuyucu metinleri AI'ın yazdığı yazı değildir; sayıdan düşülür (iç içe olanlar bir kez sayılır).
+            "var drop=0;if(last){var ch=Array.prototype.slice.call(last.querySelectorAll('button,[role=button],[aria-hidden=true],[class*=sr-only]'));" +
+            "ch.forEach(function(x){var p=x.parentElement,nested=false;while(p&&p!==last){if(ch.indexOf(p)>=0){nested=true;break;}p=p.parentElement;}" +
+            "if(!nested)drop+=(x.innerText||'').length;});}" +
+            "var c=Math.max(0,t.length-drop);" +
+            "return JSON.stringify({g:g,n:a.length,c:c,t:t.slice(-300)});" +
             "}catch(e){return '';}})($cfg)"
     }
 

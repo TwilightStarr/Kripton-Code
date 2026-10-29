@@ -3,6 +3,8 @@ package com.kriptoncod.app.data.web
 import com.kriptoncod.app.data.ai.AiGenerationException
 import com.kriptoncod.app.data.ai.AiGenerationException.Kind
 import com.kriptoncod.app.data.db.AiAccount
+import com.kriptoncod.app.data.files.RawReplyLog
+import com.kriptoncod.app.data.run.OutputTriage
 import com.kriptoncod.app.data.ai.normalize.OutputCleaner
 import com.kriptoncod.app.data.run.CodeBlockParser
 
@@ -23,6 +25,8 @@ class WebSessionGenerator(
     private val pacer: WebPacer = WebPacer(),
     private val now: () -> Long = System::currentTimeMillis,
     private val maxContinues: Int = 40,
+    /** AI yanıtlarının ilk durağı: yanıt gelir gelmez ham haliyle yazılır; üretim bitince yalnız kod arşivi kalır. null: saklama yok. */
+    private val rawLog: RawReplyLog? = null,
 ) {
 
     /**
@@ -41,18 +45,59 @@ class WebSessionGenerator(
         }
         val policy = WebOutputPolicy.forProvider(provider)
         pacer.await(account.id)
-        val session = driver.open(account, provider)
+        val tag = "web-${account.id}-${now()}"
+        val opened = driver.open(account, provider)
+        val session = if (rawLog == null) opened else ArchivingSession(opened, rawLog, tag)
         try {
-            if (!expectFiles) return plainText(session, policy, prompt)
+            if (!expectFiles) return plainText(session, policy, prompt).also { finishArchive(tag, keepProse = true, polished = null, onAsset = onAsset) }
             val raw = when (provider.output) {
                 OutputStyle.ZIP_FILE -> zipFlow(session, provider, policy, prompt, onAsset)
                 OutputStyle.LONG_CODE_BLOCK -> blockFlow(session, provider, policy, prompt, onAsset)
                 OutputStyle.API_KEY -> throw AiGenerationException(Kind.BAD_REQUEST)
             }
-            return polish(session, policy, raw)
+            val polished = polish(session, policy, raw)
+            finishArchive(tag, keepProse = false, polished = polished, onAsset = onAsset)
+            return polished
         } finally {
             runCatching { session.close() }
         }
+    }
+
+    /**
+     * Üretim başarıyla bitti: ham yanıtlar sıkıştırılır (kod korunur) ve geçici klasör kaldırılır; kalıcı kopya çalışmanın
+     * kendi çıktısındadır (`_kripton/raw/` varlıkları). Hata olursa ham dosyalar KALIR ([RawReplyLog.sweep] sonra ayıklar).
+     */
+    private fun finishArchive(tag: String, keepProse: Boolean, polished: String?, onAsset: (WebAsset) -> Unit) {
+        val log = rawLog ?: return
+        runCatching {
+            log.compact(tag, keepProse)
+            if (!keepProse && polished != null) {
+                // Çalışma metnine giren bloklardan fazlası varsa (eski sürümler, yinelenenler, onarım öncesi kısa sürümler)
+                // ham yanıtlardaki TÜM kod blokları birebir arşive konur; kod hiçbir koşulda kaybolmaz.
+                val all = log.files(tag).filter { it.name.endsWith(".code.md") }.joinToString("\n\n") { it.readText(Charsets.UTF_8) }
+                if (OutputTriage.blockCount(all) > OutputTriage.blockCount(polished)) {
+                    onAsset(WebAsset("_kripton/raw/replies-code.md", all.toByteArray(Charsets.UTF_8)))
+                }
+            }
+            // Ham dosya doğrulanamadığı için kalmışsa klasör silinmez (sweep sonra ayıklar).
+            if (log.pending(tag) == 0) log.delete(tag)
+        }
+    }
+
+    /** Her yanıtı işlenmeden ÖNCE diske yazan, indirilen özgün dosyaları da saklayan sarmalayıcı. */
+    private class ArchivingSession(
+        private val inner: WebChatSession,
+        private val log: RawReplyLog,
+        private val tag: String,
+    ) : WebChatSession by inner {
+        override suspend fun send(prompt: String): WebReply {
+            val reply = inner.send(prompt)
+            runCatching { log.save(tag, reply.text) }
+            return reply
+        }
+
+        override suspend fun download(url: String): WebFile? =
+            inner.download(url)?.also { f -> runCatching { log.saveFile(tag, f.name, f.bytes) } }
     }
 
     private fun clean(policy: WebOutputPolicy, text: String): String = OutputCleaner.clean(text, policy.aggressiveThinking, policy.specialTokens, policy.toolSections)

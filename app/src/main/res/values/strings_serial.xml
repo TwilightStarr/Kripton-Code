@@ -55,4 +55,7 @@
     <string name="serial_zip_mode_info">Seri mod: promptlar tek sohbette sırayla gider, başlamadan önce önizleyip ayarlarsınız. Paralel: promptlar kataloglara göre farklı hesaplara dağıtılır.</string>
     <string name="serial_zip_mode_serial">Seri (önizlemeli)</string>
     <string name="serial_zip_mode_parallel">Paralel</string>
+    <string name="serial_outputs_save">AI çıktılarını zip olarak kaydet (%1$d dosya)</string>
+    <string name="serial_outputs_saved">AI çıktıları kaydedildi.</string>
+    <string name="serial_outputs_failed">AI çıktıları kaydedilemedi.</string>
 </resources>

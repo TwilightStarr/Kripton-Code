@@ -138,7 +138,9 @@ class AppContainer(context: Context) {
     val webChatDriver: WebChatDriver by lazy {
         WebViewChatDriver(appContext, webSessionStore, File(appContext.filesDir, "web-selectors.json"), webMonitor)
     }
-    val webSessionGenerator: WebSessionGenerator by lazy { WebSessionGenerator(webChatDriver, WebPacer()) }
+    /** AI yanıtlarının ilk durağı (ham yazılır, sonra yalnız kod kalır). */
+    val rawReplyLog: com.kriptoncod.app.data.files.RawReplyLog by lazy { com.kriptoncod.app.data.files.RawReplyLog(File(appContext.filesDir, "raw")) }
+    val webSessionGenerator: WebSessionGenerator by lazy { WebSessionGenerator(webChatDriver, WebPacer(), rawLog = rawReplyLog) }
 
     // --- Dağıtım (prompt → AI hesabı) ---
     val credentialProvider: CredentialProvider by lazy {
@@ -222,6 +224,7 @@ class AppContainer(context: Context) {
             account = { id -> aiAccountRepository.get(id) },
             driver = webChatDriver,
             git = serialGit,
+            rawLog = rawReplyLog,
             notify = { state, event ->
                 val (kind, title) = when (event) {
                     SerialEvent.DONE -> RunNotifier.KIND_DONE to "Seri mod tamamlandı"
@@ -269,6 +272,9 @@ class AppContainer(context: Context) {
         appScope.launch {
             runCatching {
                 runRepository.recover()
+                // Yarım kalmış üretimlerin ham yanıtları: bir günden eskiyse yalnız kod kalacak şekilde ayıklanır, 14 günden eski web artıkları silinir.
+                rawReplyLog.sweep(24L * 3_600_000L)
+                rawReplyLog.purge("web-", 14L * 24 * 3_600_000L)
                 aiAccountRepository.purgeOrphanSecrets()
                 aiAccountRepository.releaseExpiredWaits()
                 runScheduler.ensureWatchdog()

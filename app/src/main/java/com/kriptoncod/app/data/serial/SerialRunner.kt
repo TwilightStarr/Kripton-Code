@@ -4,8 +4,10 @@ import com.kriptoncod.app.data.ai.AiGenerationException
 import com.kriptoncod.app.data.ai.AiGenerationException.Kind
 import com.kriptoncod.app.data.ai.normalize.OutputCleaner
 import com.kriptoncod.app.data.db.AiAccount
+import com.kriptoncod.app.data.files.RawReplyLog
 import com.kriptoncod.app.data.github.GitHubFile
 import com.kriptoncod.app.data.run.CodeBlockParser
+import com.kriptoncod.app.data.run.OutputTriage
 import com.kriptoncod.app.data.run.PathSafety
 import com.kriptoncod.app.data.run.PlaceholderDetector
 import com.kriptoncod.app.data.web.ContinuationMerger
@@ -48,6 +50,8 @@ class SerialRunner(
     private val now: () -> Long = System::currentTimeMillis,
     private val random: () -> Int = { (Math.random() * Int.MAX_VALUE).toInt() },
     private val errorDelayMs: () -> Long = { 60_000L + (Math.random() * 60_000L).toLong() },
+    /** AI yanıtlarının ilk durağı: yanıt gelir gelmez ham haliyle yazılır, alışveriş bitince yalnız kod kalır. null: saklama yok. */
+    private val rawLog: RawReplyLog? = null,
 ) {
 
     /** Duraklatıldı/iptal edildi/kayıt silindi: döngüden temiz çıkış. */
@@ -284,6 +288,9 @@ class SerialRunner(
     /** Alışveriş bitti: dosyalar diske yazılır ve aşama COMMIT'e geçer (dosya yoksa uygun yere). */
     private suspend fun finishExchange(ctx: Ctx, fix: Boolean, expectFiles: Boolean, files: Map<String, ByteArray>) {
         val id = ctx.id
+        // 2) Sonra ayıkla: ham yanıtlardan yalnız kod (birebir) kalır; düz metin çıktısı beklenen adımda yanıtın kendisi saklanır.
+        val compacted = runCatching { rawLog?.compact(rawTag(id), keepProse = !expectFiles && !fix) ?: 0 }.getOrDefault(0)
+        if (compacted > 0) store.log(id, "Ham yanıtlar ayıklandı ($compacted kayıt): yalnız kod blokları saklandı, kod silinmedi")
         if (files.isEmpty()) {
             store.clearFiles(id)
             store.clearStep(id)
@@ -355,6 +362,14 @@ class SerialRunner(
                 if (attached) "Projenin güncel hâli zip olarak sohbete eklendi (${project.size} dosya)" else "Projenin güncel hâli metin olarak sohbete verilecek (${project.size} dosya)",
             )
         }
+        if (st.needsProject && !fix) {
+            // Repoda önceden çalışmış bir Actions sonucu varsa AI onu baştan, eksiksiz görür.
+            val ci = runCatching { git.existingCi(st.repo, st.branch) }.getOrNull()
+            existingCiNote(ci)?.let { note ->
+                header = listOf(header, note).filter { it.isNotBlank() }.joinToString("\n\n")
+                store.log(st.id, "Repodaki mevcut Actions sonucu sohbete eklendi")
+            }
+        }
         if (!fix) return SerialMarkers.wrap(provider, header, prompt.body, nonce, expectFiles)
         val kind = st.pendingKind ?: "E"
         val head = listOf(header, SerialMarkers.fixHead(kind)).filter { it.isNotBlank() }.joinToString("\n\n")
@@ -406,11 +421,18 @@ class SerialRunner(
         reply: WebReply,
         binaries: LinkedHashMap<String, ByteArray>,
     ): SerialStep {
+        // 1) ÖNCE sakla: ham yanıt ve AI'ın verdiği özgün dosyalar hiçbir işlem yapılmadan diske yazılır.
+        runCatching { rawLog?.save(rawTag(id), reply.text) }
         val text = clean(policy, reply.text)
+        if (reply.text.isNotBlank()) {
+            val t = OutputTriage.triage(text)
+            store.log(id, "AI yanıtı: ham ${reply.text.length} karakter → kullanışlı ${t.usefulChars} karakter (${t.keptBlocks} dosya bloğu)")
+        }
         val zipParts = ArrayList(step.zipParts)
         var binariesChanged = false
         for (url in reply.fileUrls) {
             val file = session.download(url) ?: continue
+            runCatching { rawLog?.saveFile(rawTag(id), file.name, file.bytes) }
             val converted = ZipBlocks.convert(file)
             if (converted.text.isNotBlank()) zipParts += converted.text
             for ((path, bytes) in ZipBlocks.binaries(file)) {
@@ -551,7 +573,7 @@ class SerialRunner(
                 if (st.fixRound >= MAX_FIX_ROUNDS) {
                     throw NeedUser("$MAX_FIX_ROUNDS düzeltme turunda build temizlenmedi. Günlüğe bakıp Devam et'e basın.")
                 }
-                startFix(id, "E", result.errors + result.warnings.take(30))
+                startFix(id, "E", result.errors + result.warnings)
             }
         }
     }
@@ -595,6 +617,9 @@ class SerialRunner(
 
     // ------------------------------------------------------------------------------------------------ yardımcılar
 
+    /** Bu çalışmanın ham AI çıktılarının [RawReplyLog] etiketi. */
+    private fun rawTag(id: Long) = rawTagOf(id)
+
     private fun requireState(id: Long): SerialState = store.get(id) ?: throw StopRun()
 
     private fun requireUpdate(id: Long, transform: (SerialState) -> SerialState): SerialState = store.update(id, transform) ?: throw StopRun()
@@ -632,6 +657,25 @@ class SerialRunner(
         private const val LONG_WAIT_MS = 10L * 60_000L
         private const val MAX_GIT_BACKOFF_MS = 10L * 60_000L
         private const val SLICE_MS = 3_000L
+
+        /** Mevcut Actions sonucunu AI'a verilecek nota çevirir; temiz ve uyarısız ise (ya da sonuç yoksa) null. */
+        internal fun existingCiNote(ci: CiResult?): String? = when (ci) {
+            is CiResult.Failed -> "[Kripton] The latest GitHub Actions run on this branch FAILED. Below are ALL build errors and warnings, complete " +
+                "and unabridged. Fix every error first (and the warnings if possible) as part of your work.\n\n" +
+                "ERRORS:\n" + CiLogScan.render(ci.errors) +
+                (if (ci.warnings.isEmpty()) "" else "\n\nWARNINGS:\n" + CiLogScan.render(ci.warnings))
+
+            is CiResult.Passed -> if (ci.warnings.isEmpty()) {
+                null
+            } else {
+                "[Kripton] The latest GitHub Actions run on this branch passed, with these warnings (complete list):\n\n" + CiLogScan.render(ci.warnings)
+            }
+
+            else -> null
+        }
+
+        /** Seri çalışmanın ham AI çıktılarının [RawReplyLog] etiketi (arayüz de aynısını kullanır). */
+        fun rawTagOf(id: Long): String = "serial-$id"
 
         const val HANDOFF_ATTACHED =
             "[Kripton] This chat starts with the CURRENT state of the whole project, attached as project.zip. " +
