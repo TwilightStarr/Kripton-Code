@@ -64,8 +64,7 @@ import com.kriptoncod.app.ui.components.NodeCard
 import com.kriptoncod.app.ui.theme.KriptonTheme
 
 /** Elle gezilebilen web sağlayıcıları (Gemini API anahtarıyla çalışır, web sayfası yok). */
-private fun AiAccount.webProvider(): WebProvider? =
-    if (authType != AuthType.WEB_SESSION) null else WebProvider.fromId(providerId)?.takeIf { it != WebProvider.GEMINI }
+private fun AiAccount.webProvider(): WebProvider? = if (authType != AuthType.WEB_SESSION) null else WebProvider.fromId(providerId)?.takeIf { it != WebProvider.GEMINI }
 
 private fun WebProvider.tint(): Color = when (this) {
     WebProvider.CLAUDE -> Color(0xFFD97757)
