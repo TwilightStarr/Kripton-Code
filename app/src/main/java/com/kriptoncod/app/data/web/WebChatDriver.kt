@@ -45,4 +45,10 @@ interface WebChatDriver {
      * desteklenmiyorsa [open] gibi yeni sohbet açılır.
      */
     suspend fun resume(account: AiAccount, provider: WebProvider, chatUrl: String?): WebChatSession = open(account, provider)
+
+    /**
+     * Kullanıcının elle gezeceği oturum ("AI sohbetleri"): kayıtlı oturum yoksa ya da düşmüşse hata fırlatmaz, giriş
+     * sayfası açılır ve kullanıcı orada giriş yapabilir. Desteklenmiyorsa [open] gibi davranır.
+     */
+    suspend fun openInteractive(account: AiAccount, provider: WebProvider): WebChatSession = open(account, provider)
 }

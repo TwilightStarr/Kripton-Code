@@ -67,6 +67,7 @@ fun HomeScreen(
     onOpenSerial: (Long) -> Unit = {},
     onOpenUsage: () -> Unit = {},
     onOpenWebMonitor: () -> Unit = {},
+    onOpenWebChats: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val container = remember { (context.applicationContext as KriptonCodApp).container }
@@ -107,6 +108,14 @@ fun HomeScreen(
         )
     }
     val banner: @Composable () -> Unit = {
+        // Web hesabı varsa AI'ların web arayüzünü adına dokunarak aç (WhatsApp benzeri liste).
+        if (accounts.any { it.authType == com.kriptoncod.app.domain.AuthType.WEB_SESSION && it.providerId != "gemini" }) {
+            KButton(
+                text = stringResource(R.string.web_chats_button),
+                onClick = onOpenWebChats,
+                modifier = Modifier.fillMaxWidth().appear(1),
+            )
+        }
         // Açık web sohbeti varsa AI sayfasına tek dokunuşla geç.
         if (liveWeb.any { it.isLive }) {
             WebMonitorButton(container = container, onClick = onOpenWebMonitor, modifier = Modifier.fillMaxWidth().appear(1))

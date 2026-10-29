@@ -60,6 +60,8 @@ import com.kriptoncod.app.ui.screens.AccountEditorScreen
 import com.kriptoncod.app.ui.screens.AisScreen
 import com.kriptoncod.app.ui.screens.GitHubSettingsScreen
 import com.kriptoncod.app.ui.screens.UsageScreen
+import com.kriptoncod.app.ui.screens.WebChatScreen
+import com.kriptoncod.app.ui.screens.WebChatsScreen
 import com.kriptoncod.app.ui.screens.WebMonitorScreen
 import com.kriptoncod.app.ui.screens.HistoryScreen
 import com.kriptoncod.app.ui.screens.HomeScreen
@@ -182,10 +184,30 @@ fun AppRoot(
                                     onOpenSerial = { id -> navController.navigate(ExtraRoutes.serial(id)) },
                                     onOpenUsage = { navController.navigate(ExtraRoutes.USAGE) },
                                     onOpenWebMonitor = { navController.navigate(ExtraRoutes.WEB_MONITOR) },
+                                    onOpenWebChats = { navController.navigate(ExtraRoutes.WEB_CHATS) },
                                 )
                             }
                             composable(ExtraRoutes.WEB_MONITOR) {
                                 WebMonitorScreen(container = container, onBack = { navController.popBackStack() })
+                            }
+                            composable(ExtraRoutes.WEB_CHATS) {
+                                WebChatsScreen(
+                                    container = container,
+                                    onBack = { navController.popBackStack() },
+                                    onOpenChat = { id -> navController.navigate(ExtraRoutes.webChat(id)) },
+                                )
+                            }
+                            composable(
+                                ExtraRoutes.WEB_CHAT,
+                                arguments = listOf(navArgument(ExtraRoutes.ARG_CHAT_ACCOUNT) { type = NavType.LongType }),
+                            ) { entry ->
+                                val id = entry.arguments?.getLong(ExtraRoutes.ARG_CHAT_ACCOUNT) ?: return@composable
+                                WebChatScreen(
+                                    accountId = id,
+                                    container = container,
+                                    onBack = { navController.popBackStack() },
+                                    onOpenMonitor = { navController.navigate(ExtraRoutes.WEB_MONITOR) },
+                                )
                             }
                             composable(ExtraRoutes.USAGE) {
                                 AdaptiveFrame(Adaptive.FormMaxWidth) { UsageScreen(onBack = { navController.popBackStack() }) }

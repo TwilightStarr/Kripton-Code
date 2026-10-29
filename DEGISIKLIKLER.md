@@ -1,3 +1,20 @@
+# AI sohbetleri (WhatsApp benzeri)
+- Ana ekrandaki **AI sohbetleri** düğmesi: web hesaplarının (Claude, ChatGPT, Kimi) listesi; avatar, ad, durum, açık olana yeşil nokta.
+- Satıra dokununca o AI'ın web arayüzü ekranı dolduracak boyutta (donanım katmanlı, akıcı kaydırma, klavyeyle yeniden boyutlanır) açılır.
+- Oturum düşmüşse giriş sayfası açılır; burada giriş yapıp çıkınca oturum kaydedilir ve hesap "hazır" olur.
+- Ekrandan çıkınca oturum kapanır (çalışmalar o hesabı bekleyip kullanabilsin). Hesap bir çalışmada kullanılıyorsa sayfa yeniden açılmaz/boyutlanmaz (iş bozulmasın); Canlı web'e yönlendirilir.
+
+# Bu sürümdeki değişiklikler (Canlı web)
+
+## Canlı web: tam ekran
+- "Sayfa" sekmesine **⤢ Tam ekran** düğmesi eklendi: AI'ın web sayfası tüm ekranı kaplar, sistem çubukları gizlenir.
+- Üstte tek bir küçük **✕** düğmesi (yanında Sığdır / 0,5× / 1× / Dokunma) kalır; geri tuşu da tam ekrandan çıkarır.
+- Tam ekrana geçerken WebView yeniden kurulmaz (oturum/yazılan prompt bozulmaz).
+
+## Web oturumu düşünce
+- Kayıtlı oturum kabul edilmeyip sayfa giriş ekranına (ör. claude.ai/login) düşerse artık 45 sn beklenmez: hemen "oturum düşmüş" bildirilir, hesap yeniden giriş ister ve Canlı web'de uyarı görünür.
+- Oturum kapanırken GİRİŞSİZ (anonim) çerezler, çalışan eski oturumun üzerine yazılmaz.
+
 # Bu sürümdeki değişiklikler
 
 ## 1. Web arayüzü: "This browser is out of date"

@@ -57,6 +57,9 @@ class WebViewChatDriver(
 
     override suspend fun open(account: AiAccount, provider: WebProvider): WebChatSession = openAt(account, provider, provider.chatUrl)
 
+    override suspend fun openInteractive(account: AiAccount, provider: WebProvider): WebChatSession =
+        openAt(account, provider, provider.chatUrl, interactive = true)
+
     /** [chatUrl] bu sağlayıcıya ait bir https adresiyse O sohbeti açar; değilse yeni sohbet. */
     override suspend fun resume(account: AiAccount, provider: WebProvider, chatUrl: String?): WebChatSession {
         val target = chatUrl?.takeIf { isProviderUrl(provider, it) } ?: provider.chatUrl
@@ -69,13 +72,13 @@ class WebViewChatDriver(
         return uri.scheme == "https" && provider.hostSuffixes.any { host == it || host.endsWith(".$it") }
     }
 
-    private suspend fun openAt(account: AiAccount, provider: WebProvider, startUrl: String): WebChatSession {
+    private suspend fun openAt(account: AiAccount, provider: WebProvider, startUrl: String, interactive: Boolean = false): WebChatSession {
         val saved = sessions.load(account.id)?.takeIf { !it.isEmpty }
-            ?: throw AiGenerationException(Kind.UNAUTHORIZED)
+            ?: if (interactive) WebSession() else throw AiGenerationException(Kind.UNAUTHORIZED)
         val profiled = profilesSupported()
         val lock = if (profiled) accountLocks.getOrPut(account.id) { Mutex() } else globalLock
         lock.lock()
-        val s = ChatSession(account, provider, WebSelectors.load(provider, selectorsFile), lock, profiled, startUrl)
+        val s = ChatSession(account, provider, WebSelectors.load(provider, selectorsFile), lock, profiled, startUrl, interactive)
         try {
             s.start(saved)
         } catch (t: Throwable) {
@@ -92,8 +95,9 @@ class WebViewChatDriver(
         private val lock: Mutex,
         private val profiled: Boolean,
         private val startUrl: String,
-    ) : WebChatSession,
-        WebMonitorHandle {
+        /** true: giriş sayfasına düşmek hata sayılmaz (kullanıcı elle giriş yapar). */
+        private val interactive: Boolean = false,
+    ) : WebChatSession, WebMonitorHandle {
 
         private var cookieManager: CookieManager = CookieManager.getInstance()
         private var webStorage: WebStorage = WebStorage.getInstance()
@@ -136,7 +140,22 @@ class WebViewChatDriver(
                 WebCookies.evalString(webView!!, WebScripts.writeLocalStorage(saved.localStorage))
                 load(startUrl) // anahtarlar yazıldı; sayfa onlarla yeniden açılır
             }
+            // Kayıtlı oturum kabul edilmediyse sayfa giriş ekranına yönlenir: 45 sn giriş alanı aramak yerine hemen bildir.
+            if (!interactive && landedOnLogin()) {
+                mon { m, id -> m.loginNeeded(id) }
+                throw AiGenerationException(Kind.UNAUTHORIZED)
+            }
             mon { m, id -> m.ready(id) }
+        }
+
+        /** Sayfanın adresi sağlayıcının giriş/oturum sayfası mı (yönlendirme yüklemeyi bitirdikten sonra bakılır). */
+        private suspend fun landedOnLogin(): Boolean {
+            val wv = webView ?: return false
+            val url = withContext(Dispatchers.Main) { wv.url }.orEmpty().lowercase()
+            if (url.isEmpty()) return false
+            val path = runCatching { java.net.URI(url).path.orEmpty() }.getOrDefault("")
+            // Yalnız adres YOLUNA bakılır ("/login", "/auth/..."); ana makine adındaki "auth" yanlış alarm vermesin.
+            return selectors.loginUrlHints.any { h -> h.startsWith("/") && (path == h || path.startsWith("$h/") || path.startsWith("$h?")) }
         }
 
         @SuppressLint("SetJavaScriptEnabled")
@@ -237,10 +256,21 @@ class WebViewChatDriver(
             host.addView(wv, FrameLayout.LayoutParams(VIEW_W, VIEW_H))
         }
 
+        override fun mountResponsive(host: ViewGroup) {
+            val wv = webView ?: return
+            (wv.parent as? ViewGroup)?.removeView(wv)
+            // Elle gezilen sayfa: donanım katmanı akıcı kaydırma verir (ekran dışı otomasyonda yazılım katmanı gerekliydi).
+            wv.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+            wv.scaleX = 1f
+            wv.scaleY = 1f
+            host.addView(wv, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        }
+
         override fun unmount(host: ViewGroup) {
             val wv = webView
             if (wv != null && wv.parent === host) host.removeView(wv)
             if (wv != null && wv.parent == null) {
+                wv.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
                 wv.scaleX = 1f
                 wv.scaleY = 1f
                 layoutOffscreen(wv)
@@ -368,7 +398,8 @@ class WebViewChatDriver(
                     // Oturum düştüyse (çerezler boşaldı) eski kaydı ezme; bir sonraki işte UNAUTHORIZED döner.
                     // Elle aktarılan ek localStorage kayıtları (ör. Kimi tokenları) ilk oturumdan sonra silinmesin.
                     val merged = base?.let { b -> snap.copy(localStorage = b.localStorage + snap.localStorage) } ?: snap
-                    if (!snap.isEmpty) sessions.save(account.id, merged)
+                    // Yalnız GİRİŞLİ oturum kaydedilir: girişsiz (anonim) çerezler çalışan eski oturumu ezmesin.
+                    if (!snap.isEmpty && (provider.isLoggedIn(merged) || provider.isLoggedIn(base ?: WebSession()).not())) sessions.save(account.id, merged)
                     WebCookies.clearAll(cookieManager, webStorage)
                 }
             } finally {

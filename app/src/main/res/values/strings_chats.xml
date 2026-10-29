@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AI sohbetleri: AI'ların web arayüzünü istediğin an elle açma -->
+<resources>
+    <string name="web_chats_button">AI sohbetleri</string>
+    <string name="web_chats_title">AI sohbetleri</string>
+    <string name="web_chats_empty_title">Web hesabı yok</string>
+    <string name="web_chats_empty_msg">AI\'lar bölümünden e-posta ile bir web hesabı (Claude, ChatGPT, Kimi) ekle; burada adına dokunarak web arayüzünü açarsın.</string>
+    <string name="web_chats_status_open">Açık</string>
+    <string name="web_chats_status_error">Oturum sorunlu · dokun ve giriş yap</string>
+    <string name="web_chats_status_waiting">Kota bekliyor</string>
+    <string name="web_chats_status_tap">Açmak için dokun</string>
+    <string name="web_chats_header_open">Açık</string>
+    <string name="web_chats_header_opening">Açılıyor…</string>
+    <string name="web_chats_header_idle">Kapalı</string>
+    <string name="web_chats_reload">Yenile</string>
+    <string name="web_chats_opening">Web arayüzü açılıyor…</string>
+    <string name="web_chats_failed">Web arayüzü açılamadı. Bağlantını kontrol edip tekrar dene.</string>
+    <string name="web_chats_closed">Sayfa kapandı.</string>
+    <string name="web_chats_retry">Tekrar aç</string>
+    <string name="web_chats_busy">Bu hesap şu an bir çalışmada. İş bozulmasın diye sayfa burada açılmaz; Canlı web\'den izleyebilirsin.</string>
+    <string name="web_chats_open_monitor">Canlı web\'i aç</string>
+    <string name="web_chats_no_account">Bu hesap bulunamadı ya da web arayüzü yok.</string>
+</resources>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="web_chats_button">AI chats</string>
+    <string name="web_chats_title">AI chats</string>
+    <string name="web_chats_empty_title">No web account</string>
+    <string name="web_chats_empty_msg">Add an email web account (Claude, ChatGPT, Kimi) under AIs; then tap its name here to open its web interface.</string>
+    <string name="web_chats_status_open">Open</string>
+    <string name="web_chats_status_error">Session problem · tap to sign in</string>
+    <string name="web_chats_status_waiting">Waiting for quota</string>
+    <string name="web_chats_status_tap">Tap to open</string>
+    <string name="web_chats_header_open">Open</string>
+    <string name="web_chats_header_opening">Opening…</string>
+    <string name="web_chats_header_idle">Closed</string>
+    <string name="web_chats_reload">Reload</string>
+    <string name="web_chats_opening">Opening web interface…</string>
+    <string name="web_chats_failed">Could not open the web interface. Check your connection and try again.</string>
+    <string name="web_chats_closed">The page was closed.</string>
+    <string name="web_chats_retry">Open again</string>
+    <string name="web_chats_busy">This account is running a job right now. The page is not opened here so the job is not disturbed; you can watch it in Live web.</string>
+    <string name="web_chats_open_monitor">Open Live web</string>
+    <string name="web_chats_no_account">This account was not found or has no web interface.</string>
+</resources>

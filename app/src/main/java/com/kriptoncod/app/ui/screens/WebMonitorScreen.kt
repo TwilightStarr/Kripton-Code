@@ -1,8 +1,11 @@
 package com.kriptoncod.app.ui.screens
 
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 import android.view.MotionEvent
 import android.widget.FrameLayout
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +24,7 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,6 +53,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -97,14 +104,27 @@ fun WebMonitorScreen(container: AppContainer, onBack: () -> Unit) {
         }
     }
 
-    Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+    // Tam ekran: yalnız canlı sayfa gösterilir; üstte küçük bir çubuk (kapat · yakınlaştırma · dokunma) kalır.
+    var fullscreen by rememberSaveable { mutableStateOf(false) }
+    val showFull = fullscreen && selected != null && selected.isLive
+    // Oturum kapanınca ya da seçili oturum kalmayınca tam ekrandan çık.
+    LaunchedEffect(selected?.id, selected?.isLive) {
+        if (selected == null || !selected.isLive) fullscreen = false
+    }
+    BackHandler(enabled = showFull) { fullscreen = false }
+    ImmersiveMode(enabled = showFull)
+
+    val pad = if (showFull) Modifier.padding(0.dp) else Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+    Column(Modifier.fillMaxSize().then(pad), verticalArrangement = Arrangement.spacedBy(if (showFull) 0.dp else 8.dp)) {
+        if (!showFull) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                }
+                Text(stringResource(R.string.web_monitor_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                val liveCount = entries.count { it.isLive }
+                if (liveCount > 0) KBadge(text = stringResource(R.string.web_monitor_live_count, liveCount), accent = NodeAccent.Green)
             }
-            Text(stringResource(R.string.web_monitor_title), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-            val liveCount = entries.count { it.isLive }
-            if (liveCount > 0) KBadge(text = stringResource(R.string.web_monitor_live_count, liveCount), accent = NodeAccent.Green)
         }
 
         if (selected == null) {
@@ -116,37 +136,44 @@ fun WebMonitorScreen(container: AppContainer, onBack: () -> Unit) {
             return@Column
         }
 
-        // Oturum seçici
-        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            entries.forEach { e ->
-                KChip(
-                    label = e.provider.displayName + " · " + e.accountName.take(18) + if (e.isLive) "" else " ✕",
-                    selected = e.id == selected.id,
-                    onClick = { selectedId = e.id },
-                )
+        if (!showFull) {
+            // Oturum seçici
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                entries.forEach { e ->
+                    KChip(
+                        label = e.provider.displayName + " · " + e.accountName.take(18) + if (e.isLive) "" else " ✕",
+                        selected = e.id == selected.id,
+                        onClick = { selectedId = e.id },
+                    )
+                }
+            }
+            if (entries.any { !it.isLive }) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    KButton(
+                        text = stringResource(R.string.web_monitor_clear),
+                        onClick = { container.webMonitor.clearClosed() },
+                        style = KButtonStyle.Outline,
+                    )
+                }
+            }
+
+            StatusCard(selected, nowMs)
+
+            TabRow(selectedTabIndex = tab, containerColor = MaterialTheme.colorScheme.background) {
+                Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text(stringResource(R.string.web_monitor_tab_page)) })
+                Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text(stringResource(R.string.web_monitor_tab_turns)) })
             }
         }
-        if (entries.any { !it.isLive }) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                KButton(
-                    text = stringResource(R.string.web_monitor_clear),
-                    onClick = { container.webMonitor.clearClosed() },
-                    style = KButtonStyle.Outline,
-                )
-            }
-        }
 
-        StatusCard(selected, nowMs)
-
-        TabRow(selectedTabIndex = tab, containerColor = MaterialTheme.colorScheme.background) {
-            Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text(stringResource(R.string.web_monitor_tab_page)) })
-            Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text(stringResource(R.string.web_monitor_tab_turns)) })
-        }
-
+        // Bu kutu iki kipte de aynı yerde durur; böylece sayfa (ve WebView) tam ekrana geçerken yeniden kurulmaz.
         Box(Modifier.weight(1f).fillMaxWidth()) {
-            if (tab == 0) {
+            if (tab == 0 || showFull) {
                 if (selected.isLive) {
-                    LivePage(handle = container.webMonitor.handle(selected.id))
+                    LivePage(
+                        handle = container.webMonitor.handle(selected.id),
+                        fullscreen = showFull,
+                        onFullscreenChange = { fullscreen = it },
+                    )
                 } else {
                     Text(stringResource(R.string.web_monitor_page_gone), style = MaterialTheme.typography.bodyMedium, color = KriptonTheme.colors.muted)
                 }
@@ -200,6 +227,9 @@ private fun StatusCard(e: WebMonitorEntry, nowMs: Long) {
                 color = k.muted,
             )
             val last = e.lastTurn
+            if (e.needsLogin || last?.status?.startsWith(WebReply.Status.NEEDS_LOGIN.name) == true) {
+                Text(stringResource(R.string.web_monitor_login_page), style = MaterialTheme.typography.bodySmall, color = k.danger)
+            }
             if (last == null) {
                 Text(stringResource(R.string.web_monitor_no_prompt), style = MaterialTheme.typography.bodySmall)
             } else {
@@ -261,7 +291,7 @@ private fun durationText(ms: Long): String {
  * gösterilir; ekran kapanınca ya da uygulama arka plana geçince WebView yeniden ekran dışına alınır.
  */
 @Composable
-private fun LivePage(handle: WebMonitorHandle?) {
+private fun LivePage(handle: WebMonitorHandle?, fullscreen: Boolean, onFullscreenChange: (Boolean) -> Unit) {
     val context = LocalContext.current
     // AndroidView'ın factory'si bir kez çalışır; bu yüzden kap sabit, gösterilen oturum update'te değişir.
     val host = remember { MonitorHost(context) }
@@ -289,8 +319,20 @@ private fun LivePage(handle: WebMonitorHandle?) {
         }
     }
 
-    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(if (fullscreen) 0.dp else 6.dp)) {
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (fullscreen) {
+                // Küçük kapat düğmesi: tam ekrandan çıkar.
+                IconButton(onClick = { onFullscreenChange(false) }, modifier = Modifier.size(40.dp)) {
+                    Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.web_monitor_fullscreen_close))
+                }
+            } else {
+                KChip(stringResource(R.string.web_monitor_fullscreen), false, { onFullscreenChange(true) })
+            }
             KChip(stringResource(R.string.web_monitor_zoom_fit), zoom == 0, { zoom = 0 })
             KChip(stringResource(R.string.web_monitor_zoom_50), zoom == 1, { zoom = 1 })
             KChip(stringResource(R.string.web_monitor_zoom_100), zoom == 2, { zoom = 2 })
@@ -300,17 +342,19 @@ private fun LivePage(handle: WebMonitorHandle?) {
                 { interactive = !interactive },
             )
         }
-        if (interactive) {
+        if (interactive && !fullscreen) {
             Text(stringResource(R.string.web_monitor_touch_warn), style = MaterialTheme.typography.bodySmall, color = KriptonTheme.colors.danger)
         }
-        url?.let {
-            Text(
-                stringResource(R.string.web_monitor_url, it),
-                style = MaterialTheme.typography.bodySmall,
-                color = KriptonTheme.colors.muted,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+        if (!fullscreen) {
+            url?.let {
+                Text(
+                    stringResource(R.string.web_monitor_url, it),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KriptonTheme.colors.muted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
             val density = LocalDensity.current
@@ -335,6 +379,27 @@ private fun LivePage(handle: WebMonitorHandle?) {
             }
         }
     }
+}
+
+/** Tam ekranda sistem çubuklarını (durum/gezinme) gizler; çıkınca geri getirir. */
+@Composable
+private fun ImmersiveMode(enabled: Boolean) {
+    val context = LocalContext.current
+    DisposableEffect(enabled) {
+        val window = context.findActivity()?.window
+        val controller = window?.let { w -> runCatching { WindowCompat.getInsetsController(w, w.decorView) }.getOrNull() }
+        if (enabled && controller != null) {
+            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            controller.hide(WindowInsetsCompat.Type.systemBars())
+        }
+        onDispose { if (enabled) controller?.show(WindowInsetsCompat.Type.systemBars()) }
+    }
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }
 
 /**

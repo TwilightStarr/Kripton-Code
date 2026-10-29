@@ -17,6 +17,12 @@ interface WebMonitorHandle {
     /** WebView'ı [host] içine koyar (eski ebeveyninden çıkarır). */
     fun mount(host: ViewGroup)
 
+    /**
+     * WebView'ı [host]'a ekranı dolduracak (sabit 1280x2000 DEĞİL) boyutta koyar; yalnız kullanıcının elle gezdiği
+     * oturumlar içindir ("AI sohbetleri"). Otomasyonun çalıştığı oturumda KULLANILMAZ (seçiciler masaüstü düzenine göre).
+     */
+    fun mountResponsive(host: ViewGroup) = mount(host)
+
     /** WebView'ı [host]'tan çıkarır ve ekran dışı ölçüm düzenini geri kurar. */
     fun unmount(host: ViewGroup)
 
@@ -85,6 +91,8 @@ data class WebMonitorEntry(
     /** [liveChars] en son ne zaman değişti (yanıt takıldı mı anlamak için). */
     val lastGrowthAtMs: Long = openedAtMs,
     val closedAtMs: Long? = null,
+    /** Sayfa giriş ekranında açıldı: kayıtlı oturum düşmüş (çerezler kabul edilmedi). */
+    val needsLogin: Boolean = false,
 ) {
     val isLive: Boolean get() = closedAtMs == null
     val lastTurn: WebTurn? get() = turns.lastOrNull()
@@ -130,6 +138,9 @@ class WebMonitor(
 
     /** Sayfa yüklendi, giriş alanı çizilebilir. */
     fun ready(id: Long) = change(id) { if (it.phase == WebPhase.OPENING) it.copy(phase = WebPhase.READY) else it }
+
+    /** Sayfa giriş ekranına düştü: oturum geçersiz. */
+    fun loginNeeded(id: Long) = change(id) { it.copy(phase = WebPhase.PROBLEM, needsLogin = true) }
 
     /** Mesaj sayfaya yazılmak üzere ([peek] ise yalnız son yanıt okunacak). */
     fun promptSent(id: Long, prompt: String, peek: Boolean = false) = change(id) { e ->

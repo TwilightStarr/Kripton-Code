@@ -69,6 +69,13 @@ object ExtraRoutes {
     /** Açık web sohbetlerini (akış ve seri mod) canlı izleme ekranı. */
     const val WEB_MONITOR = "webmonitor"
 
+    /** "AI sohbetleri": WhatsApp benzeri liste; satıra dokununca o AI'ın web arayüzü açılır. */
+    const val WEB_CHATS = "webchats"
+    const val ARG_CHAT_ACCOUNT = "chatAccountId"
+    const val WEB_CHAT = "webchat/{$ARG_CHAT_ACCOUNT}"
+
+    fun webChat(accountId: Long): String = "webchat/$accountId"
+
     fun run(runId: Long): String = "run/$runId"
 
     /** Seri mod (tek sohbet) çalışması. */

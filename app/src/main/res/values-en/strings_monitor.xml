@@ -50,4 +50,7 @@
     <string name="web_monitor_show_less">Show less</string>
     <string name="web_monitor_sec">%1$d s</string>
     <string name="web_monitor_min">%1$d min %2$d s</string>
+    <string name="web_monitor_fullscreen">⤢ Full screen</string>
+    <string name="web_monitor_fullscreen_close">Exit full screen</string>
+    <string name="web_monitor_login_page">The page is on the sign-in screen: the session looks expired. Reconnect the account, or use Full screen + Touch on to sign in here.</string>
 </resources>

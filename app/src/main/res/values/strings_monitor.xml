@@ -50,4 +50,7 @@
     <string name="web_monitor_show_less">Kısalt</string>
     <string name="web_monitor_sec">%1$d sn</string>
     <string name="web_monitor_min">%1$d dk %2$d sn</string>
+    <string name="web_monitor_fullscreen">⤢ Tam ekran</string>
+    <string name="web_monitor_fullscreen_close">Tam ekrandan çık</string>
+    <string name="web_monitor_login_page">Sayfa giriş ekranında: oturum düşmüş görünüyor. Hesabı yeniden bağla ya da Tam ekran + Dokunma açık ile burada giriş yap.</string>
 </resources>
