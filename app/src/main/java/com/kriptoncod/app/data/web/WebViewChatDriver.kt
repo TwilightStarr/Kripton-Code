@@ -60,7 +60,8 @@ class WebViewChatDriver(
 
     override suspend fun open(account: AiAccount, provider: WebProvider): WebChatSession = openAt(account, provider, provider.chatUrl)
 
-    override suspend fun openInteractive(account: AiAccount, provider: WebProvider): WebChatSession = openAt(account, provider, provider.chatUrl, interactive = true)
+    override suspend fun openInteractive(account: AiAccount, provider: WebProvider): WebChatSession =
+        openAt(account, provider, provider.chatUrl, interactive = true)
 
     /** [chatUrl] bu sağlayıcıya ait bir https adresiyse O sohbeti açar; değilse yeni sohbet. */
     override suspend fun resume(account: AiAccount, provider: WebProvider, chatUrl: String?): WebChatSession {
@@ -99,8 +100,7 @@ class WebViewChatDriver(
         private val startUrl: String,
         /** true: giriş sayfasına düşmek hata sayılmaz (kullanıcı elle giriş yapar). */
         private val interactive: Boolean = false,
-    ) : WebChatSession,
-        WebMonitorHandle {
+    ) : WebChatSession, WebMonitorHandle {
 
         private var cookieManager: CookieManager = CookieManager.getInstance()
         private var webStorage: WebStorage = WebStorage.getInstance()

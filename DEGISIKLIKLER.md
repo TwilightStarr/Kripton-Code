@@ -1,7 +1,7 @@
 # Tema: gri-beyaz (gümüş) tonlar + AMOLED saf siyah
 - Zümrüt yeşil vurgu kaldırıldı; tüm vurgu, durum ("tamamlandı", "canlı", "önerilen") ve rozet renkleri logo gibi gri/beyaz tonlara çevrildi. Yalnız hata rengi kırmızı kalır.
 - Koyu temanın zemini saf siyah (#000000): AMOLED ekranda pikseller kapanır. Kartlar/yüzeyler siyahtan birkaç kademe açık gri; Material "tint" kapatıldı, menü ve iletişim kutuları griye boyanmaz.
-- Açılış ekranı, pencere zemini ve widget siyah/gümüşe uyarlandı; AI sağlayıcı avatarları gri-beyaz farklı tonlarla ayrışır.
+- Açılış ekranı, pencere zemini ve widget siyah/gümüşe uyarlandı; AI sağlayıcı simgeleri (avatar, odaklı pencere çerçevesi) renkli kalır.
 - Açık tema korundu (beyaz/grafit).
 
 # Çalışma alanı: düzen kaydetme, hazır düzenler, sabitleme, yer değiştirme

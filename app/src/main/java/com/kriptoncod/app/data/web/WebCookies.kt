@@ -35,7 +35,8 @@ object WebUserAgent {
     var DESKTOP: String = desktopUa(FALLBACK_MAJOR)
         private set
 
-    fun desktopUa(major: Int): String = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/$major.0.0.0 Safari/537.36"
+    fun desktopUa(major: Int): String =
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/$major.0.0.0 Safari/537.36"
 
     /** [ua] içindeki Chrome ana sürümü; yoksa ya da gerçekçi değilse [FALLBACK_MAJOR]. */
     fun majorOf(ua: String?): Int {

@@ -73,17 +73,15 @@ import com.kriptoncod.app.ui.components.NodeCard
 import com.kriptoncod.app.ui.theme.KriptonTheme
 
 /** Elle gezilebilen web sağlayıcıları (Gemini API anahtarıyla çalışır, web sayfası yok). */
-internal fun AiAccount.webProvider(): WebProvider? = if (authType != AuthType.WEB_SESSION) null else WebProvider.fromId(providerId)?.takeIf { it != WebProvider.GEMINI }
+internal fun AiAccount.webProvider(): WebProvider? =
+    if (authType != AuthType.WEB_SESSION) null else WebProvider.fromId(providerId)?.takeIf { it != WebProvider.GEMINI }
 
 internal fun WebProvider.tint(): Color = when (this) {
-    // Tek renkli tema: sağlayıcılar gri-beyaz tonlarla ayrışır.
-    WebProvider.CLAUDE -> Color(0xFFF0F0F2)
-
-    WebProvider.CHATGPT -> Color(0xFFBDBDC2)
-
-    WebProvider.KIMI -> Color(0xFF98989E)
-
-    WebProvider.GEMINI -> Color(0xFFD6D6DA)
+    // Tema gri-beyaz olsa da AI simgeleri (avatar, odaklı pencere çerçevesi) kolay ayırt edilsin diye sağlayıcı renklidir.
+    WebProvider.CLAUDE -> Color(0xFFD97757)
+    WebProvider.CHATGPT -> Color(0xFF10A37F)
+    WebProvider.KIMI -> Color(0xFF4B7BEC)
+    WebProvider.GEMINI -> Color(0xFF8E6CEF)
 }
 
 /** Yuvarlak, sağlayıcı renkli baş harf simgesi (sohbet listesi avatarı). */
@@ -92,7 +90,7 @@ internal fun Avatar(provider: WebProvider, size: androidx.compose.ui.unit.Dp) {
     Box(Modifier.size(size).clip(CircleShape).background(provider.tint()), contentAlignment = Alignment.Center) {
         Text(
             provider.displayName.take(1).uppercase(),
-            color = Color(0xFF0B0B0C),
+            color = Color.White,
             fontWeight = FontWeight.Bold,
             fontSize = (size.value * 0.42f).sp,
         )

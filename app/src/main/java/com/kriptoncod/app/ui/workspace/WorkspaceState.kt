@@ -76,14 +76,16 @@ object WorkspaceCodec {
  * Bildirim rozeti: bir AI'ın yanıtı bitince (SENDING/GENERATING → REPLIED/PROBLEM) o AI'ın kimliği döner.
  * [prev] ve [now] hesap kimliği → o hesabın canlı oturumunun aşamasıdır.
  */
-fun finishedAccounts(prev: Map<Long, WebPhase>, now: Map<Long, WebPhase>): Set<Long> = now.filter { (id, phase) ->
-    val before = prev[id]
-    (before == WebPhase.SENDING || before == WebPhase.GENERATING) &&
-        (phase == WebPhase.REPLIED || phase == WebPhase.PROBLEM)
-}.keys
+fun finishedAccounts(prev: Map<Long, WebPhase>, now: Map<Long, WebPhase>): Set<Long> =
+    now.filter { (id, phase) ->
+        val before = prev[id]
+        (before == WebPhase.SENDING || before == WebPhase.GENERATING) &&
+            (phase == WebPhase.REPLIED || phase == WebPhase.PROBLEM)
+    }.keys
 
 /**
  * Rozetli sayfalar: görünmeyen sayfalardaki, yanıtı bitmiş ve henüz görülmemiş ([unseen]) AI'ların sayfaları.
  * Sabit pencere her sayfada göründüğü için hiçbir sayfayı rozetlemez.
  */
-fun badgedPages(open: List<Long>, pinned: Long?, unseen: Set<Long>, perPage: Int): Set<Int> = unseen.mapNotNull { pageOfItem(open, pinned, it, perPage) }.toSet()
+fun badgedPages(open: List<Long>, pinned: Long?, unseen: Set<Long>, perPage: Int): Set<Int> =
+    unseen.mapNotNull { pageOfItem(open, pinned, it, perPage) }.toSet()
