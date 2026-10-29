@@ -64,11 +64,13 @@ class WorkspaceLayoutTest {
                     assertTrue(it.x + it.w <= w + 0.01f && it.y + it.h <= h + 0.01f)
                     assertTrue(it.w > 0f && it.h > 0f)
                 }
-                for (i in r.indices) for (j in i + 1 until r.size) {
-                    val a = r[i]
-                    val b = r[j]
-                    val overlap = a.x < b.x + b.w - 0.01f && b.x < a.x + a.w - 0.01f && a.y < b.y + b.h - 0.01f && b.y < a.y + a.h - 0.01f
-                    assertTrue("n=$n i=$i j=$j overlap", !overlap)
+                for (i in r.indices) {
+                    for (j in i + 1 until r.size) {
+                        val a = r[i]
+                        val b = r[j]
+                        val overlap = a.x < b.x + b.w - 0.01f && b.x < a.x + a.w - 0.01f && a.y < b.y + b.h - 0.01f && b.y < a.y + a.h - 0.01f
+                        assertTrue("n=$n i=$i j=$j overlap", !overlap)
+                    }
                 }
             }
         }
