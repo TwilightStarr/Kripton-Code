@@ -428,7 +428,7 @@ private fun backOut(): ExitTransition = fadeOut(tween(90, easing = FastOutLinear
 
 private fun NavHostController.navigateTo(route: Route): Unit = navigateTo(route.path)
 
-private fun NavHostController.navigateTo(path: String): Unit {
+private fun NavHostController.navigateTo(path: String) {
     navigate(path) {
         popUpTo(graph.findStartDestination().id) { saveState = true }
         launchSingleTop = true

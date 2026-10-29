@@ -9,19 +9,22 @@ import kotlin.random.Random
 
 /** Düzen, sabitleme, yer değiştirme ve kayıt mantığının birlikte çalışmasını (özellik testleri) doğrular. */
 class WorkspaceScenarioTest {
-    private fun overlap(a: PaneBox, b: PaneBox) =
-        a.x < b.x + b.w - 0.01f && b.x < a.x + a.w - 0.01f && a.y < b.y + b.h - 0.01f && b.y < a.y + a.h - 0.01f
+    private fun overlap(a: PaneBox, b: PaneBox) = a.x < b.x + b.w - 0.01f && b.x < a.x + a.w - 0.01f && a.y < b.y + b.h - 0.01f && b.y < a.y + a.h - 0.01f
 
     @Test fun everyPresetKeepsPanesInsideAndApart() {
-        for (sidebar in listOf(false, true)) for (n in 1..4) for ((w, h) in listOf(1280f to 800f, 800f to 1280f, 600f to 600f)) {
-            for (focus in listOf(null) + (0 until n).toList()) {
-                val r = layoutPane(n, w, h, gap = 8f, focus = focus, focusBoost = if (focus == null) 1f else 2.4f, sidebar = sidebar)
-                assertEquals(n, r.size)
-                r.forEach {
-                    assertTrue(it.x >= -0.01f && it.y >= -0.01f && it.w > 0f && it.h > 0f)
-                    assertTrue(it.x + it.w <= w + 0.01f && it.y + it.h <= h + 0.01f)
+        for (sidebar in listOf(false, true)) {
+            for (n in 1..4) {
+                for ((w, h) in listOf(1280f to 800f, 800f to 1280f, 600f to 600f)) {
+                    for (focus in listOf(null) + (0 until n).toList()) {
+                        val r = layoutPane(n, w, h, gap = 8f, focus = focus, focusBoost = if (focus == null) 1f else 2.4f, sidebar = sidebar)
+                        assertEquals(n, r.size)
+                        r.forEach {
+                            assertTrue(it.x >= -0.01f && it.y >= -0.01f && it.w > 0f && it.h > 0f)
+                            assertTrue(it.x + it.w <= w + 0.01f && it.y + it.h <= h + 0.01f)
+                        }
+                        for (i in r.indices) for (j in i + 1 until r.size) assertFalse("sidebar=$sidebar n=$n $i/$j", overlap(r[i], r[j]))
+                    }
                 }
-                for (i in r.indices) for (j in i + 1 until r.size) assertFalse("sidebar=$sidebar n=$n $i/$j", overlap(r[i], r[j]))
             }
         }
     }
@@ -44,19 +47,21 @@ class WorkspaceScenarioTest {
 
     @Test fun randomResizesNeverBreakInvariants() {
         val rnd = Random(42)
-        for (sidebar in listOf(false, true)) for (n in 2..4) {
-            var weights = List(n) { PaneWeight() }
-            repeat(300) {
-                val idx = rnd.nextInt(n)
-                weights = resizePane(n, weights, idx, rnd.nextFloat() * 1.6f - 0.8f, rnd.nextFloat() * 1.6f - 0.8f, sidebar)
-                val r = layoutPane(n, 1000f, 700f, weights, sidebar = sidebar)
-                // Hiçbir pencere dayanılmaz küçülmez; ana eksen toplamı korunur.
-                r.forEach {
-                    assertTrue("sidebar=$sidebar n=$n w=${it.w}", it.w >= 1000f * MIN_FRACTION * 0.99f)
-                    assertTrue("sidebar=$sidebar n=$n h=${it.h}", it.h >= 700f * MIN_FRACTION * 0.99f)
+        for (sidebar in listOf(false, true)) {
+            for (n in 2..4) {
+                var weights = List(n) { PaneWeight() }
+                repeat(300) {
+                    val idx = rnd.nextInt(n)
+                    weights = resizePane(n, weights, idx, rnd.nextFloat() * 1.6f - 0.8f, rnd.nextFloat() * 1.6f - 0.8f, sidebar)
+                    val r = layoutPane(n, 1000f, 700f, weights, sidebar = sidebar)
+                    // Hiçbir pencere dayanılmaz küçülmez; ana eksen toplamı korunur.
+                    r.forEach {
+                        assertTrue("sidebar=$sidebar n=$n w=${it.w}", it.w >= 1000f * MIN_FRACTION * 0.99f)
+                        assertTrue("sidebar=$sidebar n=$n h=${it.h}", it.h >= 700f * MIN_FRACTION * 0.99f)
+                    }
+                    val groups = slotGroups(n, sidebar)
+                    assertEquals(1000f, groups.sumOf { g -> r[g.first()].w.toDouble() }.toFloat(), 0.5f)
                 }
-                val groups = slotGroups(n, sidebar)
-                assertEquals(1000f, groups.sumOf { g -> r[g.first()].w.toDouble() }.toFloat(), 0.5f)
             }
         }
     }
