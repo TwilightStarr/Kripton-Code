@@ -25,9 +25,13 @@ fun RunProgressBar(progress: RunProgress, modifier: Modifier = Modifier) {
     val label = when {
         progress.indeterminate || (progress.total == 0 && progress.stage == RunProgress.Stage.PAUSED) ->
             stringResource(R.string.run_progress_planning)
+
         progress.stage == RunProgress.Stage.PUSHING -> stringResource(R.string.run_progress_pushing, progress.percent)
+
         progress.stage == RunProgress.Stage.CI -> stringResource(R.string.run_progress_ci, progress.percent)
+
         progress.stage == RunProgress.Stage.FIXING -> stringResource(R.string.run_progress_fixing, progress.percent)
+
         else -> {
             val parts = mutableListOf(stringResource(R.string.run_progress_nodes, progress.done, progress.total, progress.percent))
             if (progress.failed > 0) parts += stringResource(R.string.run_progress_failed, progress.failed)

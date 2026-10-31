@@ -79,8 +79,7 @@ class ModeStore(private val context: Context) {
     }
 
     /** Herhangi bir modun (hazır dahil) düzenlenebilir kopyasını oluşturur ve etkin yapmadan kaydeder. */
-    suspend fun duplicate(source: ModeProfile, newName: String): ModeProfile? =
-        save(source.copy(id = ModeProfile.newId(), name = newName, builtIn = false))
+    suspend fun duplicate(source: ModeProfile, newName: String): ModeProfile? = save(source.copy(id = ModeProfile.newId(), name = newName, builtIn = false))
 
     /** Kullanıcı modunu siler; etkinse Dengeli'ye dönülür. Hazır mod silinemez. */
     suspend fun delete(id: String) {

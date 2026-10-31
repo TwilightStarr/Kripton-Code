@@ -424,8 +424,7 @@ private fun summaryLine(m: ModeProfile): String = stringResource(
     m.serialMaxFixRounds,
 )
 
-private fun copyName(context: Context, base: String): String =
-    context.getString(R.string.mode_copy_name, base).take(ModeProfile.Limits.NAME_MAX)
+private fun copyName(context: Context, base: String): String = context.getString(R.string.mode_copy_name, base).take(ModeProfile.Limits.NAME_MAX)
 
 private fun shareText(context: Context, text: String) {
     val send = Intent(Intent.ACTION_SEND).apply {
