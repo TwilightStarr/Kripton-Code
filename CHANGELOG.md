@@ -5,6 +5,12 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
+### Eklendi (Mod Merkezi)
+- Hazır modlar (Dengeli, Hızlı, Sabırlı, Kota tasarrufu, Titiz), özel mod oluşturma/kopyalama/düzenleme/silme, dışa-içe aktarma ve tek dokunuşla seçim. Paralellik, yeniden deneme, devre kesici ve seri mod sınırları artık modda. Ayrıntı: `docs/MODLAR.md`.
+
+### Düzeltildi (ilerleme)
+- Run ilerlemesi planlamada %100'e sıçrayıp düşmüyor; gönderme/CI aşamaları ve tahmini süre eklendi. Seri mod süren promptu bitmiş saymıyor, aşamayı yüzdeye katıyor. Widget ve bildirim aynı hesabı kullanıyor.
+
 ### Değişti (tema)
 - Zümrüt yeşil vurgu kaldırıldı; tüm vurgu, durum ("tamamlandı", "canlı", "önerilen") ve rozet renkleri logo gibi gri/beyaz tonlara çevrildi. Yalnız hata rengi kırmızı kalır.
 - Koyu temanın zemini saf siyah (#000000): AMOLED ekranda pikseller kapanır. Kartlar/yüzeyler siyahtan birkaç kademe açık gri; Material "tint" kapatıldı, menü ve iletişim kutuları griye boyanmaz.

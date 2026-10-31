@@ -1,5 +1,6 @@
 package com.kriptoncod.app.data.serial
 
+import com.kriptoncod.app.domain.ModeRuntime
 import com.kriptoncod.app.data.ai.AiGenerationException
 import com.kriptoncod.app.data.ai.AiGenerationException.Kind
 import com.kriptoncod.app.data.ai.normalize.OutputCleaner
@@ -142,8 +143,8 @@ class SerialRunner(
         val fix = st.phase == SerialPhase.FIX
         val prompt = st.current ?: return
         val expectFiles = fix || prompt.expectFiles
-        if (fix && st.fixRound > MAX_FIX_ROUNDS) {
-            throw NeedUser("$MAX_FIX_ROUNDS düzeltme turunda build temizlenmedi. Günlüğe bakıp Devam et'e basın.")
+        if (fix && st.fixRound > ModeRuntime.current.serialMaxFixRounds) {
+            throw NeedUser("${ModeRuntime.current.serialMaxFixRounds} düzeltme turunda build temizlenmedi. Günlüğe bakıp Devam et'e basın.")
         }
 
         val priorNonce = st.nonce
@@ -242,10 +243,10 @@ class SerialRunner(
 
                     Kind.UNAUTHORIZED -> {
                         unauthorized++
-                        if (unauthorized >= MAX_UNAUTHORIZED) {
+                        if (unauthorized >= ModeRuntime.current.serialMaxUnauthorized) {
                             throw NeedUser("Hesabın oturumu düştü. Yapay Zekâlar bölümünden yeniden giriş yapıp Devam et'e basın.")
                         }
-                        store.log(id, "Oturum doğrulanamadı; yeniden denenecek ($unauthorized/$MAX_UNAUTHORIZED)")
+                        store.log(id, "Oturum doğrulanamadı; yeniden denenecek ($unauthorized/${ModeRuntime.current.serialMaxUnauthorized})")
                         sleepChecked(id, errorDelayMs())
                     }
 
@@ -267,7 +268,7 @@ class SerialRunner(
                 val domProblem = r.reason != null && r.reason != "lost" && r.reason != "poll_timeout"
                 if (domProblem) domFailures++
                 store.log(id, "Sayfa hatası [${r.reason ?: r.status}]" + (r.diag?.let { ":\n$it" } ?: ""))
-                if (domFailures >= MAX_DOM_FAILURES) {
+                if (domFailures >= ModeRuntime.current.serialMaxDomFailures) {
                     throw NeedUser(
                         "Web sayfası $domFailures kez beklenen biçimde yanıt vermedi (${r.reason}). Büyük olasılıkla ${provider.displayName} " +
                             "arayüzü değişti: günlükteki seçici eşleşme sayılarına bakıp web-selectors.json ile düzeltin ya da yeniden giriş yapın.",
@@ -390,7 +391,7 @@ class SerialRunner(
         while (!isFinished(step)) {
             checkControl(id)
             guard++
-            if (guard > MAX_CONTINUES) throw NeedUser("Yanıt $MAX_CONTINUES devam turunda tamamlanamadı.")
+            if (guard > ModeRuntime.current.serialMaxContinues) throw NeedUser("Yanıt ${ModeRuntime.current.serialMaxContinues} devam turunda tamamlanamadı.")
             val cut = step.truncated || ContinuationMerger.endsInsideFence(ContinuationMerger.merge(step.parts))
             val message = if (cut) {
                 SerialMarkers.continuation(nonce)
@@ -408,7 +409,7 @@ class SerialRunner(
     private fun isFinished(step: SerialStep): Boolean {
         if (step.truncated) return false
         if (ContinuationMerger.endsInsideFence(ContinuationMerger.merge(step.parts))) return false
-        return step.markerSeen || step.unmarkedAsks >= MAX_UNMARKED_ASKS
+        return step.markerSeen || step.unmarkedAsks >= ModeRuntime.current.serialMaxUnmarkedAsks
     }
 
     /** Bir yanıtı alışverişe ekler: metni, indirilen zip'leri ve ikili dosyaları; her şey diske yazılır. */
@@ -561,8 +562,8 @@ class SerialRunner(
                     advance(id)
                 }
 
-                st.warnRound >= MAX_WARN_ROUNDS -> {
-                    store.log(id, "${result.warnings.size} uyarı $MAX_WARN_ROUNDS turda giderilemedi; kabul edilip devam ediliyor")
+                st.warnRound >= ModeRuntime.current.serialMaxWarnRounds -> {
+                    store.log(id, "${result.warnings.size} uyarı ${ModeRuntime.current.serialMaxWarnRounds} turda giderilemedi; kabul edilip devam ediliyor")
                     advance(id)
                 }
 
@@ -570,8 +571,8 @@ class SerialRunner(
             }
 
             is CiResult.Failed -> {
-                if (st.fixRound >= MAX_FIX_ROUNDS) {
-                    throw NeedUser("$MAX_FIX_ROUNDS düzeltme turunda build temizlenmedi. Günlüğe bakıp Devam et'e basın.")
+                if (st.fixRound >= ModeRuntime.current.serialMaxFixRounds) {
+                    throw NeedUser("${ModeRuntime.current.serialMaxFixRounds} düzeltme turunda build temizlenmedi. Günlüğe bakıp Devam et'e basın.")
                 }
                 startFix(id, "E", result.errors + result.warnings)
             }
@@ -607,7 +608,7 @@ class SerialRunner(
             } catch (e: SerialGitException) {
                 if (e.fatal) throw NeedUser(e.message.orEmpty())
                 failures++
-                if (failures >= MAX_GIT_FAILURES) throw NeedUser("${e.message} ($failures deneme)")
+                if (failures >= ModeRuntime.current.serialMaxGitFailures) throw NeedUser("${e.message} ($failures deneme)")
                 val d = minOf(errorDelayMs() * failures, MAX_GIT_BACKOFF_MS)
                 store.log(id, "$what: ${e.message} ${d / 1000} sn sonra yeniden denenecek")
                 sleepChecked(id, d)

@@ -1,5 +1,7 @@
 package com.kriptoncod.app
 
+import com.kriptoncod.app.domain.ModeRuntime
+import com.kriptoncod.app.data.settings.ModeStore
 import android.content.Context
 import com.kriptoncod.app.data.ai.AiGenerator
 import com.kriptoncod.app.data.ai.OpenAiCompatibleGenerator
@@ -75,6 +77,9 @@ class AppContainer(context: Context) {
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     val themeStore: ThemeStore by lazy { ThemeStore(appContext) }
+
+    /** Mod Merkezi: hazır/özel modlar ve etkin mod. Etkin mod [ModeRuntime]'a yansır. */
+    val modeStore: ModeStore by lazy { ModeStore(appContext) }
 
     val database: KriptonDatabase by lazy { KriptonDatabase.build(appContext) }
     val keyVault: KeyVault by lazy { AndroidKeystoreKeyVault(File(appContext.filesDir, "vault")) }
@@ -178,7 +183,9 @@ class AppContainer(context: Context) {
             packageRun = { runId ->
                 finalAiAssembler.assemble(runId) || runFinalizer.finalize(runId) is RunFinalizer.Result.Success
             },
-            ensureTests = { runId -> testSynthesizer.ensure(runId) },
+            ensureTests = { runId ->
+                if (ModeRuntime.current.synthesizeTests) testSynthesizer.ensure(runId) else TestSynthesizer.Outcome.NotNeeded
+            },
             shouldPublish = { runId -> runPublisher.shouldPublish(runId) },
             publish = { runId -> runPublisher.publish(runId) },
             startCiLoop = { runId -> runScheduler.startCiLoop(runId) },
@@ -201,7 +208,7 @@ class AppContainer(context: Context) {
             web = webSessionGenerator,
             usage = usageRepository,
             live = liveOutput,
-            onCatalogDone = { runId, merge -> runCheckpointer.checkpoint(runId, merge) },
+            onCatalogDone = { runId, merge -> if (ModeRuntime.current.wipCheckpoint) runCheckpointer.checkpoint(runId, merge) },
             onJobError = { job, error ->
                 com.kriptoncod.app.data.crash.RunErrorLog.record(appContext, "job", job.runId, job.id, job.title, error)
             },
@@ -275,7 +282,13 @@ class AppContainer(context: Context) {
 
     /** Açılışta yarım kalan dosya/iş durumlarını toparlar; hata uygulamayı düşürmez. */
     fun startRecovery() {
+        // Etkin mod, işler başlamadan çalışma zamanına yüklenir; sonra her değişiklik anında yansır.
         appScope.launch {
+            runCatching { modeStore.syncRuntime() }
+            runCatching { modeStore.state.collect { ModeRuntime.set(it.active) } }
+        }
+        appScope.launch {
+            runCatching { modeStore.syncRuntime() }
             runCatching {
                 runRepository.recover()
                 // Yarım kalmış üretimlerin ham yanıtları: bir günden eskiyse yalnız kod kalacak şekilde ayıklanır, 14 günden eski web artıkları silinir.

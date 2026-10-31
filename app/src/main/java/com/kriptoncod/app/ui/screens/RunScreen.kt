@@ -1,5 +1,7 @@
 package com.kriptoncod.app.ui.screens
 
+import com.kriptoncod.app.ui.components.RunProgressBar
+import com.kriptoncod.app.data.run.RunProgress
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -232,6 +234,12 @@ fun RunScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.tertiary,
                 modifier = Modifier.padding(start = 4.dp, top = 2.dp),
+            )
+        }
+        if (currentRun != null) {
+            RunProgressBar(
+                progress = RunProgress.of(currentRun.status, jobs, currentRun.createdAt, System.currentTimeMillis()),
+                modifier = Modifier.padding(start = 4.dp, top = 6.dp, end = 4.dp),
             )
         }
         Spacer(Modifier.height(6.dp))

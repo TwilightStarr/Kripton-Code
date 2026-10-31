@@ -1,5 +1,6 @@
 package com.kriptoncod.app.data.run
 
+import com.kriptoncod.app.domain.ModeRuntime
 import com.kriptoncod.app.data.ai.AiGenerationException
 import com.kriptoncod.app.data.ai.AiGenerationException.Kind
 import com.kriptoncod.app.data.ai.AiGenerator
@@ -191,7 +192,7 @@ class PromptDispatcher(
         var stopYield = false
         // Aynı anda en çok kullanılabilir hesap sayısı kadar düğüm çalışır (hesap başına bir düğüm).
         val limit = accounts.observeAll().first().count { it.enabled && it.status != AccountStatus.ERROR }
-            .coerceIn(1, MAX_PARALLEL)
+            .coerceIn(1, ModeRuntime.current.maxParallel)
         coroutineScope {
             while (true) {
                 // 1) Boş hesap kadar hazır düğüm başlat.
@@ -241,7 +242,7 @@ class PromptDispatcher(
                 // 2) Biten bir düğümü sırayla işle (sonraki düğümler bunun çıktısına bağlı olabilir).
                 val (job, result) = results.receive()
                 inFlight -= job.id
-                runs.getJobs(runId).let { l -> onProgress(l.count { it.state == JobState.DONE }, l.size) }
+                runs.getJobs(runId).let { l -> RunProgress.counts(l).let { (d, t) -> onProgress(d, t) } }
                 if (result is JobResult.Done) live?.forget(job.id)
                 if (result is JobResult.Wait) {
                     wakeAtMs = minOf(wakeAtMs ?: result.untilMs, result.untilMs)
@@ -257,7 +258,7 @@ class PromptDispatcher(
 
         val jobs = runs.getJobs(runId)
         if (jobs.any { it.state in OPEN_STATES }) {
-            val delay = ((wakeAtMs ?: (now() + RETRY_BASE_MS)) - now()).coerceAtLeast(MIN_DELAY_MS)
+            val delay = ((wakeAtMs ?: (now() + ModeRuntime.current.retryBaseMs)) - now()).coerceAtLeast(MIN_DELAY_MS)
             return DispatchOutcome.Wait(delay)
         }
 
@@ -494,7 +495,7 @@ class PromptDispatcher(
                             "Hesap açılınca ya da onarılınca otomatik yeniden denenecek.",
                     )
                     runs.waitJob(job.id)
-                    return JobResult.Wait(now() + NO_ACCOUNT_WAIT_MS)
+                    return JobResult.Wait(now() + ModeRuntime.current.noAccountWaitMs)
                 }
             }
             tried += account.id
@@ -610,8 +611,8 @@ class PromptDispatcher(
 
                         Kind.SERVER, Kind.NETWORK -> {
                             // Kalite yeniden denemeleri de `attempts` sayacını artırır; hata sınırından düşülür.
-                            val attempts = ((runs.getJob(job.id)?.attempts ?: MAX_ATTEMPTS) - qualityTries).coerceAtLeast(0)
-                            if (attempts >= (retry.maxErrorAttempts ?: MAX_ATTEMPTS)) {
+                            val attempts = ((runs.getJob(job.id)?.attempts ?: ModeRuntime.current.maxAttempts) - qualityTries).coerceAtLeast(0)
+                            if (attempts >= (retry.maxErrorAttempts ?: ModeRuntime.current.maxAttempts)) {
                                 runs.failJob(job.id)
                                 return JobResult.Failed
                             }
@@ -711,8 +712,8 @@ class PromptDispatcher(
                 }
 
                 Kind.SERVER, Kind.NETWORK -> {
-                    val attempts = runs.getJob(job.id)?.attempts ?: MAX_ATTEMPTS
-                    if (attempts >= MAX_ATTEMPTS) {
+                    val attempts = runs.getJob(job.id)?.attempts ?: ModeRuntime.current.maxAttempts
+                    if (attempts >= ModeRuntime.current.maxAttempts) {
                         runs.failJob(job.id)
                         JobResult.Failed
                     } else {
@@ -786,7 +787,7 @@ class PromptDispatcher(
         /** Tüm uygun hesaplar meşgulken düğümün yeniden denenme aralığı. */
         const val BUSY_RETRY_MS = 3_000L
 
-        fun retryDelayMs(attempts: Int): Long = (RETRY_BASE_MS * attempts.coerceAtLeast(1)).coerceAtMost(MAX_RETRY_DELAY_MS)
+        fun retryDelayMs(attempts: Int): Long = (ModeRuntime.current.retryBaseMs * attempts.coerceAtLeast(1)).coerceAtMost(ModeRuntime.current.maxRetryDelayMs)
 
         /** Hiç kullanılabilir hesap yokken işin yeniden denenme aralığı. */
         const val NO_ACCOUNT_WAIT_MS = 10L * 60 * 1000

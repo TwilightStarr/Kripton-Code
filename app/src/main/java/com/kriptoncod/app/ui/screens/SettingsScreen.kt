@@ -68,6 +68,7 @@ fun SettingsScreen(
     onGoogleClientIdChange: (String) -> Unit,
     onOpenGitHub: () -> Unit,
     onOpenPermissions: () -> Unit,
+    onOpenModes: () -> Unit = {},
 ) {
     val k = KriptonTheme.colors
     val context = LocalContext.current
@@ -120,6 +121,18 @@ fun SettingsScreen(
                     onCheckedChange = { on -> scope.launch { store.setAnimations(on) } },
                 )
             }
+        }
+
+        // Mod Merkezi: tüm sınırlar ve otomasyonlar tek yerde, hazır modlarla.
+        NodeCard(modifier = Modifier.fillMaxWidth(), onClick = onOpenModes) {
+            Text(stringResource(R.string.settings_modes_title), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.settings_modes_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = k.muted,
+                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+            )
+            KButton(text = stringResource(R.string.settings_modes_open), onClick = onOpenModes)
         }
 
         // Bildirimler: çalışma kapalıyken de arka planda sürer; olaylar için bildirim istenirse gönderilir.

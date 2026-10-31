@@ -66,6 +66,7 @@ fun HomeScreen(
     onOpenRun: (Long) -> Unit,
     onOpenSerial: (Long) -> Unit = {},
     onOpenUsage: () -> Unit = {},
+    onOpenModes: () -> Unit = {},
     onOpenWebMonitor: () -> Unit = {},
     onOpenWebChats: () -> Unit = {},
 ) {
@@ -146,6 +147,9 @@ fun HomeScreen(
     val usageCard: @Composable () -> Unit = {
         if (accounts.isNotEmpty()) UsageCard(accounts, usage, onOpenUsage)
     }
+    val modeCard: @Composable () -> Unit = {
+        ModeHomeCard(onOpenModes = onOpenModes, modifier = Modifier.appear(2))
+    }
     val guide: @Composable () -> Unit = {
         SerialRunsSection(container = container, onOpen = onOpenSerial)
         if (nextAction != null) {
@@ -223,6 +227,7 @@ fun HomeScreen(
                     hero()
                     banner()
                     stats()
+                    modeCard()
                     usageCard()
                 }
                 Column(Modifier.weight(1.1f), verticalArrangement = Arrangement.spacedBy(16.dp)) { guide() }
@@ -237,6 +242,7 @@ fun HomeScreen(
             hero()
             banner()
             stats()
+            modeCard()
             usageCard()
             guide()
         }

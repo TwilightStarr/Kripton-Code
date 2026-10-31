@@ -1,5 +1,6 @@
 package com.kriptoncod.app.data.run
 
+import com.kriptoncod.app.domain.ModeRuntime
 import com.kriptoncod.app.data.db.AiAccount
 import com.kriptoncod.app.domain.AccountHealth
 import com.kriptoncod.app.domain.AccountStatus
@@ -85,7 +86,7 @@ object PoolStatus {
                 untilMs = block?.until,
                 used24h = h?.requestTimes.orEmpty().count { it > t - AccountSelector.DAY_MS },
                 dailyLimit = a.dailyLimit?.takeIf { it > 0 },
-                unhealthy = AccountSelector.healthScore(h, t) < AccountSelector.UNHEALTHY_BELOW,
+                unhealthy = AccountSelector.healthScore(h, t) < ModeRuntime.current.unhealthyBelow,
                 order = orderOf[a.id],
             )
         }

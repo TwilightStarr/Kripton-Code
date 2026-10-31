@@ -66,6 +66,9 @@ object ExtraRoutes {
     const val PERMISSIONS = "permissions"
     const val USAGE = "usage"
 
+    /** Mod Merkezi: hazır/özel modlar, tek dokunuşla seçim ve düzenleme. */
+    const val MODES = "modes"
+
     /** Açık web sohbetlerini (akış ve seri mod) canlı izleme ekranı. */
     const val WEB_MONITOR = "webmonitor"
 

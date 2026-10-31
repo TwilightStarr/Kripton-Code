@@ -1,5 +1,6 @@
 package com.kriptoncod.app.data.run
 
+import com.kriptoncod.app.domain.ModeRuntime
 import com.kriptoncod.app.data.db.AiAccount
 import com.kriptoncod.app.domain.AccountHealth
 import com.kriptoncod.app.domain.AccountStatus
@@ -62,10 +63,11 @@ object AccountSelector {
 
     /** Devre kesici açıksa yeniden açılma zamanı; kapalıysa null. */
     fun breakerReopenAt(health: AccountHealth?, t: Long): Long? {
-        val streak = health?.recent.orEmpty().take(BREAKER_STREAK)
-        if (streak.size < BREAKER_STREAK) return null
+        val need = ModeRuntime.current.breakerStreak
+        val streak = health?.recent.orEmpty().take(need)
+        if (streak.size < need) return null
         if (!streak.all { it.outcome == UsageOutcome.TRANSIENT || it.outcome == UsageOutcome.UNAUTHORIZED }) return null
-        return (streak.first().at + BREAKER_COOLDOWN_MS).takeIf { it > t }
+        return (streak.first().at + ModeRuntime.current.breakerCooldownMs).takeIf { it > t }
     }
 
     /**
@@ -86,7 +88,7 @@ object AccountSelector {
      */
     fun healthScore(health: AccountHealth?, t: Long): Double {
         val counted = health?.recent.orEmpty()
-            .filter { it.outcome != UsageOutcome.RATE_LIMITED && it.at > t - HEALTH_WINDOW_MS }
+            .filter { it.outcome != UsageOutcome.RATE_LIMITED && it.at > t - ModeRuntime.current.healthWindowMs }
         if (counted.isEmpty()) return 1.0
         return counted.count { it.outcome == UsageOutcome.SUCCESS }.toDouble() / counted.size
     }
@@ -117,7 +119,7 @@ object AccountSelector {
 
     /** Havuzdaki hesapların seçilme sırası; [PoolStatus] da aynı sıralamayı gösterir. */
     internal fun ordering(health: Map<Long, AccountHealth>, t: Long): Comparator<AiAccount> = compareBy<AiAccount> { it.isBackup }
-        .thenBy { healthScore(health[it.id], t) < UNHEALTHY_BELOW }
+        .thenBy { healthScore(health[it.id], t) < ModeRuntime.current.unhealthyBelow }
         .thenByDescending { it.powerRank }
         .thenBy { health[it.id]?.recent?.firstOrNull()?.at ?: Long.MIN_VALUE }
         .thenBy { it.id }

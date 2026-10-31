@@ -88,6 +88,8 @@ fun RunLaunchDialog(
                         color = k.muted,
                     )
                 } else {
+                    Text(stringResource(R.string.modes_home_title), style = MaterialTheme.typography.labelLarge)
+                    ModePickerRow()
                     Text(stringResource(R.string.run_launch_repo_label), style = MaterialTheme.typography.labelLarge)
                     when (val state = repoState) {
                         RepoState.Loading -> {

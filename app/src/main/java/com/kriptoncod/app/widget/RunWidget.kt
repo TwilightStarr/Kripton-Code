@@ -106,7 +106,7 @@ class RunWidget : GlanceAppWidget() {
                 color = ACCENT,
                 backgroundColor = TRACK,
             )
-            if (node != null) {
+            if (node != null && run.total > 0) {
                 Spacer(GlanceModifier.height(2.dp))
                 Text(
                     context.getString(R.string.widget_progress, run.done, run.total),

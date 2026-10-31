@@ -1,5 +1,6 @@
 package com.kriptoncod.app.ui.navigation
 
+import com.kriptoncod.app.ui.screens.ModesScreen
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.core.FastOutLinearInEasing
@@ -189,9 +190,13 @@ fun AppRoot(
                                     onOpenRun = { id -> navController.navigate(ExtraRoutes.run(id)) },
                                     onOpenSerial = { id -> navController.navigate(ExtraRoutes.serial(id)) },
                                     onOpenUsage = { navController.navigate(ExtraRoutes.USAGE) },
+                                    onOpenModes = { navController.navigate(ExtraRoutes.MODES) },
                                     onOpenWebMonitor = { navController.navigate(ExtraRoutes.WEB_MONITOR) },
                                     onOpenWebChats = { navController.navigate(ExtraRoutes.WEB_CHATS) },
                                 )
+                            }
+                            composable(ExtraRoutes.MODES) {
+                                AdaptiveFrame(Adaptive.FormMaxWidth) { ModesScreen(container = container, onBack = { navController.popBackStack() }) }
                             }
                             composable(ExtraRoutes.WEB_MONITOR) {
                                 WebMonitorScreen(container = container, onBack = { navController.popBackStack() })
@@ -399,6 +404,7 @@ fun AppRoot(
                                         },
                                         onOpenGitHub = { navController.navigate(ExtraRoutes.GITHUB) },
                                         onOpenPermissions = { navController.navigate(ExtraRoutes.PERMISSIONS) },
+                                        onOpenModes = { navController.navigate(ExtraRoutes.MODES) },
                                     )
                                 }
                             }

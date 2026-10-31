@@ -1,5 +1,7 @@
 package com.kriptoncod.app.ui.screens
 
+import com.kriptoncod.app.ui.components.SerialProgressBar
+import com.kriptoncod.app.data.serial.SerialProgress
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -174,6 +176,8 @@ fun SerialLaunchDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Text(stringResource(R.string.serial_launch_info), style = MaterialTheme.typography.bodySmall, color = k.muted)
+                Text(stringResource(R.string.modes_home_title), style = MaterialTheme.typography.labelLarge)
+                ModePickerRow()
                 Text(stringResource(R.string.serial_launch_account), style = MaterialTheme.typography.labelLarge)
                 if (webAccounts.isEmpty()) {
                     Text(stringResource(R.string.serial_launch_no_accounts), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
@@ -250,7 +254,7 @@ fun SerialRunsSection(container: AppContainer, onOpen: (Long) -> Unit) {
                     Column(Modifier.weight(1f)) {
                         Text(s.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(
-                            stringResource(R.string.serial_progress, minOf(s.index + 1, s.total), s.total) + " · " + s.repo,
+                            SerialProgress.of(s).let { p -> stringResource(R.string.serial_progress_short, p.completed, p.total, p.percent) } + " · " + s.repo,
                             style = MaterialTheme.typography.bodySmall,
                             color = k.muted,
                             maxLines = 1,
@@ -312,10 +316,8 @@ fun SerialRunScreen(id: Long, container: AppContainer, onBack: () -> Unit, onOpe
                     KBadge(text = statusText(s.status), accent = accentOf(s.status))
                 }
                 Text("${s.repo}@${s.branch}", style = MaterialTheme.typography.bodySmall, color = k.muted)
-                Text(
-                    stringResource(R.string.serial_progress, minOf(s.index + 1, s.total), s.total) + (s.current?.let { " · ${it.title}" } ?: ""),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                SerialProgressBar(SerialProgress.of(s))
+                s.current?.let { Text(it.title, style = MaterialTheme.typography.bodyMedium) }
                 if (!s.status.isFinished) Text(phaseText(s.phase), style = MaterialTheme.typography.bodySmall, color = k.muted)
                 if (s.fixRound > 0) Text("CI: ${s.fixRound}", style = MaterialTheme.typography.bodySmall, color = k.muted)
                 if (s.message.isNotBlank()) Text(s.message, style = MaterialTheme.typography.bodySmall)
