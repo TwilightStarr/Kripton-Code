@@ -108,23 +108,31 @@ private val GROUPS: List<SettingGroup> = listOf(
 )
 
 /** Hazır modların adı/açıklaması uygulama diline göre; özel modlar kullanıcının yazdığı gibi. */
-fun ModeProfile.label(context: Context): String = if (!builtIn) name else when (id) {
-    ModeProfile.ID_BALANCED -> R.string.mode_name_balanced
-    ModeProfile.ID_FAST -> R.string.mode_name_fast
-    ModeProfile.ID_PATIENT -> R.string.mode_name_patient
-    ModeProfile.ID_SAVER -> R.string.mode_name_saver
-    ModeProfile.ID_STRICT -> R.string.mode_name_strict
-    else -> null
-}?.let { context.getString(it) } ?: name
+fun ModeProfile.label(context: Context): String = if (!builtIn) {
+    name
+} else {
+    when (id) {
+        ModeProfile.ID_BALANCED -> R.string.mode_name_balanced
+        ModeProfile.ID_FAST -> R.string.mode_name_fast
+        ModeProfile.ID_PATIENT -> R.string.mode_name_patient
+        ModeProfile.ID_SAVER -> R.string.mode_name_saver
+        ModeProfile.ID_STRICT -> R.string.mode_name_strict
+        else -> null
+    }?.let { context.getString(it) } ?: name
+}
 
-fun ModeProfile.about(context: Context): String = if (!builtIn) description else when (id) {
-    ModeProfile.ID_BALANCED -> R.string.mode_desc_balanced
-    ModeProfile.ID_FAST -> R.string.mode_desc_fast
-    ModeProfile.ID_PATIENT -> R.string.mode_desc_patient
-    ModeProfile.ID_SAVER -> R.string.mode_desc_saver
-    ModeProfile.ID_STRICT -> R.string.mode_desc_strict
-    else -> null
-}?.let { context.getString(it) } ?: description
+fun ModeProfile.about(context: Context): String = if (!builtIn) {
+    description
+} else {
+    when (id) {
+        ModeProfile.ID_BALANCED -> R.string.mode_desc_balanced
+        ModeProfile.ID_FAST -> R.string.mode_desc_fast
+        ModeProfile.ID_PATIENT -> R.string.mode_desc_patient
+        ModeProfile.ID_SAVER -> R.string.mode_desc_saver
+        ModeProfile.ID_STRICT -> R.string.mode_desc_strict
+        else -> null
+    }?.let { context.getString(it) } ?: description
+}
 
 /** Mod Merkezi: hazır modları tek dokunuşla seç, kendi modunu kopyala/düzenle, dışa/içe aktar. */
 @OptIn(ExperimentalLayoutApi::class)
@@ -445,8 +453,7 @@ private fun summaryLine(m: ModeProfile): String = stringResource(
     m.serialMaxFixRounds,
 )
 
-private fun copyName(context: Context, base: String): String =
-    context.getString(R.string.mode_copy_name, base).take(ModeProfile.Limits.NAME_MAX)
+private fun copyName(context: Context, base: String): String = context.getString(R.string.mode_copy_name, base).take(ModeProfile.Limits.NAME_MAX)
 
 private fun shareText(context: Context, text: String) {
     val send = Intent(Intent.ACTION_SEND).apply {

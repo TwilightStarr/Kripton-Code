@@ -43,7 +43,10 @@ class RunProgressTest {
     @Test fun mergeNodesWeighLessThanWorkNodes() {
         val jobs = listOf(
             job(JobKind.PLAN, JobState.DONE),
-            work(JobState.DONE), work(JobState.PENDING), work(JobState.PENDING), work(JobState.PENDING),
+            work(JobState.DONE),
+            work(JobState.PENDING),
+            work(JobState.PENDING),
+            work(JobState.PENDING),
             job(JobKind.FINAL_MERGE, JobState.PENDING),
         )
         // 1 / (4 + 0.25) = 0.2352...
