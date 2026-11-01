@@ -56,7 +56,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.app.ActivityCompat
-import androidx.core.app.DragAndDropPermissionsCompat
+import androidx.core.view.DragAndDropPermissionsCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kriptoncod.app.AppContainer
 import com.kriptoncod.app.R
@@ -584,7 +584,9 @@ private fun AiWindowContent(
             val entry = entries.firstOrNull { it.id == s.entryId && it.isLive }
             when {
                 entry == null -> Notice(stringResource(R.string.web_chats_closed), stringResource(R.string.web_chats_retry)) { hub.reopen(account) }
+
                 s.borrowed -> Notice(stringResource(R.string.web_chats_busy), stringResource(R.string.web_chats_open_monitor), onOpenMonitor)
+
                 else -> ChatPage(handle = container.webMonitor.handle(entry.id), installFileChooser = false, onFocus = onFocus)
             }
         }
