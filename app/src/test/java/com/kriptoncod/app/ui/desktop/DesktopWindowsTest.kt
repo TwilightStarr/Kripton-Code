@@ -162,11 +162,13 @@ class DesktopWindowsTest {
             assertEquals(n, boxes.size)
             boxes.forEach { assertTrue(it.x >= -0.01f && it.y >= -0.01f && it.right <= area.w + 0.01f && it.bottom <= area.h + 0.01f) }
             // Döşenen pencereler üst üste binmez.
-            for (i in boxes.indices) for (j in i + 1 until boxes.size) {
-                val a = boxes[i]
-                val b = boxes[j]
-                val overlap = a.x < b.right - 0.01f && b.x < a.right - 0.01f && a.y < b.bottom - 0.01f && b.y < a.bottom - 0.01f
-                assertFalse("n=$n $a $b", overlap)
+            for (i in boxes.indices) {
+                for (j in i + 1 until boxes.size) {
+                    val a = boxes[i]
+                    val b = boxes[j]
+                    val overlap = a.x < b.right - 0.01f && b.x < a.right - 0.01f && a.y < b.bottom - 0.01f && b.y < a.bottom - 0.01f
+                    assertFalse("n=$n $a $b", overlap)
+                }
             }
         }
     }
