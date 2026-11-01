@@ -23,8 +23,10 @@ fun AppsGlyph(tint: Color, size: Dp = 22.dp) {
     Canvas(Modifier.size(size)) {
         val s = this.size.minDimension
         val r = s * 0.085f
-        for (row in 0..2) for (col in 0..2) {
-            drawCircle(tint, r, Offset(s * (0.2f + 0.3f * col), s * (0.2f + 0.3f * row)))
+        for (row in 0..2) {
+            for (col in 0..2) {
+                drawCircle(tint, r, Offset(s * (0.2f + 0.3f * col), s * (0.2f + 0.3f * row)))
+            }
         }
     }
 }

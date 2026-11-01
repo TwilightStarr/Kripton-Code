@@ -92,7 +92,9 @@ private fun TextBody(file: File, kind: FileKind) {
     val l = loaded
     when {
         l == null -> Unit
+
         l.first.isEmpty() -> Text(stringResource(R.string.desktop_files_unreadable), Modifier.align(Alignment.Center).padding(16.dp))
+
         else -> Column(Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
             if (l.second) {
                 Text(
@@ -136,7 +138,13 @@ private fun ImageBody(file: File) {
                 .pointerInput(Unit) {
                     detectTransformGestures { _, pan, zoom, _ ->
                         scale = (scale * zoom).coerceIn(1f, 8f)
-                        if (scale == 1f) { ox = 0f; oy = 0f } else { ox += pan.x; oy += pan.y }
+                        if (scale == 1f) {
+                            ox = 0f
+                            oy = 0f
+                        } else {
+                            ox += pan.x
+                            oy += pan.y
+                        }
                     }
                 }
                 .graphicsLayer(scaleX = scale, scaleY = scale, translationX = ox, translationY = oy),

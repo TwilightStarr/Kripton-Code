@@ -142,7 +142,9 @@ fun OpenWithDialog(file: File, onDismiss: () -> Unit, onFailed: () -> Unit) {
                 val list = apps
                 when {
                     list == null -> Text("…")
+
                     list.isEmpty() -> Text(stringResource(R.string.desktop_files_no_app))
+
                     else -> LazyColumn(Modifier.heightIn(max = 320.dp)) {
                         items(list, key = { it.packageName }) { a ->
                             Text(
@@ -166,7 +168,10 @@ fun OpenWithDialog(file: File, onDismiss: () -> Unit, onFailed: () -> Unit) {
                         Text(stringResource(R.string.desktop_files_always, ext), style = MaterialTheme.typography.bodySmall)
                     }
                     if (FileOpen.remembered(context, file) != null) {
-                        TextButton(onClick = { FileOpen.forget(context, file); onDismiss() }) { Text(stringResource(R.string.desktop_files_forget_default, ext)) }
+                        TextButton(onClick = {
+                            FileOpen.forget(context, file)
+                            onDismiss()
+                        }) { Text(stringResource(R.string.desktop_files_forget_default, ext)) }
                     }
                 }
             }
