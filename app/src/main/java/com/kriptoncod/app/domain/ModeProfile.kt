@@ -98,8 +98,9 @@ data class ModeProfile(
     val unhealthyBelow: Double get() = unhealthyBelowPct / 100.0
 
     /** Aynı ayarlar mı (ad/açıklama/kimlik hariç)? "Hangi hazır moddayım" tespiti için. */
-    fun sameSettingsAs(other: ModeProfile): Boolean = copy(id = "", name = "", description = "", builtIn = false).coerced0() ==
-        other.copy(id = "", name = "", description = "", builtIn = false).coerced0()
+    fun sameSettingsAs(other: ModeProfile): Boolean =
+        copy(id = "", name = "", description = "", builtIn = false).coerced0() ==
+            other.copy(id = "", name = "", description = "", builtIn = false).coerced0()
 
     private fun coerced0(): ModeProfile = coerced().copy(id = "", name = "", description = "")
 
@@ -311,13 +312,7 @@ object ModeCodec {
         val seen = HashSet<String>()
         return mapNotNull { raw ->
             val p = raw.copy(builtIn = false).coerced()
-            if (ModeProfile.builtInById(p.id) != null) {
-                null
-            } else if (seen.add(p.id)) {
-                p
-            } else {
-                null
-            }
+            if (ModeProfile.builtInById(p.id) != null) null else if (seen.add(p.id)) p else null
         }.take(ModeProfile.Limits.MAX_CUSTOM)
     }
 }
