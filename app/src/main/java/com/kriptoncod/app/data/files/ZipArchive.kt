@@ -31,22 +31,15 @@ data class ZipRecord(
 class ZipArchive(root: File, private val now: () -> Long = System::currentTimeMillis) {
     private val dir = File(root, "zip-archive")
     private val indexFile = File(dir, "index.json")
-    private val json = Json {
-        ignoreUnknownKeys = true
-        encodeDefaults = true
-    }
+    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val lock = Any()
     private val _records = MutableStateFlow(load())
     val records: StateFlow<List<ZipRecord>> = _records
 
     private fun load(): List<ZipRecord> = try {
-        if (!indexFile.isFile) {
-            emptyList()
-        } else {
-            json.decodeFromString(ListSerializer(ZipRecord.serializer()), indexFile.readText())
-                .filter { File(dir, "${it.id}.zip").isFile }
-                .sortedByDescending { it.createdAt }
-        }
+        if (!indexFile.isFile) emptyList() else json.decodeFromString(ListSerializer(ZipRecord.serializer()), indexFile.readText())
+            .filter { File(dir, "${it.id}.zip").isFile }
+            .sortedByDescending { it.createdAt }
     } catch (_: Exception) {
         emptyList()
     }

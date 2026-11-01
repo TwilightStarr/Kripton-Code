@@ -58,6 +58,11 @@
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
 
+        <!-- ACRA'nın ek dosya sağlayıcısı kullanılmaz (yalnız yerel yazıcı var, ek dosya yok); kütüphanenin bildirimi kaldırılır. -->
+        <provider
+            android:name="org.acra.attachment.AcraContentProvider"
+            tools:node="remove" />
+
         <!-- Bildirimdeki Duraklat / Devam et / İptal düğmeleri (yalnız uygulamanın kendi PendingIntent'leri). -->
         <receiver
             android:name=".work.RunActionReceiver"

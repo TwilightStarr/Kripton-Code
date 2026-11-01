@@ -132,7 +132,15 @@ jobs:
           KEY_PASS: ${{ secrets.KEY_PASSWORD }}
         run: |
           if [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASS" ] && [ -n "$KEY_ALIAS_IN" ] && [ -n "$KEY_PASS" ]; then
-            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            # Telefondan yapıştırırken sığabilecek boşluk/satır sonu/tırnak karakterleri temizlenir.
+            printf '%s' "$KEYSTORE_B64" | tr -d ' \r\n"' | base64 -d > "$RUNNER_TEMP/release.keystore" || true
+            # Derleme dakikalarca sürmeden önce anahtarın gerçekten okunabildiğini doğrula.
+            if ! keytool -list -keystore "$RUNNER_TEMP/release.keystore" -storetype PKCS12 \
+                 -storepass "$KEYSTORE_PASS" -alias "$KEY_ALIAS_IN" >/dev/null 2>&1; then
+              echo "::error::Keystore okunamadı. KEYSTORE_BASE64 eksik/bozuk kopyalanmış, KEYSTORE_PASSWORD yanlış ya da KEY_ALIAS keystore'daki -alias ile aynı değil (büyük/küçük harf dahil)."
+              ls -l "$RUNNER_TEMP/release.keystore" || true
+              exit 1
+            fi
             echo "KEYSTORE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
             echo "KEYSTORE_PASSWORD=$KEYSTORE_PASS" >> "$GITHUB_ENV"
             echo "KEY_ALIAS=$KEY_ALIAS_IN" >> "$GITHUB_ENV"

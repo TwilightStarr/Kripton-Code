@@ -15,7 +15,6 @@ enum class Route(val path: String, @param:StringRes val label: Int, val icon: Im
     Home("home", R.string.nav_home, Icons.Filled.Home),
     Ais("ais", R.string.nav_ais, Icons.Filled.Face),
     Prompts("prompts", R.string.nav_prompts, Icons.Filled.Edit),
-
     /** Geçmiş + Zip'ler tek sekmede (iki alt sekme): alt menü 5 öğede kalır. */
     Archive("archive", R.string.nav_archive, Icons.AutoMirrored.Filled.List),
     Settings("settings", R.string.nav_settings, Icons.Filled.Settings),
