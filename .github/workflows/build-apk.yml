@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  BASE_VERSION: "0.1"   # major.minor; patch = toplam commit sayısı (otomatik artar)
+  BASE_VERSION: "0.1"   # major.minor; patch = önceki yayın etiketine göre her yayında +1 (otomatik)
 
 jobs:
   # Kod biçimi: ktlint CLI (Gradle/Kotlin sürümünden bağımsız). Şimdilik yalnız RAPORLAR, derlemeyi durdurmaz:
@@ -91,18 +91,66 @@ jobs:
           fi
           chmod +x gradlew
 
+      # Yama (patch) numarası commit sayısından DEĞİL, önceki yayın etiketlerinden (build-<major.minor>.<N>) türetilir.
+      # Commit sayısı bir yayında birden çok artabildiği için numara atlıyordu (1, 3, 5 ...); artık her yayın tam +1.
+      #  - Bu commit zaten etiketliyse (yeniden çalıştırma) aynı numara kullanılır.
+      #  - Etiket yoksa (ilk yayın / yeni major.minor) commit sayısından başlanır; versionCode hep artan kalır.
       - name: Sürüm numarasını hesapla
         id: ver
         run: |
-          COUNT=$(git rev-list --count HEAD)
+          git fetch --tags --force --quiet || true
+          PREFIX="build-${BASE_VERSION}."
+          max_n() {
+            local best="" t n
+            while read -r t; do
+              n="${t#"$PREFIX"}"
+              [[ "$n" =~ ^[0-9]+$ ]] || continue
+              if [ -z "$best" ] || [ "$n" -gt "$best" ]; then best="$n"; fi
+            done
+            echo "$best"
+          }
+          HERE=$(git tag --points-at HEAD --list "${PREFIX}*" | max_n)
+          if [ -n "$HERE" ]; then
+            COUNT="$HERE"
+          else
+            LAST=$(git tag --list "${PREFIX}*" | max_n)
+            if [ -n "$LAST" ]; then COUNT=$((LAST + 1)); else COUNT=$(git rev-list --count HEAD); fi
+          fi
           echo "name=${BASE_VERSION}.${COUNT}" >> "$GITHUB_OUTPUT"
           echo "code=${COUNT}" >> "$GITHUB_OUTPUT"
           echo "Sürüm: ${BASE_VERSION}.${COUNT} (versionCode ${COUNT})"
+
+      # Release imza secret'ları (Settings > Secrets > Actions) tanımlıysa main push'unda APK release anahtarıyla imzalanır;
+      # yoksa (ya da PR/fork'ta) eskisi gibi sabit debug imzası kullanılır.
+      - name: Release imzasını hazırla
+        id: sign
+        if: github.event_name != 'pull_request'
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS_IN: ${{ secrets.KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASS" ] && [ -n "$KEY_ALIAS_IN" ] && [ -n "$KEY_PASS" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            echo "KEYSTORE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+            echo "KEYSTORE_PASSWORD=$KEYSTORE_PASS" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=$KEY_ALIAS_IN" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=$KEY_PASS" >> "$GITHUB_ENV"
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::İmza secret'ları tanımlı değil; debug imzalı APK yayınlanacak."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Derle, lint, birim test
         run: |
           set -o pipefail
           ./gradlew --no-daemon --continue assembleDebug lintDebug testDebugUnitTest -PversionName=${{ steps.ver.outputs.name }} -PversionCode=${{ steps.ver.outputs.code }} --stacktrace 2>&1 | tee build.log
+          # İmza varsa release APK'sı da derlenir (R8 küçültmeli, release anahtarıyla imzalı).
+          if [ "${{ steps.sign.outputs.signed }}" = "true" ]; then
+            ./gradlew --no-daemon assembleRelease -PversionName=${{ steps.ver.outputs.name }} -PversionCode=${{ steps.ver.outputs.code }} --stacktrace 2>&1 | tee -a build.log
+          fi
 
       # Hata özeti: 8500 satırlık günlük yerine yalnız hata satırlarını içeren küçük bir dosya.
       - name: Hata özeti çıkar
@@ -158,7 +206,12 @@ jobs:
         run: |
           mkdir -p dist
           OUT="dist/KriptonCod-${VERSION}.apk"
-          cp "$(ls app/build/outputs/apk/debug/*.apk | head -n 1)" "$OUT"
+          if [ "${{ steps.sign.outputs.signed }}" = "true" ]; then
+            SRC=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
+          else
+            SRC=$(ls app/build/outputs/apk/debug/*.apk | head -n 1)
+          fi
+          cp "$SRC" "$OUT"
           ( cd dist && sha256sum "KriptonCod-${VERSION}.apk" > "KriptonCod-${VERSION}.apk.sha256" )
           ls -l dist
 
