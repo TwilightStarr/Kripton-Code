@@ -49,8 +49,7 @@ object FileOps {
         return f
     }
 
-    private fun intoItself(src: File, dstDir: File): Boolean =
-        src.isDirectory && FileBrowse.isInside(dstDir, src)
+    private fun intoItself(src: File, dstDir: File): Boolean = src.isDirectory && FileBrowse.isInside(dstDir, src)
 
     fun copy(src: File, dstDir: File): Result<File> = runCatching {
         require(src.exists()) { "Kaynak yok" }
@@ -80,8 +79,7 @@ object FileOps {
     }
 
     /** Ad boş olamaz; "/" ve "\u0000" içeremez; "." / ".." olamaz; aynı klasörde başka bir öğenin adı olamaz. */
-    fun validName(name: String): Boolean =
-        name.isNotBlank() && name != "." && name != ".." && '/' !in name && '\u0000' !in name && name.length <= 255
+    fun validName(name: String): Boolean = name.isNotBlank() && name != "." && name != ".." && '/' !in name && '\u0000' !in name && name.length <= 255
 
     fun rename(f: File, newName: String): Result<File> = runCatching {
         val n = newName.trim()
@@ -100,7 +98,12 @@ object FileOps {
         var size = 0L
         var count = 0
         dir.walkTopDown().onEnter { !java.nio.file.Files.isSymbolicLink(it.toPath()) }
-            .forEach { if (it.isFile) { size += it.length(); count++ } }
+            .forEach {
+                if (it.isFile) {
+                    size += it.length()
+                    count++
+                }
+            }
         return size to count
     }
 

@@ -25,8 +25,7 @@ object PrivProtocol {
         return PrivError.entries.firstOrNull { it.name == code } ?: PrivError.UNKNOWN
     }
 
-    fun formatEntry(name: String, isDir: Boolean, size: Long, modified: Long): String =
-        "${if (isDir) 'd' else 'f'}\t${if (isDir) 0L else size}\t$modified\t$name"
+    fun formatEntry(name: String, isDir: Boolean, size: Long, modified: Long): String = "${if (isDir) 'd' else 'f'}\t${if (isDir) 0L else size}\t$modified\t$name"
 
     /** Bozuk satırları atlar; sıralama servisten gelen sırayı korur. */
     fun parseEntries(text: String): List<PrivEntry> = text.lineSequence().mapNotNull { line ->
@@ -57,8 +56,7 @@ object PrivProtocol {
      * Bir paketin veri klasörü. Root (uid 0) ise gerçek /data/data; adb (shell) ise yalnız harici
      * `Android/data/<paket>` okunabilir (/data/data shell'e kapalıdır).
      */
-    fun appDataPath(pkg: String, uid: Int, externalRoot: String): String =
-        if (uid == 0) "/data/data/$pkg" else "${externalRoot.trimEnd('/')}/Android/data/$pkg"
+    fun appDataPath(pkg: String, uid: Int, externalRoot: String): String = if (uid == 0) "/data/data/$pkg" else "${externalRoot.trimEnd('/')}/Android/data/$pkg"
 
     /** Kullanıcıya gösterilecek erişim düzeyi. */
     fun modeOf(uid: Int?): PrivMode = when (uid) {

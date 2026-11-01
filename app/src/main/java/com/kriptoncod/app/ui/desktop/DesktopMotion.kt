@@ -107,8 +107,11 @@ internal fun TabLayer(
             .offset { IntOffset(if (visible || presence.value > 0.001f) 0 else OFFSCREEN_PX, 0) }
             .zIndex(
                 when {
-                    closing -> 3f // kapanan sekme küçülürken altındaki komşu görünür
+                    closing -> 3f
+
+                    // kapanan sekme küçülürken altındaki komşu görünür
                     visible -> 2f
+
                     else -> 0f
                 },
             )
@@ -175,8 +178,7 @@ internal fun rememberSystemAnimatorScale(follow: Boolean): Float {
     return if (follow) scale else 1f
 }
 
-private fun readAnimatorScale(context: Context): Float =
-    runCatching { Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) }.getOrDefault(1f)
+private fun readAnimatorScale(context: Context): Float = runCatching { Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) }.getOrDefault(1f)
 
 /**
  * Fare/dokunmatik yüzeyin SAĞ tuşuna basılınca [onClick] çağrılır (uzun basışın yanında, bilgisayar fareli kullanıcılar için
