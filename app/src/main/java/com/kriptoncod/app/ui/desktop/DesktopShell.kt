@@ -584,9 +584,7 @@ private fun AiWindowContent(
             val entry = entries.firstOrNull { it.id == s.entryId && it.isLive }
             when {
                 entry == null -> Notice(stringResource(R.string.web_chats_closed), stringResource(R.string.web_chats_retry)) { hub.reopen(account) }
-
                 s.borrowed -> Notice(stringResource(R.string.web_chats_busy), stringResource(R.string.web_chats_open_monitor), onOpenMonitor)
-
                 else -> ChatPage(handle = container.webMonitor.handle(entry.id), installFileChooser = false, onFocus = onFocus)
             }
         }
