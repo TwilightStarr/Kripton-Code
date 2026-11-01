@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -79,7 +80,7 @@ fun FileViewer(file: File, kind: FileKind, onClose: () -> Unit, onOpenExternal: 
 }
 
 @Composable
-private fun TextBody(file: File, kind: FileKind) {
+private fun BoxScope.TextBody(file: File, kind: FileKind) {
     val loaded by produceState<Pair<List<String>, Boolean>?>(null, file.path) {
         value = withContext(Dispatchers.IO) {
             runCatching {
@@ -92,9 +93,7 @@ private fun TextBody(file: File, kind: FileKind) {
     val l = loaded
     when {
         l == null -> Unit
-
         l.first.isEmpty() -> Text(stringResource(R.string.desktop_files_unreadable), Modifier.align(Alignment.Center).padding(16.dp))
-
         else -> Column(Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
             if (l.second) {
                 Text(
@@ -110,7 +109,7 @@ private fun TextBody(file: File, kind: FileKind) {
 }
 
 @Composable
-private fun ImageBody(file: File) {
+private fun BoxScope.ImageBody(file: File) {
     val bmp by produceState<Bitmap?>(null, file.path) {
         value = withContext(Dispatchers.IO) {
             runCatching {
@@ -138,13 +137,7 @@ private fun ImageBody(file: File) {
                 .pointerInput(Unit) {
                     detectTransformGestures { _, pan, zoom, _ ->
                         scale = (scale * zoom).coerceIn(1f, 8f)
-                        if (scale == 1f) {
-                            ox = 0f
-                            oy = 0f
-                        } else {
-                            ox += pan.x
-                            oy += pan.y
-                        }
+                        if (scale == 1f) { ox = 0f; oy = 0f } else { ox += pan.x; oy += pan.y }
                     }
                 }
                 .graphicsLayer(scaleX = scale, scaleY = scale, translationX = ox, translationY = oy),
@@ -154,7 +147,7 @@ private fun ImageBody(file: File) {
 
 /** PdfRenderer aynı anda tek sayfa açar ve iş parçacığı güvenli değildir: sayfalar sırayla, kilit altında çizilir. */
 @Composable
-private fun PdfBody(file: File) {
+private fun BoxScope.PdfBody(file: File) {
     val holder by produceState<PdfHolder?>(null, file.path) {
         value = withContext(Dispatchers.IO) {
             runCatching {

@@ -86,7 +86,7 @@ android {
     testOptions { unitTests { isIncludeAndroidResources = true } }
 
     // Room şema dışa aktarımı (migration testleri bu JSON'ları okur; repoya commit edilir).
-    sourceSets.getByName("test").assets.srcDir("$projectDir/schemas")
+    sourceSets.getByName("test").assets.directories.add("schemas")
 
     packaging {
         resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" }

@@ -100,10 +100,15 @@
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
 
-        <!-- ACRA'nın ek dosya sağlayıcısı kullanılmaz (yalnız yerel yazıcı var, ek dosya yok); kütüphanenin bildirimi kaldırılır. -->
+        <!-- ACRA'nın ek dosya sağlayıcısı kullanılmaz (yalnız yerel yazıcı var, ek dosya yok): devre dışı bırakılır, dışa açılmaz.
+             "remove" yerine "merge" kullanılır: birim test manifest birleştirmesinde kütüphane bildirimi bulunmadığından
+             "remove" orada "no other declaration present" uyarısı veriyordu. -->
         <provider
             android:name="org.acra.attachment.AcraContentProvider"
-            tools:node="remove" />
+            android:authorities="${applicationId}.acra"
+            android:enabled="false"
+            android:exported="false"
+            tools:node="merge" />
 
         <!-- Dosyayı başka uygulamada açmak için salt okuma URI'si (yalnız kullanıcı "Aç" dediğinde, seçilen uygulamaya). -->
         <provider

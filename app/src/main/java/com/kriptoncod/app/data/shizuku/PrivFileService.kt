@@ -22,9 +22,7 @@ class PrivFileService : IPrivFileService.Stub() {
         return runCatching {
             when {
                 !dir.exists() -> PrivProtocol.error(PrivError.NOT_FOUND)
-
                 !dir.isDirectory -> PrivProtocol.error(PrivError.NOT_DIR)
-
                 else -> {
                     val names = dir.list() ?: return PrivProtocol.error(PrivError.DENIED)
                     names.sorted()

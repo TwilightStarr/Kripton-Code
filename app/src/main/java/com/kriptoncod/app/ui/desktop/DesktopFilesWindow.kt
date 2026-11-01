@@ -184,7 +184,6 @@ fun DesktopFilesWindow(
 
                 FileSource.SYSTEM -> when (val r = ShizukuFiles.list(dirPath, showHidden)) {
                     is PrivListing.Ok -> FilesListing.Entries(r.entries.map { FileBrowse.fromPriv(File(dirPath), it) })
-
                     // Shizuku yok / izin yok / erişim reddedildi: normal erişimle okunabiliyorsa onu göster (zarif geri düşüş).
                     is PrivListing.Fail -> FileBrowse.list(File(dirPath), showHidden).takeIf { it.isNotEmpty() }
                         ?.let { FilesListing.Entries(it) } ?: FilesListing.Failed(r.reason)
@@ -199,7 +198,8 @@ fun DesktopFilesWindow(
         }
     }
 
-    fun appPath(pkg: String): String = if (pkg == context.packageName) context.applicationInfo.dataDir else ShizukuFiles.appDataPath(pkg, storageRoot.path)
+    fun appPath(pkg: String): String =
+        if (pkg == context.packageName) context.applicationInfo.dataDir else ShizukuFiles.appDataPath(pkg, storageRoot.path)
 
     val scope = rememberCoroutineScope()
     var viewing by remember { mutableStateOf<Pair<File, FileKind>?>(null) }
@@ -238,7 +238,6 @@ fun DesktopFilesWindow(
             val kind = FileOps.kindOf(f.name)
             when (kind) {
                 FileKind.TEXT, FileKind.MARKDOWN, FileKind.PDF, FileKind.IMAGE -> viewing = f to kind
-
                 else -> {
                     val pkg = FileOpen.remembered(context, f)
                     if (pkg == null || !FileOpen.launch(context, f, pkg)) openWith = f
@@ -250,23 +249,11 @@ fun DesktopFilesWindow(
     fun act(a: FileAction, e: FileEntry) {
         when (a) {
             FileAction.OPEN -> if (e.isDir) dirPath = e.file.path else openFile(e)
-
             FileAction.OPEN_WITH -> scope.launch { readable(e.file)?.let { openWith = it } ?: say(context.getString(R.string.desktop_files_unreadable)) }
-
-            FileAction.COPY -> {
-                clip = e.file to false
-                say(context.getString(R.string.desktop_files_copied, e.name))
-            }
-
-            FileAction.MOVE -> {
-                clip = e.file to true
-                say(context.getString(R.string.desktop_files_cut, e.name))
-            }
-
+            FileAction.COPY -> { clip = e.file to false; say(context.getString(R.string.desktop_files_copied, e.name)) }
+            FileAction.MOVE -> { clip = e.file to true; say(context.getString(R.string.desktop_files_cut, e.name)) }
             FileAction.RENAME -> renaming = e.file
-
             FileAction.DELETE -> deleting = e.file
-
             FileAction.PROPS -> props = e
         }
     }
@@ -291,124 +278,123 @@ fun DesktopFilesWindow(
             onClose = { viewing = null },
             onOpenExternal = { openWith = shownViewing.first },
         )
-    } else {
-        Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-            if (shizukuEnabled) {
-                Row(
-                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    FilterChip(
-                        selected = source == FileSource.STORAGE,
-                        onClick = { pickSource(FileSource.STORAGE) },
-                        label = { Text(stringResource(R.string.desktop_files_src_storage), maxLines = 1) },
-                    )
-                    FilterChip(
-                        selected = source == FileSource.SYSTEM,
-                        onClick = { pickSource(FileSource.SYSTEM) },
-                        label = { Text(stringResource(R.string.desktop_files_src_system), maxLines = 1) },
-                    )
-                    FilterChip(
-                        selected = source == FileSource.APPS,
-                        onClick = { pickSource(FileSource.APPS) },
-                        label = { Text(stringResource(R.string.desktop_files_src_apps), maxLines = 1) },
-                    )
-                }
-            }
-            if (source != FileSource.APPS) {
-                Toolbar(
-                    dir = dir,
-                    root = root,
-                    homeLabel = if (source == FileSource.SYSTEM) systemLabel else homeLabel,
-                    showHidden = showHidden,
-                    showExt = showExt,
-                    gridView = gridView,
-                    quickDirs = if (source == FileSource.SYSTEM) {
-                        buildList {
-                            if (sz.mode == PrivMode.ROOT) add("/data/data" to File("/data/data"))
-                            add("Android/data" to File(storageRoot, "Android/data"))
-                            add("/data/local/tmp" to File("/data/local/tmp"))
-                        }
-                    } else {
-                        listOf("Download", "Documents", "Pictures", "DCIM").map { it to File(storageRoot, it) }
-                    },
-                    onNavigate = { dirPath = it.path },
-                    onToggleHidden = { hiddenOverride = !showHidden },
-                    onToggleExt = { extOverride = !showExt },
-                    onToggleGrid = { gridOverride = !gridView },
-                    onRefresh = { tick++ },
+    } else
+    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        if (shizukuEnabled) {
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FilterChip(
+                    selected = source == FileSource.STORAGE,
+                    onClick = { pickSource(FileSource.STORAGE) },
+                    label = { Text(stringResource(R.string.desktop_files_src_storage), maxLines = 1) },
+                )
+                FilterChip(
+                    selected = source == FileSource.SYSTEM,
+                    onClick = { pickSource(FileSource.SYSTEM) },
+                    label = { Text(stringResource(R.string.desktop_files_src_system), maxLines = 1) },
+                )
+                FilterChip(
+                    selected = source == FileSource.APPS,
+                    onClick = { pickSource(FileSource.APPS) },
+                    label = { Text(stringResource(R.string.desktop_files_src_apps), maxLines = 1) },
                 )
             }
-            HorizontalDivider(color = KriptonTheme.colors.nodeBorder.copy(alpha = 0.5f))
-            Box(Modifier.weight(1f).fillMaxWidth()) {
-                val l = listing
-                when {
-                    source == FileSource.STORAGE && !access.granted -> AccessCard(onGrant = access.request)
-
-                    l == null -> Unit
-
-                    l is FilesListing.Packages -> LazyColumn(Modifier.fillMaxSize()) {
-                        items(l.names, key = { it }) { pkg ->
-                            Column(
-                                Modifier.fillMaxWidth().clickable {
-                                    sourceKey = FileSource.SYSTEM.name
-                                    dirPath = appPath(pkg)
-                                }.padding(horizontal = 16.dp, vertical = 10.dp),
-                            ) {
-                                Text(pkg, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            }
-                            HorizontalDivider(color = KriptonTheme.colors.nodeBorder.copy(alpha = 0.25f))
-                        }
+        }
+        if (source != FileSource.APPS) {
+            Toolbar(
+                dir = dir,
+                root = root,
+                homeLabel = if (source == FileSource.SYSTEM) systemLabel else homeLabel,
+                showHidden = showHidden,
+                showExt = showExt,
+                gridView = gridView,
+                quickDirs = if (source == FileSource.SYSTEM) {
+                    buildList {
+                        if (sz.mode == PrivMode.ROOT) add("/data/data" to File("/data/data"))
+                        add("Android/data" to File(storageRoot, "Android/data"))
+                        add("/data/local/tmp" to File("/data/local/tmp"))
                     }
+                } else {
+                    listOf("Download", "Documents", "Pictures", "DCIM").map { it to File(storageRoot, it) }
+                },
+                onNavigate = { dirPath = it.path },
+                onToggleHidden = { hiddenOverride = !showHidden },
+                onToggleExt = { extOverride = !showExt },
+                onToggleGrid = { gridOverride = !gridView },
+                onRefresh = { tick++ },
+            )
+        }
+        HorizontalDivider(color = KriptonTheme.colors.nodeBorder.copy(alpha = 0.5f))
+        Box(Modifier.weight(1f).fillMaxWidth()) {
+            val l = listing
+            when {
+                source == FileSource.STORAGE && !access.granted -> AccessCard(onGrant = access.request)
 
-                    l is FilesListing.Failed -> PrivProblem(l.reason, sz, onRetry = { tick++ })
+                l == null -> Unit
 
-                    l is FilesListing.Entries && l.list.isEmpty() -> Text(
-                        stringResource(R.string.desktop_files_empty),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = KriptonTheme.colors.muted,
-                        modifier = Modifier.align(Alignment.Center),
-                    )
-
-                    l is FilesListing.Entries && gridView -> LazyVerticalGrid(GridCells.Adaptive(96.dp), Modifier.fillMaxSize()) {
-                        gridItems(l.list, key = { it.file.path }) { e ->
-                            FileItem(e, true, showExt, drag, aiTargets, areaOrigin, { dirPath = e.file.path }, onSend, onDragDrop, source == FileSource.STORAGE) { a -> act(a, e) }
+                l is FilesListing.Packages -> LazyColumn(Modifier.fillMaxSize()) {
+                    items(l.names, key = { it }) { pkg ->
+                        Column(
+                            Modifier.fillMaxWidth().clickable {
+                                sourceKey = FileSource.SYSTEM.name
+                                dirPath = appPath(pkg)
+                            }.padding(horizontal = 16.dp, vertical = 10.dp),
+                        ) {
+                            Text(pkg, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
-                    }
-
-                    l is FilesListing.Entries -> LazyColumn(Modifier.fillMaxSize()) {
-                        items(l.list, key = { it.file.path }) { e ->
-                            FileItem(e, false, showExt, drag, aiTargets, areaOrigin, { dirPath = e.file.path }, onSend, onDragDrop, source == FileSource.STORAGE) { a -> act(a, e) }
-                        }
+                        HorizontalDivider(color = KriptonTheme.colors.nodeBorder.copy(alpha = 0.25f))
                     }
                 }
-            }
-            val pending = clip
-            if (pending != null && source == FileSource.STORAGE) {
-                HorizontalDivider(color = KriptonTheme.colors.nodeBorder.copy(alpha = 0.5f))
-                Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        stringResource(if (pending.second) R.string.desktop_files_clip_move else R.string.desktop_files_clip_copy, pending.first.name),
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
-                    TextButton(onClick = { paste() }) { Text(stringResource(R.string.desktop_files_paste), maxLines = 1) }
-                    TextButton(onClick = { clip = null }) { Text(stringResource(R.string.desktop_files_cancel), maxLines = 1) }
-                }
-            }
-            if (showHints && (access.granted || source != FileSource.STORAGE)) {
-                HorizontalDivider(color = KriptonTheme.colors.nodeBorder.copy(alpha = 0.5f))
-                Text(
-                    stringResource(R.string.desktop_files_hint),
-                    style = MaterialTheme.typography.labelSmall,
+
+                l is FilesListing.Failed -> PrivProblem(l.reason, sz, onRetry = { tick++ })
+
+                l is FilesListing.Entries && l.list.isEmpty() -> Text(
+                    stringResource(R.string.desktop_files_empty),
+                    style = MaterialTheme.typography.bodyMedium,
                     color = KriptonTheme.colors.muted,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.align(Alignment.Center),
                 )
+
+                l is FilesListing.Entries && gridView -> LazyVerticalGrid(GridCells.Adaptive(96.dp), Modifier.fillMaxSize()) {
+                    gridItems(l.list, key = { it.file.path }) { e ->
+                        FileItem(e, true, showExt, drag, aiTargets, areaOrigin, { dirPath = e.file.path }, onSend, onDragDrop, source == FileSource.STORAGE) { a -> act(a, e) }
+                    }
+                }
+
+                l is FilesListing.Entries -> LazyColumn(Modifier.fillMaxSize()) {
+                    items(l.list, key = { it.file.path }) { e ->
+                        FileItem(e, false, showExt, drag, aiTargets, areaOrigin, { dirPath = e.file.path }, onSend, onDragDrop, source == FileSource.STORAGE) { a -> act(a, e) }
+                    }
+                }
             }
+        }
+        val pending = clip
+        if (pending != null && source == FileSource.STORAGE) {
+            HorizontalDivider(color = KriptonTheme.colors.nodeBorder.copy(alpha = 0.5f))
+            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(if (pending.second) R.string.desktop_files_clip_move else R.string.desktop_files_clip_copy, pending.first.name),
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = { paste() }) { Text(stringResource(R.string.desktop_files_paste), maxLines = 1) }
+                TextButton(onClick = { clip = null }) { Text(stringResource(R.string.desktop_files_cancel), maxLines = 1) }
+            }
+        }
+        if (showHints && (access.granted || source != FileSource.STORAGE)) {
+            HorizontalDivider(color = KriptonTheme.colors.nodeBorder.copy(alpha = 0.5f))
+            Text(
+                stringResource(R.string.desktop_files_hint),
+                style = MaterialTheme.typography.labelSmall,
+                color = KriptonTheme.colors.muted,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 
@@ -673,10 +659,7 @@ private fun FileItem(
             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                 @Composable
                 fun entryItem(label: Int, action: FileAction) {
-                    DropdownMenuItem(text = { Text(stringResource(label)) }, onClick = {
-                        menu = false
-                        onAction(action)
-                    })
+                    DropdownMenuItem(text = { Text(stringResource(label)) }, onClick = { menu = false; onAction(action) })
                 }
                 entryItem(R.string.desktop_files_open, FileAction.OPEN)
                 if (!entry.isDir) entryItem(R.string.desktop_files_open_with, FileAction.OPEN_WITH)

@@ -148,7 +148,8 @@ object FileBrowse {
     }
 
     /** Shizuku ile okunan dosya: [FileEntry]'ye eşler ([dir] altındaki öğe). */
-    fun fromPriv(dir: File, e: com.kriptoncod.app.data.shizuku.PrivEntry): FileEntry = FileEntry(File(dir, e.name), e.name, e.isDir, e.size, e.modified)
+    fun fromPriv(dir: File, e: com.kriptoncod.app.data.shizuku.PrivEntry): FileEntry =
+        FileEntry(File(dir, e.name), e.name, e.isDir, e.size, e.modified)
 
     private fun canonical(f: File): File = runCatching { f.canonicalFile }.getOrDefault(f.absoluteFile)
 }

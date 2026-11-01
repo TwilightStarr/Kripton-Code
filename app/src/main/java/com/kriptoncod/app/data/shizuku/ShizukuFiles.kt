@@ -225,7 +225,8 @@ object ShizukuFiles {
     }
 
     /** Bir paketin veri klasörünün yolu (erişim düzeyine göre). */
-    fun appDataPath(pkg: String, externalRoot: String): String = PrivProtocol.appDataPath(pkg, _state.value.uid ?: -1, externalRoot)
+    fun appDataPath(pkg: String, externalRoot: String): String =
+        PrivProtocol.appDataPath(pkg, _state.value.uid ?: -1, externalRoot)
 
     /**
      * Dosyayı salt okunur akış olarak açar; yalnız servis zaten bağlıysa çalışır (Dosyalar penceresi listelerken bağlar).
