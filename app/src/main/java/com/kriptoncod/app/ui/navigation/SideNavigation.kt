@@ -1,5 +1,6 @@
 package com.kriptoncod.app.ui.navigation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,13 +9,14 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationDrawerItemDefaults
-import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.PermanentDrawerSheet
@@ -116,14 +118,19 @@ fun SideNavigation(
                 }
             }
         } else {
-            NavigationRail(
-                containerColor = scheme.surface,
-                header = {
-                    Spacer(Modifier.height(8.dp))
-                    KriptonCodLogo(logoSize = 40.dp, busy = LocalAppBusy.current)
-                    Spacer(Modifier.height(8.dp))
-                },
+            // Kaydırılabilir ray: telefon yatayken (düşük yükseklik) alttaki öğeler (AI sohbetleri, Masaüstü) kesilmesin.
+            Column(
+                Modifier
+                    .fillMaxHeight()
+                    .width(80.dp)
+                    .background(scheme.surface)
+                    .verticalScroll(rememberScrollState())
+                    .padding(vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
+                KriptonCodLogo(logoSize = 40.dp, busy = LocalAppBusy.current)
+                Spacer(Modifier.height(4.dp))
                 Route.entries.forEach { route ->
                     NavigationRailItem(
                         selected = isSelected(route),

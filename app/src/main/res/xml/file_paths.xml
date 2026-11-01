@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dosyalar penceresi: seçilen dosyayı başka bir uygulamada açmak için (FileProvider, salt okuma izni verilir). -->
+<paths>
+    <root-path name="root" path="." />
+</paths>

@@ -12,3 +12,8 @@
 # ACRA yerel gönderici: ServiceLoader ile (META-INF/services) bulunur; ACRA ayrıca BuildConfig'i yansıtma ile okur.
 -keep class com.kriptoncod.app.data.crash.LocalCrashSenderFactory { <init>(); }
 -keep class com.kriptoncod.app.BuildConfig { *; }
+
+# Shizuku kullanıcı servisi: Shizuku sınıfı ada göre (yansıma ile) örnekler; AIDL Stub'ı da korunur.
+-keep class com.kriptoncod.app.data.shizuku.PrivFileService { <init>(...); }
+-keep class com.kriptoncod.app.data.shizuku.IPrivFileService { *; }
+-keep class com.kriptoncod.app.data.shizuku.IPrivFileService$Stub { *; }

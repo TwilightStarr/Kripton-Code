@@ -4,10 +4,10 @@ import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.view.DragEvent
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -19,12 +19,7 @@ import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -44,15 +39,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.app.ActivityCompat
@@ -60,13 +56,13 @@ import androidx.core.view.DragAndDropPermissionsCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kriptoncod.app.AppContainer
 import com.kriptoncod.app.R
+import com.kriptoncod.app.data.settings.DesktopPrefs
+import com.kriptoncod.app.data.shizuku.ShizukuFiles
 import com.kriptoncod.app.data.db.AiAccount
 import com.kriptoncod.app.data.web.WebChatHub
 import com.kriptoncod.app.domain.ThemePreference
 import com.kriptoncod.app.ui.adaptive.windowClassFor
-import com.kriptoncod.app.ui.components.KriptonCodLogo
 import com.kriptoncod.app.ui.navigation.AppRoot
-import com.kriptoncod.app.ui.screens.Avatar
 import com.kriptoncod.app.ui.screens.ChatPage
 import com.kriptoncod.app.ui.screens.Notice
 import com.kriptoncod.app.ui.screens.WebFileChooserEffect
@@ -74,8 +70,13 @@ import com.kriptoncod.app.ui.screens.tint
 import com.kriptoncod.app.ui.screens.webProvider
 import com.kriptoncod.app.ui.theme.KriptonTheme
 import com.kriptoncod.app.ui.theme.LocalAnimationsEnabled
+import com.kriptoncod.app.ui.theme.LocalMotionScale
+import com.kriptoncod.app.ui.theme.MotionScale
 import java.io.File
+import java.time.LocalDate
 import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -88,39 +89,58 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * Masaüstü modu: tam ekran, taşınabilir/boyutlandırılabilir pencereler, görev çubuğu, dosya yöneticisi.
+ * Masaüstü modu: Linux başlatıcısı (launcher) düzeni.
  *
- *  - AI web arayüzleri sade pencerelerdir: başlıktan sürükle = taşı, kenar/köşeden sürükle = boyutlandır, çift dokun = büyüt,
- *    kenara sürükle = yarım/çeyrek/tam ekrana yaslan. İçlerine normal klavyeyle yazılır (klavye açılınca alan küçülür, pencere sığdırılır).
- *  - "Kripton Code" penceresi uygulamanın bütün ekranlarını (AppRoot) barındırır.
- *  - Dosyalar penceresi (tüm dosyalara erişim izniyle) dosyaları AI penceresine sürükle-bırak ya da menüyle verir;
- *    başka uygulamadan bırakılan dosyalar da kabul edilir (bölünmüş ekran).
- *  - Yan yana uygulama: kurulu bir uygulama Android bölünmüş ekranında Kripton Code'un yanında açılır.
- *  - Pencere düzeni kaydedilir; mod bir kez açılınca uygulama hep bununla başlar ([DesktopModeHost]).
- *
- * Pencere kuralları [Desktop] içindedir (ekrandan bağımsız); harici ekran/DeX desteği için yalnız yeni bir alan verilir.
+ *  - Alt çubuk (dock): sol baştaki düğme uygulama başlatıcıyı açar; yanında sabitlenmiş uygulamalar ve açık sekmeler durur.
+ *    İstediğin uygulamayı başlatıcıdaki raptiyeyle (ya da uzun basışla) çubuğa ekler/çıkarırsın.
+ *  - Uygulamalar SEKME gibi açılır: aynı anda tek sekme tüm alanı kaplar; diğerleri arkada açık kalır (AI oturumları ve
+ *    sohbetler kaybolmaz). Sekme yokken boş masaüstü (saat + sabit uygulamalar) görünür.
+ *  - AI web arayüzleri, "Dosyalar" ve "Kripton Code" (uygulamanın bütün ekranları) birer sekmedir.
+ *  - Cihazdaki diğer Android uygulamaları tam ekran açılır ve çubukta açık sekme olarak izlenir (Android bir uygulamayı
+ *    başka uygulamanın içine gömmeye izin vermez); çubuktan dokununca yeniden öne gelir.
+ *  - Dosyalar sekmesinde bir dosyayı basılı tutup alt çubuktaki açık AI sekmesine sürükle ya da satır menüsüyle gönder.
+ *  - Sekmeler ve sabit uygulamalar kaydedilir; mod bir kez açılınca uygulama hep bununla başlar ([DesktopModeHost]).
  */
-@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class, FlowPreview::class)
 @Composable
 fun DesktopShell(
     container: AppContainer,
     themePreference: ThemePreference,
     onThemeChange: (ThemePreference) -> Unit,
+    /** Ana ekran (launcher) olarak açıldı: geri tuşu uygulamadan çıkarmaz. */
+    isHome: Boolean = false,
+) {
+    // Pencere/sekme hareketlerinin ölçeği: genel "Animasyonlar" anahtarı (sistem "animasyonları kaldır" dahil) VE masaüstünün
+    // "Pencere animasyonları" anahtarı açıksa oynar; süreler "geçiş hızı" ve (isteğe bağlı) sistem Animatör ölçeğiyle ayarlanır.
+    val prefs by container.themeStore.desktopPrefsFlow.collectAsStateWithLifecycle(initialValue = DesktopPrefs())
+    val animationsOn = LocalAnimationsEnabled.current && prefs.windowAnimations
+    val systemScale = rememberSystemAnimatorScale(prefs.followSystemAnimatorScale)
+    val motion = remember(animationsOn, prefs.motionSpeed, systemScale) { MotionScale(animationsOn, prefs.motionSpeed, systemScale) }
+    CompositionLocalProvider(LocalMotionScale provides motion) {
+        DesktopShellContent(container, themePreference, onThemeChange, isHome)
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class, FlowPreview::class)
+@Composable
+private fun DesktopShellContent(
+    container: AppContainer,
+    themePreference: ThemePreference,
+    onThemeChange: (ThemePreference) -> Unit,
+    isHome: Boolean,
 ) {
     val context = LocalContext.current
-    val density = LocalDensity.current
-    val d = density.density
     val k = KriptonTheme.colors
     val scheme = MaterialTheme.colorScheme
     val scope = rememberCoroutineScope()
     val store = container.themeStore
     val hub = container.webChatHub
-    val animations = LocalAnimationsEnabled.current
     val desktopMode = LocalDesktopMode.current
 
-    val fullscreen by store.desktopFullscreenFlow.collectAsStateWithLifecycle(initialValue = true)
+    val prefs by store.desktopPrefsFlow.collectAsStateWithLifecycle(initialValue = DesktopPrefs())
+    val fullscreen = prefs.fullscreen
+    val shizukuFiles by store.shizukuFilesFlow.collectAsStateWithLifecycle(initialValue = false)
     DesktopImmersiveEffect(fullscreen)
-    // Dosya seçici bütün pencereler için TEK kez kurulur; içerideki ekranlar kendi seçicisini kurmaz.
+    // Dosya seçici bütün sekmeler için TEK kez kurulur; içerideki ekranlar kendi seçicisini kurmaz.
     WebFileChooserEffect()
 
     val accountsState: List<AiAccount>? by container.aiAccountRepository.observeAll().collectAsStateWithLifecycle(initialValue = null)
@@ -128,32 +148,45 @@ fun DesktopShell(
     val rowsById = remember(aiRows) { aiRows.associateBy { it.id } }
 
     var state by remember { mutableStateOf(DesktopState()) }
-    var area by remember { mutableStateOf(DSize(0f, 0f)) }
     var areaRoot by remember { mutableStateOf(Offset.Zero) }
+    var areaSize by remember { mutableStateOf(IntSize.Zero) }
+    // Kapanış animasyonu oynayan sekmeler: durumdan hemen çıkar, içerik animasyon bitene dek bileşimde kalır.
+    var closing by remember { mutableStateOf<List<DesktopTab>>(emptyList()) }
+    // Açılışta geri yüklenen sekmeler "ikondan büyüme" animasyonu oynamaz; yalnız sonradan açılanlar oynar.
+    val restoredIds = remember { HashSet<Int>() }
     var restored by remember { mutableStateOf(false) }
-    var interacting by remember { mutableStateOf(false) }
-    var snapPreview by remember { mutableStateOf<WinMode?>(null) }
-    var pointerDp by remember { mutableStateOf(Offset.Zero) }
-    var startMenu by remember { mutableStateOf(false) }
-    var sbsOpen by remember { mutableStateOf(false) }
+    var launcher by remember { mutableStateOf(false) }
     var showPerm by remember { mutableStateOf(false) }
     var toastText by remember { mutableStateOf<String?>(null) }
     var minuteOfDay by remember { mutableIntStateOf(0) }
+    var dateText by remember { mutableStateOf("") }
+    var installed by remember { mutableStateOf<List<InstalledApp>?>(null) }
     val fileDrag = remember { FileDrag() }
+    // Alt çubuk: tam ekranda (ayara bağlı) ya da "otomatik gizle" açıkken gizlenir; alt kenardaki tutamaçla geçici açılır.
+    var dockPeek by remember { mutableStateOf(false) }
+    var dockPeekTick by remember { mutableIntStateOf(0) }
     val opened = remember { mutableSetOf<Long>() }
     var dropPermissions by remember { mutableStateOf<DragAndDropPermissionsCompat?>(null) }
     val filesAccess = rememberFilesAccess()
     val imeVisible = WindowInsets.isImeVisible
+    val dockHidden = (prefs.fullscreen && prefs.fullscreenHidesDock) || prefs.dockAutoHide
+    val dockVisible = !dockHidden || dockPeek || launcher || fileDrag.file != null
+    val dockPad = if (imeVisible || !dockVisible) 0.dp else DOCK_HEIGHT + 2.dp
+    LaunchedEffect(dockPeek, dockPeekTick, launcher) {
+        if (dockPeek && !launcher) {
+            kotlinx.coroutines.delay(5_000)
+            dockPeek = false
+        }
+    }
+    val dockBounds = remember { HashMap<String, Rect>() }
+    val filesLabel = stringResource(R.string.desktop_app_files)
+    val kriptonLabel = stringResource(R.string.desktop_app_kripton)
 
     // ---- Kayıt / geri yükleme ----
-    LaunchedEffect(area.w > 0f) {
-        if (area.w <= 0f || restored) return@LaunchedEffect
+    LaunchedEffect(Unit) {
         val saved = DesktopCodec.decode(store.desktopLayoutFlow.first())
-        state = if (saved.windows.isEmpty()) {
-            Desktop.open(DesktopState(), DesktopApps.KRIPTON, area, mode = WinMode.MAXIMIZED)
-        } else {
-            saved
-        }
+        state = saved ?: Desktop.open(DesktopState(pinned = DesktopApps.DEFAULT_PINNED), DesktopApps.KRIPTON)
+        restoredIds += state.tabs.map { it.id }
         restored = true
         if (!store.desktopPermissionAsked.first()) {
             if (FilesAccess.isGranted(context)) store.setDesktopPermissionAsked(true) else showPerm = true
@@ -163,24 +196,33 @@ fun DesktopShell(
         if (!restored) return@LaunchedEffect
         snapshotFlow { DesktopCodec.encode(state) }.distinctUntilChanged().drop(1).debounce(500).collect { store.setDesktopLayout(it) }
     }
-    // Saat
+    // Cihazdaki uygulamalar: açılışta ve başlatıcı her açıldığında yenilenir (yeni kurulanlar görünsün).
+    LaunchedEffect(launcher) {
+        if (launcher || installed == null) {
+            installed = withContext(Dispatchers.Default) { runCatching { InstalledApps.list(context) }.getOrDefault(emptyList()) }
+        }
+    }
+    // Saat ve tarih
     LaunchedEffect(Unit) {
+        val dateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)
         while (true) {
             val t = LocalTime.now()
             minuteOfDay = t.hour * 60 + t.minute
+            dateText = LocalDate.now().format(dateFormat)
             delay(15_000)
         }
     }
-    // Silinen hesapların pencerelerini kapat (liste yüklenmeden önce hiçbir şey silinmez).
+    // Silinen hesapların sekmelerini ve sabitlerini kaldır (liste yüklenmeden önce hiçbir şey silinmez).
     LaunchedEffect(accountsState, restored) {
         if (accountsState == null || !restored) return@LaunchedEffect
-        state.windows.forEach { w ->
-            val id = DesktopApps.aiAccountId(w.app)
-            if (id != null && id !in rowsById) state = Desktop.close(state, w.id)
+        state.tabs.mapNotNull { DesktopApps.aiAccountId(it.app) }.filter { it !in rowsById }.forEach { id ->
+            opened.remove(id)
+            hub.release(id)
         }
+        state = Desktop.retain(state) { app -> DesktopApps.aiAccountId(app)?.let { it in rowsById } ?: true }
     }
-    // Açık AI pencerelerinin web oturumunu aç (zaten açıksa hub bir şey yapmaz).
-    val aiIds = state.windows.mapNotNull { DesktopApps.aiAccountId(it.app) }
+    // Açık AI sekmelerinin web oturumunu aç (zaten açıksa hub bir şey yapmaz).
+    val aiIds = state.tabs.mapNotNull { DesktopApps.aiAccountId(it.app) }
     LaunchedEffect(aiIds, accountsState) {
         aiIds.forEach { id ->
             if (opened.add(id)) {
@@ -198,38 +240,67 @@ fun DesktopShell(
         }
     }
 
-    // ---- Pencere eylemleri ----
-    fun open(app: String, mode: WinMode = WinMode.NORMAL) {
-        if (area.w <= 0f) return
-        state = Desktop.open(state, app, area, mode = mode)
-        startMenu = false
-    }
-
-    fun closeWindow(win: DesktopWindow) {
-        DesktopApps.aiAccountId(win.app)?.let { id ->
-            opened.remove(id)
-            hub.release(id)
+    // ---- Uygulama / sekme eylemleri ----
+    fun openApp(app: String) {
+        launcher = false
+        val pkg = DesktopApps.packageOf(app)
+        if (pkg == null) {
+            state = Desktop.open(state, app)
+            return
         }
-        state = Desktop.close(state, win.id)
+        // Cihazdaki uygulama: tam ekran açılır; çubukta açık sekme olarak izlenir.
+        val activity = context.findActivity()
+        if (activity != null && InstalledApps.launch(activity, pkg)) {
+            state = Desktop.open(state, app)
+        } else {
+            toastText = context.getString(R.string.desktop_app_launch_failed)
+        }
     }
 
-    fun moveStart(win: DesktopWindow, startLocalPx: Offset, titleWidthPx: Float) {
-        val eff = Desktop.boxOf(win, area)
-        pointerDp = Offset(eff.x + startLocalPx.x / d, eff.y + startLocalPx.y / d)
-        state = Desktop.beginMove(state, win.id, area, startLocalPx.x / titleWidthPx)
-        interacting = true
+    // Pencere animasyonla kapanır (aşağı küçülerek): sekme durumdan hemen çıkar, içerik animasyon bitene dek bileşimde kalır;
+    // AI oturumu animasyon bitince bırakılır (kapanırken sayfa boşalmasın).
+    fun closeTab(id: Int) {
+        val tab = state.byId(id) ?: return
+        if (!DesktopApps.isExternal(tab.app)) closing = closing + tab
+        state = Desktop.close(state, id)
     }
 
-    fun moveDelta(id: Int, dx: Float, dy: Float) {
-        state = Desktop.moveBy(state, id, dx, dy, area)
-        pointerDp += Offset(dx, dy)
-        snapPreview = Desktop.snapZone(pointerDp.x, pointerDp.y, area)
+    fun finishClose(tab: DesktopTab) {
+        closing = closing.filter { it.id != tab.id }
+        val accountId = DesktopApps.aiAccountId(tab.app) ?: return
+        // Aynı hesap bu arada yeniden açıldıysa oturum korunur.
+        if (state.byApp(tab.app) == null) {
+            opened.remove(accountId)
+            hub.release(accountId)
+        }
     }
 
-    fun moveEnd(id: Int) {
-        snapPreview?.let { state = Desktop.setMode(state, id, it) }
-        snapPreview = null
-        interacting = false
+    fun closeApp(app: String) {
+        state.tabsOf(app).forEach { closeTab(it.id) }
+    }
+
+    fun closeAllTabs() {
+        state.tabs.toList().forEach { closeTab(it.id) }
+    }
+
+    /** Yeni açılan sekmenin "ikondan büyüme" başlangıç noktası: alt çubuktaki simgesinin merkezi (yoksa alt orta). */
+    fun revealOriginFor(app: String): () -> TransformOrigin = {
+        val r = dockBounds[app]
+        val w = areaSize.width.toFloat()
+        val h = areaSize.height.toFloat()
+        if (r == null || w <= 0f || h <= 0f) {
+            TransformOrigin(0.5f, 1f)
+        } else {
+            TransformOrigin(((r.center.x - areaRoot.x) / w).coerceIn(0f, 1f), ((r.center.y - areaRoot.y) / h).coerceIn(0f, 2f))
+        }
+    }
+
+    fun trackBounds(app: String, rect: Rect?) {
+        if (rect == null) {
+            dockBounds.remove(app)
+        } else {
+            dockBounds[app] = rect
+        }
     }
 
     // ---- Dosyayı AI sayfasına verme ----
@@ -256,10 +327,18 @@ fun DesktopShell(
     }
 
     fun sendFile(file: File, accountId: Long) {
-        if (file.length() > FileBrowse.MAX_UPLOAD_BYTES) {
-            toastText = context.getString(R.string.desktop_upload_too_big, file.name, FileBrowse.humanSize(FileBrowse.MAX_UPLOAD_BYTES))
-        } else {
-            sendToAi(accountId, file.name) { FileBrowse.readForUpload(file) }
+        scope.launch {
+            // Normal erişimle okunabiliyorsa eskisi gibi; okunamıyorsa (örn. /data/data) ve Shizuku bağlıysa onun akışıyla.
+            val direct = withContext(Dispatchers.IO) { file.canRead() }
+            val size = withContext(Dispatchers.IO) { if (direct) file.length() else ShizukuFiles.sizeOf(file.path) ?: 0L }
+            when {
+                size > FileBrowse.MAX_UPLOAD_BYTES ->
+                    toastText = context.getString(R.string.desktop_upload_too_big, file.name, FileBrowse.humanSize(FileBrowse.MAX_UPLOAD_BYTES))
+
+                direct -> sendToAi(accountId, file.name) { FileBrowse.readForUpload(file) }
+
+                else -> sendToAi(accountId, file.name) { FileBrowse.readStream(file.name, null, { ShizukuFiles.openRead(file.path) }) }
+            }
         }
     }
 
@@ -274,23 +353,53 @@ fun DesktopShell(
         return true
     }
 
-    /** Uygulama içi sürüklemede parmağın altındaki (en üstteki) pencere AI penceresiyse o. */
-    fun aiWindowAt(pointerPx: Offset): DesktopWindow? {
-        val x = pointerPx.x / d
-        val y = pointerPx.y / d
-        val top = state.windows.asReversed().firstOrNull { !it.minimized && Desktop.boxOf(it, area).contains(x, y) }
-        return top?.takeIf { DesktopApps.aiAccountId(it.app) != null }
+    /** Dosya sürüklenirken parmağın altındaki alt çubuk öğesi açık bir AI sekmesiyse onun anahtarı. */
+    fun dockAiAt(pointerPx: Offset): String? {
+        val p = pointerPx + areaRoot
+        return dockBounds.entries.firstOrNull { (app, rect) ->
+            DesktopApps.aiAccountId(app) != null && state.byApp(app) != null && rect.contains(p)
+        }?.key
     }
 
-    val hoverWin = if (fileDrag.file != null) aiWindowAt(fileDrag.pointer) else null
-    val focusedId = state.focused?.id
-    val openApps = state.windows.map { it.app }.toSet()
+    // ---- Uygulama bilgisi (ad, renk, simge) ----
+    val installedByPkg = installed?.associateBy { it.packageName }
 
-    BackHandler(enabled = startMenu || sbsOpen || showPerm) {
-        when {
-            showPerm -> showPerm = false
-            sbsOpen -> sbsOpen = false
-            else -> startMenu = false
+    fun infoOf(app: String): AppInfo? {
+        val aiId = DesktopApps.aiAccountId(app)
+        if (aiId != null) {
+            val account = rowsById[aiId] ?: return null
+            val provider = account.webProvider() ?: return null
+            return AppInfo(app, account.displayName, provider.tint(), provider)
+        }
+        if (app == DesktopApps.FILES) return AppInfo(app, filesLabel, scheme.primary)
+        if (app == DesktopApps.KRIPTON) return AppInfo(app, kriptonLabel, scheme.primary)
+        val pkg = DesktopApps.packageOf(app) ?: return null
+        val label = installedByPkg?.get(pkg)?.label ?: return null
+        return AppInfo(app, label, scheme.primary)
+    }
+
+    val activeId = state.activeId
+    val dockItems = Desktop.dock(state).mapNotNull { e ->
+        infoOf(e.app)?.let { info ->
+            // Aynı uygulamanın birden çok penceresi: kartlarda "Dosyalar · 2" gibi numaralanır.
+            val tabs = e.tabIds.mapIndexed { i, id ->
+                val label = if (e.grouped) context.getString(R.string.desktop_tab_window_label, info.title, i + 1) else info.title
+                DockTab(id, label, id == activeId)
+            }
+            DockItem(info, e.tabId, e.pinned, tabs.any { it.active }, tabs, DesktopApps.allowsMultiple(e.app))
+        }
+    }
+    val openApps = state.tabs.map { it.app }.toSet()
+    val pinnedSet = state.pinned.toSet()
+    val dropHover = if (fileDrag.file != null) dockAiAt(fileDrag.pointer) else null
+
+    // Ana ekran olarak: geri tuşu masaüstünden çıkmaz (yalnız açık katmanları kapatır).
+    BackHandler(enabled = isHome) { }
+    BackHandler(enabled = launcher || showPerm) {
+        if (showPerm) {
+            showPerm = false
+        } else {
+            launcher = false
         }
     }
 
@@ -305,8 +414,10 @@ fun DesktopShell(
                     Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .onGloballyPositioned { areaRoot = it.positionInRoot() }
-                        .onSizeChanged { area = DSize(it.width / d, it.height / d) }
+                        .onGloballyPositioned {
+                            areaRoot = it.positionInRoot()
+                            areaSize = it.size
+                        }
                         .drawBehind {
                             // Hafif nokta ızgarası: masaüstü dokusu.
                             val step = 36.dp.toPx()
@@ -321,86 +432,72 @@ fun DesktopShell(
                             }
                         },
                 ) {
-                    if (state.windows.none { !it.minimized } && restored) {
-                        Text(
-                            stringResource(R.string.desktop_empty),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = k.muted,
-                            modifier = Modifier.align(Alignment.Center).padding(32.dp),
+                    // Hiçbir sekme görünmüyorsa: boş masaüstü.
+                    if (restored && state.active == null) {
+                        DesktopHome(
+                            clock = formatClock(minuteOfDay),
+                            date = dateText,
+                            pinned = state.pinned.mapNotNull { infoOf(it) },
+                            openApps = openApps,
+                            onOpen = { openApp(it.app) },
                         )
                     }
 
-                    val zOrder = state.windows.mapIndexed { i, w -> w.id to (i + 1).toFloat() }.toMap()
+                    // Bütün sekmeler bileşimde kalır; yalnız görünen sekme ekrandadır (diğerleri ekran dışında, saydam).
                     CompositionLocalProvider(LocalFileChooserOwnedByShell provides true) {
-                        state.windows.sortedBy { it.id }.forEach { win ->
-                            key(win.id) {
-                                val aiId = DesktopApps.aiAccountId(win.app)
-                                val account = aiId?.let { rowsById[it] }
-                                val provider = account?.webProvider()
-                                val tint = provider?.tint() ?: scheme.primary
-                                val title = when {
-                                    aiId != null -> account?.displayName ?: "AI"
-                                    win.app == DesktopApps.FILES -> stringResource(R.string.desktop_app_files)
-                                    else -> stringResource(R.string.desktop_app_kripton)
-                                }
-                                WindowFrame(
-                                    win = win,
-                                    area = area,
-                                    z = zOrder[win.id] ?: 1f,
-                                    focused = focusedId == win.id,
-                                    tint = tint,
-                                    title = title,
-                                    animate = animations && !interacting,
-                                    dropHover = hoverWin?.id == win.id,
-                                    dropLabel = stringResource(R.string.desktop_drop_here, title),
-                                    acceptSystemDrop = aiId != null,
-                                    onSystemDrop = { ev -> aiId != null && handleSystemDrop(aiId, ev) },
-                                    onFocus = { state = Desktop.focus(state, win.id) },
-                                    onMinimize = { state = Desktop.minimize(state, win.id) },
-                                    onToggleMax = { state = Desktop.toggleMaximize(state, win.id) },
-                                    onClose = { closeWindow(win) },
-                                    onMoveStart = { p, w -> moveStart(state.byId(win.id) ?: win, p, w) },
-                                    onMove = { dx, dy -> moveDelta(win.id, dx, dy) },
-                                    onMoveEnd = { moveEnd(win.id) },
-                                    onResizeStart = { interacting = true },
-                                    onResize = { edges, dx, dy -> state = Desktop.resizeBy(state, win.id, edges, dx, dy, area) },
-                                    onResizeEnd = { interacting = false },
-                                    icon = {
-                                        when {
-                                            provider != null -> Avatar(provider, 22.dp)
-                                            win.app == DesktopApps.FILES -> FolderGlyph(scheme.primary, 22.dp)
-                                            else -> KriptonCodLogo(logoSize = 22.dp)
-                                        }
-                                    },
-                                    titleActions = {
-                                        if (account != null) {
-                                            IconButton(onClick = { hub.reopen(account) }, modifier = Modifier.size(34.dp)) {
-                                                Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.web_chats_reload), modifier = Modifier.size(18.dp))
-                                            }
-                                        }
-                                    },
+                        // Kapanmakta olan sekmeler de çizilir (animasyon bitene dek); anahtar aynı kaldığı için içerik korunur.
+                        val closingIds = closing.map { it.id }.toSet()
+                        val layers = (state.tabs + closing.filter { c -> state.tabs.none { it.id == c.id } })
+                            .filter { !DesktopApps.isExternal(it.app) }
+                            .sortedBy { it.id }
+                        layers.forEach { tab ->
+                            key(tab.id) {
+                                val visible = tab.id == activeId
+                                val aiId = DesktopApps.aiAccountId(tab.app)
+                                TabLayer(
+                                    visible = visible,
+                                    closing = tab.id in closingIds,
+                                    revealOrigin = if (tab.id in restoredIds) null else revealOriginFor(tab.app),
+                                    onClosed = { finishClose(tab) },
+                                    background = scheme.background,
                                 ) {
                                     when {
-                                        aiId != null -> AiWindowContent(
-                                            accountId = aiId,
-                                            account = account,
-                                            container = container,
-                                            onOpenMonitor = { open(DesktopApps.KRIPTON) },
-                                            onFocus = { state = Desktop.focus(state, win.id) },
-                                        )
+                                        aiId != null -> {
+                                            val account = rowsById[aiId]
+                                            val title = account?.displayName ?: "AI"
+                                            AiDropArea(
+                                                label = stringResource(R.string.desktop_drop_here, title),
+                                                tint = account?.webProvider()?.tint() ?: scheme.primary,
+                                                onSystemDrop = { ev -> handleSystemDrop(aiId, ev) },
+                                            ) {
+                                                AiWindowContent(
+                                                    accountId = aiId,
+                                                    account = account,
+                                                    container = container,
+                                                    onOpenMonitor = { openApp(DesktopApps.KRIPTON) },
+                                                )
+                                            }
+                                        }
 
-                                        win.app == DesktopApps.FILES -> DesktopFilesWindow(
+                                        tab.app == DesktopApps.FILES -> DesktopFilesWindow(
                                             drag = fileDrag,
-                                            aiTargets = state.windows.mapNotNull { w ->
-                                                DesktopApps.aiAccountId(w.app)?.let { id -> rowsById[id]?.let { AiTarget(id, it.displayName) } }
+                                            aiTargets = state.tabs.mapNotNull { t ->
+                                                DesktopApps.aiAccountId(t.app)?.let { id -> rowsById[id]?.let { AiTarget(id, it.displayName) } }
                                             },
                                             areaOrigin = { areaRoot },
+                                            shizukuEnabled = shizukuFiles,
+                                            showHints = prefs.showHints,
+                                            defaultHidden = prefs.filesHidden,
+                                            defaultExt = prefs.filesExt,
+                                            defaultGrid = prefs.filesGrid,
                                             onSend = { f, id -> sendFile(f, id) },
-                                            onDragDrop = { f -> aiWindowAt(fileDrag.pointer)?.let { w -> DesktopApps.aiAccountId(w.app)?.let { sendFile(f, it) } } },
+                                            onDragDrop = { f ->
+                                                dockAiAt(fileDrag.pointer)?.let { app -> DesktopApps.aiAccountId(app)?.let { sendFile(f, it) } }
+                                            },
                                         )
 
                                         else -> BoxWithConstraints(Modifier.fillMaxSize()) {
-                                            // Pencere genişliğine göre telefon/tablet düzeni (ekran genişliğine göre değil).
+                                            // Sekme genişliğine göre telefon/tablet düzeni (ekran genişliğine göre değil).
                                             AppRoot(
                                                 themePreference = themePreference,
                                                 onThemeChange = onThemeChange,
@@ -413,111 +510,109 @@ fun DesktopShell(
                             }
                         }
                     }
-
-                    snapPreview?.let { zone -> Desktop.modeBox(zone, area)?.let { SnapPreview(it, scheme.primary) } }
-
-                    // Sürüklenen dosyanın parmağı izleyen etiketi.
-                    fileDrag.file?.let { f ->
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = scheme.surface,
-                            tonalElevation = 0.dp,
-                            modifier = Modifier
-                                .zIndex(5000f)
-                                .offset { IntOffset(fileDrag.pointer.x.roundToInt() - 24, fileDrag.pointer.y.roundToInt() - 56) },
-                        ) {
-                            Text(f.name, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), maxLines = 1)
-                        }
-                    }
                 }
 
-                if (!imeVisible) {
-                    val items = state.windows.sortedBy { it.id }.map { w ->
-                        val aiId = DesktopApps.aiAccountId(w.app)
-                        val account = aiId?.let { rowsById[it] }
-                        val provider = account?.webProvider()
-                        val tint = provider?.tint() ?: scheme.primary
-                        TaskItem(
-                            id = w.id,
-                            title = when {
-                                aiId != null -> account?.displayName ?: "AI"
-                                w.app == DesktopApps.FILES -> stringResource(R.string.desktop_app_files)
-                                else -> stringResource(R.string.desktop_app_kripton)
-                            },
-                            focused = focusedId == w.id,
-                            minimized = w.minimized,
-                            tint = tint,
-                            icon = {
-                                when {
-                                    provider != null -> Avatar(provider, 22.dp)
-                                    w.app == DesktopApps.FILES -> FolderGlyph(scheme.primary, 22.dp)
-                                    else -> KriptonCodLogo(logoSize = 22.dp)
-                                }
-                            },
-                        )
-                    }
-                    Taskbar(
-                        items = items,
-                        startOpen = startMenu,
+                if (!imeVisible && dockVisible) {
+                    Dock(
+                        items = dockItems,
+                        launcherOpen = launcher,
+                        desktopShown = state.active == null,
                         clock = formatClock(minuteOfDay),
                         fullscreen = fullscreen,
-                        onStart = { startMenu = !startMenu },
-                        onItem = { id ->
-                            state = Desktop.toggleFromTaskbar(state, id)
-                            startMenu = false
+                        showLabels = prefs.dockLabels,
+                        showClock = prefs.showClock,
+                        dropHoverApp = dropHover,
+                        hasOpenTabs = state.tabs.isNotEmpty(),
+                        onLauncher = { dockPeekTick++; launcher = !launcher },
+                        onItem = { item ->
+                            dockPeekTick++
+                            launcher = false
+                            val tabId = item.tabId
+                            when {
+                                // Harici uygulamaya dokunmak onu yeniden öne getirir.
+                                DesktopApps.isExternal(item.info.app) -> openApp(item.info.app)
+                                // Görünen sekmede değilse öne getirir (grupta: görünen ya da ilk pencere); açık değilse açar.
+                                !item.active && tabId != null -> {
+                                    state = Desktop.activate(state, tabId)
+                                }
+
+                                !item.active -> openApp(item.info.app)
+                                // Zaten görünen grupta yeniden dokunmak sıradaki pencereye geçer; tek pencerede bir şey yapmaz.
+                                item.grouped -> {
+                                    state = Desktop.cycleInGroup(state, item.info.app)
+                                }
+
+                                else -> Unit
+                            }
                         },
-                        onSideBySide = {
-                            startMenu = false
-                            sbsOpen = true
+                        onClose = { item -> item.tabId?.let { closeTab(it) } },
+                        onTogglePin = { item -> state = Desktop.togglePin(state, item.info.app) },
+                        onMovePin = { item, delta -> state = Desktop.movePinned(state, item.info.app, delta) },
+                        onReload = { item ->
+                            DesktopApps.aiAccountId(item.info.app)?.let { id -> rowsById[id]?.let { hub.reopen(it) } }
+                        },
+                        onTabActivate = { id -> state = Desktop.activate(state, id) },
+                        onTabClose = { id -> closeTab(id) },
+                        onNewWindow = { item ->
+                            launcher = false
+                            state = Desktop.openNew(state, item.info.app)
+                        },
+                        onCloseApp = { item -> closeApp(item.info.app) },
+                        onCloseAll = { closeAllTabs() },
+                        onShowDesktop = {
+                            launcher = false
+                            state = Desktop.showDesktop(state)
                         },
                         onToggleFullscreen = { scope.launch { store.setDesktopFullscreen(!fullscreen) } },
+                        onBounds = { app, rect -> trackBounds(app, rect) },
                     )
                 }
             }
 
-            if (startMenu && !imeVisible) {
-                Box(Modifier.fillMaxSize().padding(bottom = TASKBAR_HEIGHT + 2.dp)) {
-                    StartMenu(
-                        aiRows = aiRows,
+            if (launcher) {
+                Box(Modifier.fillMaxSize().padding(bottom = dockPad)) {
+                    Launcher(
+                        kripton = listOfNotNull(infoOf(DesktopApps.KRIPTON), infoOf(DesktopApps.FILES)),
+                        ai = aiRows.mapNotNull { infoOf(DesktopApps.ai(it.id)) },
+                        installed = installed?.map { AppInfo(DesktopApps.pkg(it.packageName), it.label, scheme.primary) },
                         openApps = openApps,
+                        pinned = pinnedSet,
                         fullscreen = fullscreen,
-                        onOpenAi = { open(DesktopApps.ai(it.id)) },
-                        onOpenFiles = { open(DesktopApps.FILES) },
-                        onOpenKripton = { open(DesktopApps.KRIPTON) },
-                        onSideBySide = {
-                            startMenu = false
-                            sbsOpen = true
-                        },
-                        onTile = {
-                            state = Desktop.tile(state, area)
-                            startMenu = false
-                        },
-                        onCascade = {
-                            state = Desktop.cascade(state, area)
-                            startMenu = false
-                        },
-                        onShowDesktop = {
-                            state = Desktop.minimizeAll(state)
-                            startMenu = false
-                        },
+                        onOpen = { openApp(it.app) },
+                        onTogglePin = { state = Desktop.togglePin(state, it.app) },
                         onToggleFullscreen = { scope.launch { store.setDesktopFullscreen(!fullscreen) } },
+                        onSetHome = if (isHome || HomeRole.isDefault(context)) {
+                            null
+                        } else {
+                            {
+                                launcher = false
+                                HomeRole.request(context)
+                            }
+                        },
                         onExit = {
-                            startMenu = false
+                            launcher = false
                             desktopMode.requestExit()
                         },
-                        onDismiss = { startMenu = false },
+                        onDismiss = { launcher = false },
                     )
                 }
+            }
+
+            if (!dockVisible && !imeVisible) {
+                DockHandle(
+                    onReveal = { dockPeek = true; dockPeekTick++ },
+                    modifier = Modifier.align(Alignment.BottomCenter).zIndex(8000f),
+                )
             }
 
             toastText?.let { msg ->
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = scheme.surface,
-                    border = androidx.compose.foundation.BorderStroke(1.5.dp, k.nodeBorder),
+                    border = BorderStroke(1.5.dp, k.nodeBorder),
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = TASKBAR_HEIGHT + 16.dp, start = 16.dp, end = 16.dp)
+                        .padding(bottom = (if (dockVisible) DOCK_HEIGHT else 0.dp) + 16.dp, start = 16.dp, end = 16.dp)
                         .zIndex(9000f),
                 ) {
                     Text(msg, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp))
@@ -525,19 +620,18 @@ fun DesktopShell(
             }
         }
 
-        if (sbsOpen) {
-            SideBySidePicker(
-                onDismiss = { sbsOpen = false },
-                onPick = { app ->
-                    sbsOpen = false
-                    val activity = context.findActivity()
-                    if (activity == null || !SideBySide.launch(activity, app.packageName)) {
-                        Toast.makeText(context, R.string.desktop_sbs_failed, Toast.LENGTH_SHORT).show()
-                    } else if (!activity.isInMultiWindowMode) {
-                        Toast.makeText(context, R.string.desktop_sbs_not_split, Toast.LENGTH_LONG).show()
-                    }
-                },
-            )
+        // Sürüklenen dosyanın parmağı izleyen etiketi (alt çubuğun da üstünde görünsün diye en dışta).
+        fileDrag.file?.let { f ->
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = scheme.surface,
+                tonalElevation = 0.dp,
+                modifier = Modifier
+                    .zIndex(9500f)
+                    .offset { IntOffset((fileDrag.pointer.x + areaRoot.x).roundToInt() - 24, (fileDrag.pointer.y + areaRoot.y).roundToInt() - 56) },
+            ) {
+                Text(f.name, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), maxLines = 1)
+            }
         }
 
         if (showPerm) {
@@ -560,14 +654,13 @@ fun DesktopShell(
     }
 }
 
-/** AI penceresinin içeriği: sayfa hazırsa web arayüzü, değilse durum bildirimi. */
+/** AI sekmesinin içeriği: sayfa hazırsa web arayüzü, değilse durum bildirimi. */
 @Composable
 private fun AiWindowContent(
     accountId: Long,
     account: AiAccount?,
     container: AppContainer,
     onOpenMonitor: () -> Unit,
-    onFocus: () -> Unit,
 ) {
     val hub = container.webChatHub
     val k = KriptonTheme.colors
@@ -584,12 +677,14 @@ private fun AiWindowContent(
             val entry = entries.firstOrNull { it.id == s.entryId && it.isLive }
             when {
                 entry == null -> Notice(stringResource(R.string.web_chats_closed), stringResource(R.string.web_chats_retry)) { hub.reopen(account) }
+
                 s.borrowed -> Notice(stringResource(R.string.web_chats_busy), stringResource(R.string.web_chats_open_monitor), onOpenMonitor)
-                else -> ChatPage(handle = container.webMonitor.handle(entry.id), installFileChooser = false, onFocus = onFocus)
+
+                else -> ChatPage(handle = container.webMonitor.handle(entry.id), installFileChooser = false)
             }
         }
 
-        else -> Column(Modifier.fillMaxSize(), verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+        else -> Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             com.kriptoncod.app.ui.components.KriptonLoader()
             Text(
                 stringResource(R.string.web_chats_opening),

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,17 +29,21 @@ private enum class HostDialog { Enable, Exit }
 fun DesktopModeHost(
     container: AppContainer,
     initialEnabled: Boolean,
+    /** Ana ekran (launcher) olarak açıldı: masaüstü modu zorunlu. */
+    asHome: Boolean = false,
     themePreference: ThemePreference,
     onThemeChange: (ThemePreference) -> Unit,
 ) {
     val store = container.themeStore
     val scope = rememberCoroutineScope()
     val enabled by store.desktopModeFlow.collectAsStateWithLifecycle(initialValue = initialEnabled)
-    val available = remember { DesktopPlatform.isTabletDevice() }
+    // Mod her cihazda açılabilir (tablette en rahatı); ana ekran olarak kullanılırken zaten zorunludur.
+    val available = true
     var dialog by remember { mutableStateOf<HostDialog?>(null) }
     // Çalışırken mod değişirse açılış animasyonu yeniden oynatılmaz.
     var switched by remember { mutableStateOf(false) }
 
+    LaunchedEffect(asHome, enabled) { if (asHome && !enabled) store.setDesktopMode(true) }
     val controller = remember(available, enabled) {
         DesktopModeController(
             available = available,
@@ -50,8 +55,8 @@ fun DesktopModeHost(
 
     CompositionLocalProvider(LocalDesktopMode provides controller) {
         Box(Modifier.fillMaxSize()) {
-            if (enabled && available) {
-                DesktopShell(container = container, themePreference = themePreference, onThemeChange = onThemeChange)
+            if ((enabled || asHome) && available) {
+                DesktopShell(container = container, themePreference = themePreference, onThemeChange = onThemeChange, isHome = asHome)
             } else {
                 AppRoot(themePreference = themePreference, onThemeChange = onThemeChange, playIntro = !switched)
             }

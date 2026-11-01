@@ -23,6 +23,8 @@ markdownRenderer = "0.35.0"
 glance = "1.1.1"
 acra = "5.12.0"  # 5.13+ Kotlin 2.4 + compileSdk 37 ister; proje Kotlin 2.2 / SDK 35 kullanıyor
 leakcanary = "2.14"
+# Shizuku: ayrıcalıklı (adb/root) kullanıcı servisi; masaüstü modu Dosyalar penceresinde /data erişimi
+shizuku = "13.1.5"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -60,6 +62,9 @@ markdown-renderer-code = { module = "com.mikepenz:multiplatform-markdown-rendere
 androidx-glance-appwidget = { module = "androidx.glance:glance-appwidget", version.ref = "glance" }
 # Yerel çökme günlüğü (ağ göndericisi YOK; bkz. data/crash)
 acra-core = { module = "ch.acra:acra-core", version.ref = "acra" }
+# Shizuku API + ShizukuProvider (binder alımı)
+shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
+shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku" }
 # Yalnız debug: bellek sızıntısı tespiti
 leakcanary-android = { module = "com.squareup.leakcanary:leakcanary-android", version.ref = "leakcanary" }
 # Google Identity Services — Authorization API (GIS)

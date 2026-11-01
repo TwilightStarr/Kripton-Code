@@ -2,7 +2,6 @@ package com.kriptoncod.app.ui.desktop
 
 import android.Manifest
 import android.app.Activity
-import android.app.ActivityOptions
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
@@ -111,10 +110,11 @@ fun DesktopImmersiveEffect(enabled: Boolean) {
     }
 }
 
-/** Yan yana açılabilecek kurulu uygulama. */
+/** Başlatıcıda görünen, cihazda kurulu bir uygulama. */
 data class InstalledApp(val label: String, val packageName: String)
 
-object SideBySide {
+/** Cihazdaki diğer uygulamalar: listeleme ve başlatma. Başlatılan uygulama tam ekran ayrı bir Android görevi olarak açılır. */
+object InstalledApps {
     /** Başlatıcıda görünen uygulamalar (kendimiz hariç), ada göre sıralı. Yavaştır; arka planda çağır. */
     fun list(context: Context): List<InstalledApp> {
         val pm = context.packageManager
@@ -133,13 +133,35 @@ object SideBySide {
     }
 
     /**
-     * Uygulamayı Kripton Code'un YANINDA (Android bölünmüş ekranı) başlatır. Dönen değer: başlatıldı mı.
-     * Bölünmüş ekran, açan etkinlik zaten çoklu pencere modundayken uygulanır; [Activity.isInMultiWindowMode] kapalıysa
-     * uygulama yine açılır, ama yan yana yerleşim için kullanıcının önce bölünmüş ekranı açması gerekir.
+     * Uygulamayı başlatır; zaten çalışıyorsa görevini öne getirir (RESET_TASK_IF_NEEDED, mevcut görevi sıfırlamaz).
+     * Dönen değer: başlatıldı mı.
      */
     fun launch(activity: Activity, packageName: String): Boolean {
         val intent = activity.packageManager.getLaunchIntentForPackage(packageName) ?: return false
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK or Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT)
-        return runCatching { activity.startActivity(intent, ActivityOptions.makeBasic().toBundle()) }.isSuccess
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+        return runCatching { activity.startActivity(intent) }.isSuccess
+    }
+}
+
+/** Kripton Code'u cihazın ana ekran (launcher) uygulaması yapma. */
+object HomeRole {
+    fun isDefault(context: Context): Boolean {
+        val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        val info = context.packageManager.resolveActivity(home, PackageManager.MATCH_DEFAULT_ONLY)
+        return info?.activityInfo?.packageName == context.packageName
+    }
+
+    /** Önce sistemin "ana ekran uygulaması" onayı (Android 10+), olmazsa varsayılan uygulamalar ayarı. */
+    fun request(context: Context): Boolean {
+        val intents = ArrayList<Intent>()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val rm = context.getSystemService(android.app.role.RoleManager::class.java)
+            if (rm != null && rm.isRoleAvailable(android.app.role.RoleManager.ROLE_HOME) && !rm.isRoleHeld(android.app.role.RoleManager.ROLE_HOME)) {
+                intents.add(rm.createRequestRoleIntent(android.app.role.RoleManager.ROLE_HOME))
+            }
+        }
+        intents.add(Intent(Settings.ACTION_HOME_SETTINGS))
+        intents.add(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+        return intents.any { i -> runCatching { context.startActivity(i) }.isSuccess }
     }
 }

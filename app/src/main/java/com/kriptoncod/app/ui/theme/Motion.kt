@@ -1,13 +1,18 @@
 package com.kriptoncod.app.ui.theme
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.Easing
+import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
@@ -28,6 +33,58 @@ import kotlinx.coroutines.delay
  * basma efekti) bunu okur; kapalıyken hiçbir şey hareket etmez.
  */
 val LocalAnimationsEnabled = compositionLocalOf { true }
+
+/**
+ * Hareket belirteçleri (token): süreler ve eğriler tek yerde durur; pencere/sekme animasyonları bunlardan beslenir, böylece
+ * hızlar tutarlı kalır ve "geçiş hızı" kaydırıcısı hepsini birden ölçekler. (Material3 `MotionScheme` yaylanma tabanlıdır;
+ * süre ölçeklenebilmesi için burada süre + eğri belirteçleri kullanılır.)
+ */
+object Motion {
+    /** Küçük, hızlı değişiklikler: gösterge, çıkış solması. */
+    const val SHORT = 150
+
+    /** Sekme geçişi, kapanış. */
+    const val MEDIUM = 260
+
+    /** Uygulama açılışı (ikondan büyüyerek). */
+    const val LONG = 380
+
+    /** Ekran içi geçişler için genel eğri (Material "emphasized"). */
+    val Emphasized: Easing = CubicBezierEasing(0.2f, 0f, 0f, 1f)
+
+    /** Ekrana GİREN öğeler: hızlı başlar, yumuşak oturur. */
+    val EmphasizedDecelerate: Easing = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
+
+    /** Ekrandan ÇIKAN öğeler: yavaş başlar, hızlanarak gider. */
+    val EmphasizedAccelerate: Easing = CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f)
+}
+
+/**
+ * Geçerli hareket ölçeği: animasyonlar açık mı, kullanıcının geçiş hızı ve sistem Animatör ölçeği. Süreler
+ * [duration]/[spec] ile bu ölçeğe göre hesaplanır; kapalıyken her şey anında (snap) olur.
+ */
+@Immutable
+class MotionScale(
+    val enabled: Boolean = true,
+    val speed: Float = 1f,
+    val systemScale: Float = 1f,
+) {
+    fun duration(baseMs: Int): Int = motionDurationMs(baseMs, enabled, speed, systemScale)
+
+    /** [baseMs] tasarım süresine göre ölçeklenmiş animasyon; süre 0 ise anında. */
+    fun <T> spec(baseMs: Int, easing: Easing = Motion.Emphasized): FiniteAnimationSpec<T> {
+        val d = duration(baseMs)
+        return if (d <= 0) snap() else tween(durationMillis = d, easing = easing)
+    }
+
+    override fun equals(other: Any?): Boolean =
+        other is MotionScale && other.enabled == enabled && other.speed == speed && other.systemScale == systemScale
+
+    override fun hashCode(): Int = (enabled.hashCode() * 31 + speed.hashCode()) * 31 + systemScale.hashCode()
+}
+
+/** Pencere/sekme animasyonlarının ölçeği; masaüstü kabuğu ayarlardan kurar. Varsayılan: normal hız. */
+val LocalMotionScale = compositionLocalOf { MotionScale() }
 
 /** Arka planda bir çalışma sürüyor mu? Logo bunu görünce "çalışıyor" animasyonunu oynatır. */
 val LocalAppBusy = compositionLocalOf { false }

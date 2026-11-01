@@ -302,6 +302,10 @@ class AppContainer(context: Context) {
 
     /** Açılışta yarım kalan dosya/iş durumlarını toparlar; hata uygulamayı düşürmez. */
     fun startRecovery() {
+        // Shizuku yalnız Ayarlar'da açıksa bağlanır; kapalıyken dinleyici bile eklenmez.
+        appScope.launch {
+            runCatching { themeStore.shizukuFilesFlow.collect { com.kriptoncod.app.data.shizuku.ShizukuFiles.setEnabled(appContext, it) } }
+        }
         // Etkin mod, işler başlamadan çalışma zamanına yüklenir; sonra her değişiklik anında yansır.
         appScope.launch {
             runCatching { modeStore.syncRuntime() }

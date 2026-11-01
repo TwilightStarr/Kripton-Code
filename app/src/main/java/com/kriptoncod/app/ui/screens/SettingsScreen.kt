@@ -189,6 +189,19 @@ fun SettingsScreen(
                     onCheckedChange = { on -> if (on) desktop.requestEnable() else desktop.requestExit() },
                 )
             }
+            if (desktop.enabled && !com.kriptoncod.app.ui.desktop.HomeRole.isDefault(context)) {
+                Text(
+                    stringResource(R.string.desktop_setting_home_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = k.muted,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 8.dp),
+                )
+                KButton(
+                    text = stringResource(R.string.desktop_menu_set_home),
+                    onClick = { com.kriptoncod.app.ui.desktop.HomeRole.request(context) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
 
         // Mod Merkezi: tüm sınırlar ve otomasyonlar tek yerde, hazır modlarla.
@@ -208,6 +221,9 @@ fun SettingsScreen(
             )
             KButton(text = stringResource(R.string.settings_modes_open), onClick = onOpenModes)
         }
+
+        // Masaüstü modu ayrıntıları (tam ekran, alt çubuk, yazılar, Dosyalar varsayılanları).
+        if (desktop.available) DesktopSettingsCard()
 
         // Bildirimler: çalışma kapalıyken de arka planda sürer; olaylar için bildirim istenirse gönderilir.
         NodeCard(modifier = Modifier.fillMaxWidth()) {
@@ -292,6 +308,9 @@ fun SettingsScreen(
                 }
             }
         }
+
+        // Masaüstü > Dosyalar: Shizuku ile sistem dosyaları (varsayılan kapalı).
+        ShizukuSettingsCard()
 
         NodeCard(modifier = Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

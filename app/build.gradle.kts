@@ -79,6 +79,8 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        // Shizuku kullanıcı servisi arayüzü (src/main/aidl/.../IPrivFileService.aidl)
+        aidl = true
     }
 
     testOptions { unitTests { isIncludeAndroidResources = true } }
@@ -139,6 +141,9 @@ dependencies {
     implementation(libs.markdown.renderer.code)
     // Google Identity Services — Authorization API
     implementation(libs.google.identity.authorization)
+    // Shizuku: yalnız kullanıcı Ayarlar'dan açarsa ve izin verirse kullanılır (bkz. data/shizuku)
+    implementation(libs.shizuku.api)
+    implementation(libs.shizuku.provider)
 
     // Yalnız debug derlemesinde: bellek sızıntısı tespiti (release'e girmez)
     debugImplementation(libs.leakcanary.android)

@@ -83,4 +83,21 @@ class FileBrowseTest {
         assertNull(FileBrowse.readStream("a.png", "image/png", { null }))
         assertEquals("text/x", FileBrowse.readStream("a", "text/x", { ByteArrayInputStream(data) })!!.mime)
     }
+
+    @Test
+    fun extensionAndBadge() {
+        assertEquals("pdf", FileBrowse.extension("Rapor.PDF"))
+        assertEquals("", FileBrowse.extension(".gizli"))
+        assertEquals("", FileBrowse.extension("README"))
+        assertEquals("KOT", FileBrowse.badge("a.kotlin"))
+    }
+
+    @Test
+    fun displayNameHidesExtension() {
+        val f = FileEntry(File("a.kt"), "a.kt", false, 1, 0)
+        assertEquals("a", FileBrowse.displayName(f, false))
+        assertEquals("a.kt", FileBrowse.displayName(f, true))
+        val d = FileEntry(File("x.d"), "x.d", true, 0, 0)
+        assertEquals("x.d", FileBrowse.displayName(d, false))
+    }
 }

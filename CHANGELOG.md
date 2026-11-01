@@ -5,6 +5,28 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
+### Eklendi (Masaüstü modu: animasyonlar, sekme gruplama, görev çubuğu)
+- Uygulama açılışı simgeden büyüyerek, sekme geçişi zoom + solma ile, kapanış aşağı küçülerek oynar. Süreler tek bir hareket ölçeğinden (`Motion`/`MotionScale`) gelir; Ayarlar'da pencere animasyonları anahtarı, geçiş hızı kaydırıcısı (0,5×–2×) ve sistem Animatör ölçeğini izleme var. Genel "Animasyonlar" kapalıyken hiçbiri oynamaz.
+- Birden çok pencereli uygulamalar (Dosyalar) çubukta gruplanır: sayı rozeti, pencere önizleme kartları, "yeni pencere", "tümünü kapat". Çubukta uzun basış ya da sağ tık menüsü; masaüstünü göster düğmesinde "tüm sekmeleri kapat".
+
+### Değişti (Masaüstü modu çubukları ve ayarlar)
+- **Tam ekran artık alt çubuğu (dock) da gizler** (ayarla kapatılabilir). Çubuk gizliyken alt kenarda ince bir tutamak durur: dokun ya da yukarı kaydır → çubuk 5 sn açılır; dosya sürüklerken ya da başlatıcı açıkken kendiliğinden görünür. "Alt çubuğu hep gizle" seçeneği de var.
+- Pencerelerin altındaki ipucu yazıları (Dosyalar) varsayılan **kapalı**; Ayarlar'dan açılır. Alt çubukta sekme adları ve saat de isteğe bağlı.
+- Yeni **Ayarlar > Masaüstü modu ayarları** kartı: tam ekran, çubuk gizleme, sekme adları, saat, ipucu yazıları, Dosyalar varsayılanları (gizliler/uzantı/grid) ve "sıfırla". Veri: `DesktopPrefs` + `ThemeStore.desktopPrefsFlow`.
+
+### Eklendi (Evrensel dosya açıcı)
+- Dosyalar penceresinde dosyaya dokununca açılır. **Uygulama içi:** metin/log/json/xml/kod (renklendirmeli, `OutputMarkdownView`), markdown, **PDF** (`PdfRenderer`), **görüntü** (yakınlaştırmalı). Büyük metinde ilk 512 KB gösterilir.
+- Diğer türler (docx, 7z, tar.gz, apk…) harici uygulamaya gider: `FileProvider` + `ACTION_VIEW`, kurulu uygulamalar listelenir; "bu uzantıyı her zaman bununla aç" tercihi saklanır (kaldırılabilir); "Sistem seçicisi" düğmesi de var. Kendi arşiv motoru yazılmadı.
+- Satır menüsü: Aç, Şununla aç, AI'a gönder, **Kopyala, Taşı** (hedef klasörde "Buraya yapıştır"), **Yeniden adlandır, Sil** (onaylı), **Özellikler** (yol, boyut, tarih, isteğe bağlı MD5/SHA-256). Dosya işlemleri yalnız normal depolamada; Shizuku kaynağı salt okunurdur (açma/özellik için dosya geçici önbelleğe kopyalanır, pencere kapanınca silinir).
+- Yeni: `FileOps`, `FileOpen`, `FileViewer`, `FileActions`, `res/xml/file_paths.xml`, `FileOpsTest`.
+
+### Eklendi (Shizuku ile sistem dosyaları)
+- Masaüstü modu **Dosyalar** penceresine Shizuku desteği: `Depolama` / `Sistem (/)` / `Uygulama verileri` kaynakları. Ayarlar > "Shizuku ile sistem dosyaları" ile açılır (**varsayılan kapalı**; kapalıyken Shizuku'ya hiç bağlanılmaz). Salt okunur: silme/yazma yok.
+- Erişim düzeyi Shizuku'nun başlatılış biçimine bağlıdır: **root** = `/data/data` dâhil her şey; **adb** = `Android/data`, `/data/local/tmp` vb. (diğer uygulamaların `/data/data` klasörü adb/shell'e Android tarafından kapalıdır). Uygulama hangi modda olduğunu gösterir ve reddedilen klasörde nedenini açıklar.
+- Zarif geri düşüş: Shizuku kurulu/çalışıyor/izinli değilse durum kartı + yönlendirme gösterilir; normal erişimle okunabilen klasörler (kendi uygulama verin dâhil) yine listelenir.
+- Okunan bir dosya AI sekmesine sürüklenince Shizuku akışıyla sayfaya verilir (30 MB sınırı aynı).
+- Yeni: `data/shizuku/` (AIDL `IPrivFileService`, `PrivFileService`, `ShizukuFiles`, `PrivProtocol`), `ShizukuSettingsCard`, `PrivProtocolTest`. Bağımlılık: `dev.rikka.shizuku:api` + `provider` 13.1.5.
+
 ### Değişti (GitHub token)
 - GitHub ayarlarına **güvenli token rehberi** eklendi: ince ayarlı (fine-grained) token, yalnız seçilen repolar, yalnız Contents (Read and write) + Actions (Read-only); Workflows izni isteğe bağlı. Düğme GitHub'ın token sayfasını ad, süre (90 gün) ve izinler hazır dolu açar. Klasik (ghp_…) token kaydedilirse uyarı çıkar. Ayarlar'daki GitHub kartı önce bu rehbere yönlendirir.
 

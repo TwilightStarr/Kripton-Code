@@ -27,11 +27,18 @@
 
     <!-- Üreticiye özel güç/otomatik başlatma ekranlarını açabilmek için (paket görünürlüğü, Android 11+). -->
     <queries>
-        <!-- Masaüstü modu "yan yana uygulama" listesi: başlatıcıda görünen uygulamalar. -->
+        <!-- Masaüstü modu uygulama başlatıcısı: cihazda kurulu ve başlatıcıda görünen uygulamalar. -->
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+        <!-- Dosyalar penceresi "Aç": dosyayı açabilen uygulamaları listelemek için. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="*/*" />
+        </intent>
+        <!-- Shizuku kurulu mu? (Ayarlar > Dosyalar: ayrıcalıklı erişim durumu) -->
+        <package android:name="moe.shizuku.privileged.api" />
         <package android:name="com.miui.securitycenter" />
         <package android:name="com.miui.powerkeeper" />
         <package android:name="com.huawei.systemmanager" />
@@ -61,6 +68,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
             android:resizeableActivity="true"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|density|keyboard|keyboardHidden|navigation|uiMode"
             android:windowSoftInputMode="adjustResize">
@@ -69,6 +77,23 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            Ana ekran (launcher) olarak seçilebilsin: Android Ayarlar > Varsayılan uygulamalar > Ana ekran uygulaması.
+            Bu girişle açılınca masaüstü modu zorla açılır; Ana Sayfa tuşu buraya döner.
+        -->
+        <activity-alias
+            android:name=".HomeAlias"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/desktop_home_label"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
 
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
@@ -79,6 +104,29 @@
         <provider
             android:name="org.acra.attachment.AcraContentProvider"
             tools:node="remove" />
+
+        <!-- Dosyayı başka uygulamada açmak için salt okuma URI'si (yalnız kullanıcı "Aç" dediğinde, seçilen uygulamaya). -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <!--
+            Shizuku binder alıcısı. Yalnızca Shizuku çalışıyorsa ve kullanıcı izin verirse bir şey olur;
+            uygulama Ayarlar'da "Shizuku ile sistem dosyaları" açılmadıkça Shizuku'ya hiç bağlanmaz.
+        -->
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="${applicationId}.shizuku"
+            android:enabled="true"
+            android:exported="true"
+            android:multiprocess="false"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
 
         <!-- Bildirimdeki Duraklat / Devam et / İptal düğmeleri (yalnız uygulamanın kendi PendingIntent'leri). -->
         <receiver

@@ -1,42 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Masaüstü modu (tablet): tam ekran, pencereli arayüz, görev çubuğu, dosya yöneticisi -->
+<!-- Masaüstü modu: tam ekran, alt çubuklu uygulama başlatıcı, sekmeler, dosya yöneticisi -->
 <resources>
     <string name="desktop_nav_label">Masaüstü</string>
     <string name="desktop_start">Uygulamalar</string>
     <string name="desktop_menu_ai">Yapay zekâlar</string>
-    <string name="desktop_menu_apps">Uygulamalar</string>
-    <string name="desktop_menu_no_ai">Web oturumlu AI hesabı yok. Kripton Code penceresinde AI sekmesinden ekleyebilirsin.</string>
     <string name="desktop_app_files">Dosyalar</string>
     <string name="desktop_app_kripton">Kripton Code</string>
-    <string name="desktop_menu_side_by_side">Yan yana uygulama aç</string>
-    <string name="desktop_menu_tile">Pencereleri döşe</string>
-    <string name="desktop_menu_cascade">Pencereleri diz</string>
     <string name="desktop_menu_show_desktop">Masaüstünü göster</string>
     <string name="desktop_menu_fullscreen">Tam ekran</string>
     <string name="desktop_menu_exit">Masaüstü modundan çık</string>
-    <string name="desktop_empty">Masaüstü boş. Sol alttaki düğmeden bir AI ya da uygulama aç.</string>
-
-    <string name="desktop_win_minimize">Küçült</string>
-    <string name="desktop_win_maximize">Büyüt</string>
-    <string name="desktop_win_restore">Geri al</string>
-    <string name="desktop_win_close">Kapat</string>
-    <string name="desktop_win_resize">Pencereyi yeniden boyutlandır</string>
-    <string name="desktop_win_busy">Bu AI şu an bir çalışmada kullanılıyor.</string>
-    <string name="desktop_win_open_monitor">Canlı izle</string>
+    <string name="desktop_empty">Açık sekme yok. Bir uygulamaya dokun ya da sol alttaki düğmeden tüm uygulamaları aç.</string>
 
     <string name="desktop_files_title">Dosyalar</string>
     <string name="desktop_files_need_title">Tüm dosyalara erişim</string>
-    <string name="desktop_files_need_body">Dosyalara göz atmak ve AI pencerelerine bırakmak için Android’in “tüm dosyalara erişim” izni gerekir. Bir dosya yalnız sen onu bir AI penceresine bıraktığında o pencerenin web sayfasına verilir; başka hiçbir yere gönderilmez.</string>
+    <string name="desktop_files_need_body">Dosyalara göz atmak ve AI sekmelerine bırakmak için Android’in “tüm dosyalara erişim” izni gerekir. Bir dosya yalnız sen onu bir AI sekmesine bıraktığında o sekmenin web sayfasına verilir; başka hiçbir yere gönderilmez.</string>
     <string name="desktop_files_grant">İzin ver</string>
     <string name="desktop_files_home">Cihaz</string>
     <string name="desktop_files_up">Üst klasör</string>
     <string name="desktop_files_hidden">Gizlileri göster</string>
+    <string name="desktop_files_show_ext">Uzantıları göster</string>
+    <string name="desktop_files_grid">Grid görünüm</string>
     <string name="desktop_files_refresh">Yenile</string>
     <string name="desktop_files_empty">Bu klasör boş</string>
-    <string name="desktop_files_hint">Bir dosyayı basılı tutup AI penceresinin üstüne sürükle ya da satırdaki menüden gönder.</string>
+    <string name="desktop_files_hint">Bir dosyayı basılı tutup alt çubuktaki açık bir AI sekmesinin üstüne sürükle ya da satırdaki menüden gönder.</string>
     <string name="desktop_files_send_menu">AI’a gönder</string>
     <string name="desktop_files_send_to">%1$s</string>
-    <string name="desktop_files_no_ai">Açık AI penceresi yok. Önce bir AI aç.</string>
+    <string name="desktop_files_no_ai">Açık AI sekmesi yok. Önce bir AI aç.</string>
     <string name="desktop_files_folder_items">%1$d öğe</string>
 
     <string name="desktop_drop_here">Bırak: %1$s sayfasına eklenir</string>
@@ -47,25 +36,118 @@
     <string name="desktop_upload_unreadable">Dosya okunamadı ya da klasör bırakıldı</string>
     <string name="desktop_upload_not_ready">%1$s sayfası henüz hazır değil</string>
 
-    <string name="desktop_sbs_title">Yan yana uygulama</string>
-    <string name="desktop_sbs_hint">Seçtiğin uygulama Kripton Code’un yanında açılır. Android bölünmüş ekranını kullanır.</string>
-    <string name="desktop_sbs_search">Uygulama ara</string>
-    <string name="desktop_sbs_not_split">Bölünmüş ekran kapalı görünüyor. Son uygulamalardan Kripton Code’u “Bölünmüş ekran” ile aç, sonra uygulamayı buradan başlat.</string>
-    <string name="desktop_sbs_failed">Uygulama açılamadı</string>
-    <string name="desktop_sbs_empty">Eşleşen uygulama yok</string>
-
     <string name="desktop_perm_title">Masaüstü modu izinleri</string>
-    <string name="desktop_perm_body">Masaüstü modu tam ekran çalışır; sistem çubukları kenardan kaydırınca geçici görünür. “Dosyalar” penceresi için tüm dosyalara erişim izni istenir; istersen şimdi ver, istersen Dosyalar’ı ilk açtığında. Yan yana uygulama listesi için kurulu uygulamaların adları okunur. Hiçbir veri cihazdan kendiliğinden çıkmaz.</string>
+    <string name="desktop_perm_body">Masaüstü modu tam ekran çalışır; sistem çubukları kenardan kaydırınca geçici görünür. “Dosyalar” sekmesi için tüm dosyalara erişim izni istenir; istersen şimdi ver, istersen Dosyalar’ı ilk açtığında. Uygulama başlatıcı için kurulu uygulamaların adları ve simgeleri okunur. Hiçbir veri cihazdan kendiliğinden çıkmaz.</string>
     <string name="desktop_perm_grant">Dosya erişimini ver</string>
     <string name="desktop_perm_later">Şimdi değil</string>
 
     <string name="desktop_setting_title">Masaüstü modu (tablet)</string>
-    <string name="desktop_setting_hint">Tam ekran, sürüklenebilir pencereler, görev çubuğu ve dosya yöneticisi. Bir kez açınca uygulama hep bu modla başlar; buradan ya da görev çubuğundan kapatabilirsin.</string>
+    <string name="desktop_setting_hint">Tam ekran, alt çubuklu uygulama başlatıcı ve sekmeler. Uygulamalar sekme gibi açılır, istediğini alt çubuğa sabitlersin. Bir kez açınca uygulama hep bu modla başlar; buradan ya da başlatıcıdan kapatabilirsin.</string>
     <string name="desktop_setting_unavailable">Bu mod tablet içindir (ekranın kısa kenarı en az 600 dp).</string>
     <string name="desktop_enable_title">Masaüstü moduna geçilsin mi?</string>
-    <string name="desktop_enable_body">Uygulama tam ekran, pencereli bir masaüstüne dönüşür: AI web arayüzleri sade pencereler gibi taşınır ve boyutlandırılır, dosyalar sürükle-bırak ile AI’a verilir. Bir kez açılırsa her açılışta bu modla başlar; istediğin zaman kapatabilirsin.</string>
+    <string name="desktop_enable_body">Uygulama tam ekran bir masaüstü başlatıcısına dönüşür: altta sabitlediğin uygulamalar durur, uygulamalar (AI web arayüzleri, dosyalar, cihazdaki uygulamalar) sekme gibi açılır. Bir kez açılırsa her açılışta bu modla başlar; istediğin zaman kapatabilirsin.</string>
     <string name="desktop_enable_confirm">Masaüstüne geç</string>
     <string name="desktop_exit_title">Masaüstü modundan çıkılsın mı?</string>
     <string name="desktop_exit_body">Uygulama bir sonraki açılışta normal görünümle başlar. İstediğin zaman Ayarlar’dan ya da yan menüden tekrar açabilirsin.</string>
     <string name="desktop_exit_confirm">Çık</string>
+    <string name="desktop_home_label">Kripton Masaüstü</string>
+    <string name="desktop_menu_set_home">Ana ekran (launcher) yap</string>
+    <string name="desktop_setting_home_hint">Tabletin ana ekranı yerine Kripton Masaüstü’nü kullanmak için varsayılan ana ekran uygulaması yap. Ana Sayfa tuşu buraya döner; Android ayarlarından eski ana ekrana dönebilirsin.</string>
+
+    <!-- Sekmeler, alt çubuk (dock) ve uygulama başlatıcı -->
+    <string name="desktop_tab_reload">Yenile</string>
+    <string name="desktop_tab_close">Sekmeyi kapat</string>
+    <string name="desktop_pin">Alt çubuğa sabitle</string>
+    <string name="desktop_unpin">Alt çubuktan kaldır</string>
+    <string name="desktop_move_left">Sola taşı</string>
+    <string name="desktop_move_right">Sağa taşı</string>
+    <string name="desktop_app_launch_failed">Uygulama açılamadı</string>
+    <string name="desktop_launcher_search">Uygulama ara</string>
+    <string name="desktop_launcher_kripton">Kripton</string>
+    <string name="desktop_launcher_installed">Cihazdaki uygulamalar</string>
+    <string name="desktop_launcher_loading">Uygulamalar yükleniyor…</string>
+    <string name="desktop_launcher_empty">Eşleşen uygulama yok</string>
+    <!-- Shizuku ile sistem dosyaları (Ayarlar + Masaüstü > Dosyalar) -->
+    <string name="settings_shizuku">Shizuku ile sistem dosyaları</string>
+    <string name="settings_shizuku_hint">Masaüstü modundaki Dosyalar penceresinde /data gibi normalde kapalı klasörlere salt okunur göz atmanı sağlar. Varsayılan kapalıdır.</string>
+    <string name="settings_shizuku_policy">Yalnız okuma: dosya silinmez, değiştirilmez. Hiçbir dosya kendiliğinden gönderilmez; yalnız sen bir AI sekmesine bıraktığında o sekmenin sayfasına verilir. Kapatırsan Shizuku bağlantısı bırakılır.</string>
+    <string name="shizuku_status_not_installed">Shizuku kurulu değil. Kurana dek Dosyalar normal depolama erişimiyle çalışır.</string>
+    <string name="shizuku_status_not_running">Shizuku kurulu ama çalışmıyor. Shizuku uygulamasını açıp başlat (kablosuz hata ayıklama ya da root ile).</string>
+    <string name="shizuku_status_needs_permission">Shizuku çalışıyor. Bu uygulamaya erişim izni vermen gerekiyor.</string>
+    <string name="shizuku_status_ready_root">Hazır — root modu: /data/data dâhil tüm sistem dosyaları okunabilir.</string>
+    <string name="shizuku_status_ready_adb">Hazır — adb modu: Android/data ve /data/local/tmp okunur; diğer uygulamaların /data/data klasörü için Shizuku’nun root ile başlatılması gerekir.</string>
+    <string name="shizuku_status_ready_other">Hazır. Erişim düzeyi Shizuku’nun çalıştığı kullanıcıya bağlıdır.</string>
+    <string name="shizuku_action_download">Shizuku’yu indir</string>
+    <string name="shizuku_action_open">Shizuku’yu aç</string>
+    <string name="shizuku_action_grant">İzin ver</string>
+    <string name="desktop_files_src_storage">Depolama</string>
+    <string name="desktop_files_src_system">Sistem</string>
+    <string name="desktop_files_src_apps">Uygulama verileri</string>
+    <string name="desktop_files_system_root">Sistem (/)</string>
+    <string name="desktop_files_retry">Yeniden dene</string>
+    <string name="desktop_files_denied_root">Bu klasöre root ile bile erişilemedi (SELinux ya da sistem kısıtı olabilir).</string>
+    <string name="desktop_files_denied_adb">Bu klasör adb (shell) yetkisine kapalı. Diğer uygulamaların /data/data klasörü için Shizuku’yu root ile başlat; Android/data klasörü bu modda açılır.</string>
+    <string name="desktop_files_not_found">Klasör bulunamadı.</string>
+    <string name="desktop_files_not_dir">Bu bir klasör değil.</string>
+    <string name="desktop_files_priv_error">Klasör okunamadı. Yeniden dene.</string>
+    <!-- Evrensel dosya açıcı + dosya işlemleri -->
+    <string name="desktop_files_open_other">Başka uygulamada aç</string>
+    <string name="desktop_files_unreadable">Dosya okunamadı.</string>
+    <string name="desktop_files_truncated">Dosya büyük: yalnız ilk 512 KB gösteriliyor.</string>
+    <string name="desktop_files_rename">Yeniden adlandır</string>
+    <string name="desktop_files_ok">Tamam</string>
+    <string name="desktop_files_cancel">Vazgeç</string>
+    <string name="desktop_files_delete">Sil</string>
+    <string name="desktop_files_delete_body">“%1$s” kalıcı olarak silinsin mi? Geri alınamaz.</string>
+    <string name="desktop_files_delete_folder_body">“%1$s” klasörü ve içindekilerin hepsi kalıcı olarak silinsin mi? Geri alınamaz.</string>
+    <string name="desktop_files_prop_path">Yol</string>
+    <string name="desktop_files_prop_size">Boyut</string>
+    <string name="desktop_files_prop_type">Tür</string>
+    <string name="desktop_files_prop_modified">Değiştirilme</string>
+    <string name="desktop_files_prop_hash">MD5 / SHA-256 hesapla</string>
+    <string name="desktop_files_props">Özellikler</string>
+    <string name="desktop_files_folder_files">%1$d dosya</string>
+    <string name="desktop_files_open_with">Şununla aç</string>
+    <string name="desktop_files_no_app">Bu dosyayı açabilen uygulama bulunamadı.</string>
+    <string name="desktop_files_always">“.%1$s” dosyalarını her zaman bununla aç</string>
+    <string name="desktop_files_forget_default">“.%1$s” için kayıtlı varsayılanı kaldır</string>
+    <string name="desktop_files_system_chooser">Sistem seçicisi</string>
+    <string name="desktop_files_open">Aç</string>
+    <string name="desktop_files_copy">Kopyala</string>
+    <string name="desktop_files_move">Taşı</string>
+    <string name="desktop_files_paste">Buraya yapıştır</string>
+    <string name="desktop_files_clip_move">Taşınacak: %1$s</string>
+    <string name="desktop_files_clip_copy">Kopyalanacak: %1$s</string>
+    <string name="desktop_files_copied">“%1$s” kopyalanmak üzere seçildi</string>
+    <string name="desktop_files_cut">“%1$s” taşınmak üzere seçildi</string>
+    <string name="desktop_files_op_failed">İşlem başarısız oldu.</string>
+    <string name="desktop_prefs_title">Masaüstü modu ayarları</string>
+    <string name="desktop_prefs_hint">Masaüstü modunun görünümü ve çubukları buradan düzenlenir.</string>
+    <string name="desktop_prefs_fullscreen">Tam ekran</string>
+    <string name="desktop_prefs_fullscreen_hint">Durum ve gezinme çubuklarını gizler (kenardan kaydırınca geçici görünür).</string>
+    <string name="desktop_prefs_fs_dock">Tam ekranda alt çubuğu da gizle</string>
+    <string name="desktop_prefs_fs_dock_hint">Alt kenardaki ince tutamağa dokun ya da yukarı kaydır; çubuk birkaç saniyeliğine açılır.</string>
+    <string name="desktop_prefs_autohide">Alt çubuğu hep gizle</string>
+    <string name="desktop_prefs_autohide_hint">Tam ekran kapalıyken de çubuk gizli kalır, tutamakla açılır.</string>
+    <string name="desktop_prefs_labels">Sekme adları</string>
+    <string name="desktop_prefs_labels_hint">Alt çubukta açık uygulamaların adı yazar; kapalıysa yalnız simge.</string>
+    <string name="desktop_prefs_clock">Saati göster</string>
+    <string name="desktop_prefs_hints">İpucu yazıları</string>
+    <string name="desktop_prefs_hints_hint">Pencerelerin altındaki açıklama satırları (varsayılan kapalı).</string>
+    <string name="desktop_prefs_files">Dosyalar penceresi varsayılanları</string>
+    <string name="desktop_prefs_reset">Masaüstü ayarlarını sıfırla</string>
+    <string name="desktop_dock_reveal">Alt çubuğu göster</string>
+    <!-- Sekme gruplama, pencere kartları, animasyonlar -->
+    <string name="desktop_tab_new_window">Yeni pencere</string>
+    <string name="desktop_tab_close_all">Tümünü kapat</string>
+    <string name="desktop_close_all_tabs">Tüm sekmeleri kapat</string>
+    <string name="desktop_tab_switch_to">%1$s penceresine geç</string>
+    <string name="desktop_tab_window_label">%1$s · %2$d</string>
+    <string name="desktop_prefs_motion">Animasyonlar</string>
+    <string name="desktop_prefs_window_anim">Pencere ve sekme animasyonları</string>
+    <string name="desktop_prefs_window_anim_hint">Açılışta ikondan büyüme, sekme geçişinde zoom + solma, kapanışta aşağı küçülme. Genel “Animasyonlar” anahtarı kapalıysa hiç oynamaz.</string>
+    <string name="desktop_prefs_system_scale">Sistem animasyon ölçeğini izle</string>
+    <string name="desktop_prefs_system_scale_hint">Geliştirici seçeneklerindeki “Animatör süre ölçeği” süreleri uzatır ya da kısaltır; 0 ise animasyon oynamaz.</string>
+    <string name="desktop_prefs_speed">Geçiş hızı</string>
+    <string name="desktop_prefs_speed_hint">Yavaş ↔ hızlı. 1× normal hızdır.</string>
 </resources>

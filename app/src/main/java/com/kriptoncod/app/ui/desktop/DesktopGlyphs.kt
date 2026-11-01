@@ -23,10 +23,8 @@ fun AppsGlyph(tint: Color, size: Dp = 22.dp) {
     Canvas(Modifier.size(size)) {
         val s = this.size.minDimension
         val r = s * 0.085f
-        for (row in 0..2) {
-            for (col in 0..2) {
-                drawCircle(tint, r, Offset(s * (0.2f + 0.3f * col), s * (0.2f + 0.3f * row)))
-            }
+        for (row in 0..2) for (col in 0..2) {
+            drawCircle(tint, r, Offset(s * (0.2f + 0.3f * col), s * (0.2f + 0.3f * row)))
         }
     }
 }
@@ -151,5 +149,25 @@ fun GripGlyph(tint: Color, size: Dp = 16.dp) {
         for (f in listOf(0.4f, 0.65f, 0.9f)) {
             drawLine(tint, Offset(s * f, s), Offset(s, s * f), strokeWidth = w, cap = StrokeCap.Round)
         }
+    }
+}
+
+/** Raptiye simgesi: [filled] true ise dolu (sabitlenmiş), değilse çizgili. */
+@Composable
+fun PinGlyph(tint: Color, filled: Boolean, size: Dp = 16.dp) {
+    Canvas(Modifier.size(size)) {
+        val s = this.size.minDimension
+        val w = 1.6.dp.toPx()
+        val head = Path().apply {
+            moveTo(s * 0.34f, s * 0.12f)
+            lineTo(s * 0.66f, s * 0.12f)
+            lineTo(s * 0.62f, s * 0.50f)
+            lineTo(s * 0.78f, s * 0.62f)
+            lineTo(s * 0.22f, s * 0.62f)
+            lineTo(s * 0.38f, s * 0.50f)
+            close()
+        }
+        drawPath(head, tint, style = if (filled) Fill else Stroke(width = w, join = StrokeJoin.Round))
+        drawLine(tint, Offset(s * 0.5f, s * 0.62f), Offset(s * 0.5f, s * 0.92f), strokeWidth = w, cap = StrokeCap.Round)
     }
 }

@@ -3,6 +3,7 @@ package com.kriptoncod.app
 import android.Manifest
 import android.content.pm.PackageManager
 import android.animation.ValueAnimator
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -12,6 +13,8 @@ import androidx.core.content.ContextCompat
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kriptoncod.app.ui.desktop.DesktopModeHost
@@ -22,12 +25,24 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
+    /** Ana ekran (HOME) girişiyle açıldı mı: masaüstü modu zorla açılır, geri tuşu uygulamadan çıkarmaz. */
+    private var launchedAsHome by mutableStateOf(false)
+
+    private fun isHomeIntent(i: Intent?): Boolean = i?.hasCategory(Intent.CATEGORY_HOME) == true
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (isHomeIntent(intent)) launchedAsHome = true
+    }
+
     override fun attachBaseContext(newBase: android.content.Context) {
         super.attachBaseContext(com.kriptoncod.app.data.settings.AppLanguage.wrap(newBase))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        launchedAsHome = isHomeIntent(intent)
         enableEdgeToEdge()
         // Android 13+: bildirim izni ilk açılışta istenir (reddedilirse çalışma yine sürer, yalnız bildirim görünmez).
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -52,6 +67,7 @@ class MainActivity : ComponentActivity() {
                     DesktopModeHost(
                         container = (application as KriptonCodApp).container,
                         initialEnabled = initialDesktop,
+                        asHome = launchedAsHome,
                         themePreference = preference,
                         onThemeChange = { scope.launch { store.set(it) } },
                     )

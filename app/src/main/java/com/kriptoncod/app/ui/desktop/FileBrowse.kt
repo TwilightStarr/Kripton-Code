@@ -79,6 +79,21 @@ object FileBrowse {
         return "$text ${units[i]}"
     }
 
+    /** "rapor.PDF" -> "pdf"; uzantısız ya da ".gizli" gibi noktayla başlayan adlarda "". */
+    fun extension(name: String): String {
+        val i = name.lastIndexOf('.')
+        return if (i <= 0 || i == name.lastIndex) "" else name.substring(i + 1).lowercase(Locale.ROOT)
+    }
+
+    /** [showExtension] false iken uzantıyı gizler ("a.kt" -> "a"); klasör adına dokunmaz. */
+    fun displayName(entry: FileEntry, showExtension: Boolean): String {
+        if (showExtension || entry.isDir || extension(entry.name).isEmpty()) return entry.name
+        return entry.name.substring(0, entry.name.lastIndexOf('.'))
+    }
+
+    /** Simge rozeti: uzantının ilk 3 harfi, büyük harf ("kotlin" -> "KOT"). */
+    fun badge(name: String): String = extension(name).take(3).uppercase(Locale.ROOT)
+
     /** Uzantıdan MIME türü; bilinmiyorsa genel ikili tür. */
     fun mimeFor(name: String): String = when (name.substringAfterLast('.', "").lowercase(Locale.ROOT)) {
         "txt", "log", "kt", "kts", "java", "py", "js", "ts", "sh", "gradle", "toml", "yml", "yaml", "xml", "ini", "cfg" -> "text/plain"
@@ -131,6 +146,10 @@ object FileBrowse {
             if (total == 0L) null else UploadFile(name, mime?.takeIf { it.isNotBlank() && it != "*/*" } ?: mimeFor(name), out.toByteArray())
         }
     }
+
+    /** Shizuku ile okunan dosya: [FileEntry]'ye eşler ([dir] altındaki öğe). */
+    fun fromPriv(dir: File, e: com.kriptoncod.app.data.shizuku.PrivEntry): FileEntry =
+        FileEntry(File(dir, e.name), e.name, e.isDir, e.size, e.modified)
 
     private fun canonical(f: File): File = runCatching { f.canonicalFile }.getOrDefault(f.absoluteFile)
 }
