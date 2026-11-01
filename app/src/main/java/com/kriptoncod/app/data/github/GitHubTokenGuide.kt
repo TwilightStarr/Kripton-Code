@@ -12,7 +12,7 @@ import java.net.URLEncoder
  *  - contents=write : repo zip indirme (zipball), blob/tree/commit/ref yazma
  *  - actions=read   : workflow çalıştırmalarını listeleme ve hata günlüklerini indirme
  *  - metadata=read  : GitHub otomatik ekler
- *  - workflows=write: YALNIZ `.github/workflows/*` dosyaları değiştirilecekse (aksi halde GitHub push'u reddeder)
+ *  - workflows=write: YALNIZ `.github/workflows` klasöründeki dosyalar değiştirilecekse (aksi halde GitHub push'u reddeder)
  */
 object GitHubTokenGuide {
     private const val BASE = "https://github.com/settings/personal-access-tokens/new"

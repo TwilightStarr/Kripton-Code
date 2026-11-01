@@ -184,7 +184,6 @@ fun SettingsScreen(
                 stringResource(R.string.settings_modes_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = k.muted,
-                color = k.muted,
                 modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
             )
             KButton(text = stringResource(R.string.settings_modes_open), onClick = onOpenModes)
@@ -405,22 +404,20 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = k.muted,
                 )
-                if (showGoogle) {
-                    OutlinedTextField(
-                        value = googleClientId,
-                        onValueChange = onGoogleClientIdChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.settings_google_client_id_label)) },
-                        placeholder = { Text(stringResource(R.string.settings_google_client_id_placeholder)) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        shape = MaterialTheme.shapes.medium,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = k.nodeBorder,
-                        ),
-                    )
-                }
+                if (showGoogle) OutlinedTextField(
+                    value = googleClientId,
+                    onValueChange = onGoogleClientIdChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(R.string.settings_google_client_id_label)) },
+                    placeholder = { Text(stringResource(R.string.settings_google_client_id_placeholder)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = k.nodeBorder,
+                    ),
+                )
             }
         }
         SectionHeader(stringResource(R.string.settings_section_about))
@@ -487,6 +484,7 @@ fun SettingsScreen(
                 }
             }
         }
+
     }
 }
 

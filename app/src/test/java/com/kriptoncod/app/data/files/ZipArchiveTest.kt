@@ -13,9 +13,7 @@ class ZipArchiveTest {
     private val root: File = Files.createTempDirectory("ziparch").toFile()
     private var clock = 1_000L
 
-    @After fun cleanup() {
-        root.deleteRecursively()
-    }
+    @After fun cleanup() { root.deleteRecursively() }
 
     private fun archive() = ZipArchive(root) { clock++ }
     private fun zip(vararg f: Pair<String, String>) = RepoZip.toZip(f.associate { it.first to it.second.toByteArray() })

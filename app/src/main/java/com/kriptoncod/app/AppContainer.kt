@@ -142,10 +142,7 @@ class AppContainer(context: Context) {
     val webMonitor: WebMonitor by lazy { WebMonitor() }
     val webChatDriver: WebChatDriver by lazy {
         WebViewChatDriver(
-            appContext,
-            webSessionStore,
-            File(appContext.filesDir, "web-selectors.json"),
-            webMonitor,
+            appContext, webSessionStore, File(appContext.filesDir, "web-selectors.json"), webMonitor,
             beforeAutomation = { accountId, exclusive -> webChatHub.preempt(accountId, exclusive) },
         )
     }
@@ -236,13 +233,11 @@ class AppContainer(context: Context) {
 
     // --- Seri mod (tek AI, tek sohbet, sıralı) ---
     val serialStore: SerialStore by lazy { SerialStore(File(appContext.filesDir, "serial")) }
-
     /** "Zip'ler" sekmesi: GitHub'dan çekilen projeler ve AI değişiklik zip'leri. */
     val zipArchive: com.kriptoncod.app.data.files.ZipArchive by lazy { com.kriptoncod.app.data.files.ZipArchive(appContext.filesDir) }
     val serialGit: SerialGit by lazy {
         GitHubSerialGit(
-            githubService,
-            githubTokenStore,
+            githubService, githubTokenStore,
             onSnapshot = { repo, branch, zip, count ->
                 zipArchive.add(com.kriptoncod.app.data.files.ZipArchive.KIND_REPO, "$repo@$branch", "GitHub", zip, count)
             },

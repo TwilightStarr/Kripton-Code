@@ -314,15 +314,9 @@ fun WebChatScreen(accountId: Long, container: AppContainer, onBack: () -> Unit, 
                 )
             }
             if (acc != null && provider != null && state !is WebChatHub.State.Opening) {
-                androidx.compose.material3.TextButton(onClick = {
-                    userClosed = false
-                    hub.reopen(acc)
-                }) { Text(stringResource(R.string.web_chats_reload)) }
+                androidx.compose.material3.TextButton(onClick = { userClosed = false; hub.reopen(acc) }) { Text(stringResource(R.string.web_chats_reload)) }
                 if (state is WebChatHub.State.Ready) {
-                    androidx.compose.material3.TextButton(onClick = {
-                        userClosed = true
-                        hub.release(accountId)
-                    }) {
+                    androidx.compose.material3.TextButton(onClick = { userClosed = true; hub.release(accountId) }) {
                         Text(stringResource(R.string.web_chats_close_session))
                     }
                 }
@@ -338,12 +332,7 @@ fun WebChatScreen(accountId: Long, container: AppContainer, onBack: () -> Unit, 
                 userClosed && s is WebChatHub.State.Idle -> Notice(
                     stringResource(R.string.web_chats_closed),
                     stringResource(R.string.web_chats_retry),
-                ) {
-                    if (acc != null) {
-                        userClosed = false
-                        hub.open(acc)
-                    }
-                }
+                ) { if (acc != null) { userClosed = false; hub.open(acc) } }
 
                 s is WebChatHub.State.Failed -> Notice(
                     stringResource(R.string.web_chats_failed),
