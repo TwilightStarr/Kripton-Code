@@ -131,23 +131,14 @@ jobs:
           KEY_ALIAS_IN: ${{ secrets.KEY_ALIAS }}
           KEY_PASS: ${{ secrets.KEY_PASSWORD }}
         run: |
-          # Telefondan yapıştırırken parolaların sonuna sızan boşluk/satır sonu/tırnaklar temizlenir.
-          trim() { printf '%s' "$1" | tr -d '\r\n' | sed -e 's/^[[:space:]"]*//' -e 's/[[:space:]"]*$//'; }
-          KEYSTORE_PASS="$(trim "$KEYSTORE_PASS")"
-          KEY_ALIAS_IN="$(trim "$KEY_ALIAS_IN")"
-          KEY_PASS="$(trim "$KEY_PASS")"
           if [ -n "$KEYSTORE_B64" ] && [ -n "$KEYSTORE_PASS" ] && [ -n "$KEY_ALIAS_IN" ] && [ -n "$KEY_PASS" ]; then
-            printf '%s' "$KEYSTORE_B64" | tr -d ' \r\n"' | base64 -d > "$RUNNER_TEMP/release.keystore" || echo "::warning::KEYSTORE_BASE64 base64 olarak çözülemedi (bozuk/eksik kopya)."
-            echo "Keystore dosya boyutu: $(stat -c%s "$RUNNER_TEMP/release.keystore") bayt (boş ya da çok küçükse KEYSTORE_BASE64 eksik kopyalanmıştır)"
-            # -storetype verilmez: keytool PKCS12 / JKS biçimini kendisi algılar. Gerçek hata çıktısı gösterilir.
-            if ! keytool -list -keystore "$RUNNER_TEMP/release.keystore" -storepass "$KEYSTORE_PASS" > "$RUNNER_TEMP/keytool.out" 2>&1; then
-              echo "::error::Keystore açılamadı (dosya bozuk ya da KEYSTORE_PASSWORD yanlış). keytool çıktısı:"
-              sed 's/^/  | /' "$RUNNER_TEMP/keytool.out"
-              exit 1
-            fi
-            if ! keytool -list -keystore "$RUNNER_TEMP/release.keystore" -storepass "$KEYSTORE_PASS" -alias "$KEY_ALIAS_IN" >/dev/null 2>&1; then
-              echo "::error::Keystore açıldı ama KEY_ALIAS bulunamadı. Keystore içindeki gerçek takma adlar:"
-              grep -iE "PrivateKeyEntry|trustedCertEntry" "$RUNNER_TEMP/keytool.out" | sed 's/^/  | /'
+            # Telefondan yapıştırırken sığabilecek boşluk/satır sonu/tırnak karakterleri temizlenir.
+            printf '%s' "$KEYSTORE_B64" | tr -d ' \r\n"' | base64 -d > "$RUNNER_TEMP/release.keystore" || true
+            # Derleme dakikalarca sürmeden önce anahtarın gerçekten okunabildiğini doğrula.
+            if ! keytool -list -keystore "$RUNNER_TEMP/release.keystore" -storetype PKCS12 \
+                 -storepass "$KEYSTORE_PASS" -alias "$KEY_ALIAS_IN" >/dev/null 2>&1; then
+              echo "::error::Keystore okunamadı. KEYSTORE_BASE64 eksik/bozuk kopyalanmış, KEYSTORE_PASSWORD yanlış ya da KEY_ALIAS keystore'daki -alias ile aynı değil (büyük/küçük harf dahil)."
+              ls -l "$RUNNER_TEMP/release.keystore" || true
               exit 1
             fi
             echo "KEYSTORE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
