@@ -404,20 +404,22 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = k.muted,
                 )
-                if (showGoogle) OutlinedTextField(
-                    value = googleClientId,
-                    onValueChange = onGoogleClientIdChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text(stringResource(R.string.settings_google_client_id_label)) },
-                    placeholder = { Text(stringResource(R.string.settings_google_client_id_placeholder)) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = k.nodeBorder,
-                    ),
-                )
+                if (showGoogle) {
+                    OutlinedTextField(
+                        value = googleClientId,
+                        onValueChange = onGoogleClientIdChange,
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.settings_google_client_id_label)) },
+                        placeholder = { Text(stringResource(R.string.settings_google_client_id_placeholder)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = k.nodeBorder,
+                        ),
+                    )
+                }
             }
         }
         SectionHeader(stringResource(R.string.settings_section_about))
@@ -484,7 +486,6 @@ fun SettingsScreen(
                 }
             }
         }
-
     }
 }
 

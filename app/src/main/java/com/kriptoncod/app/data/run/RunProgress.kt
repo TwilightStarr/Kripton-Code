@@ -92,13 +92,21 @@ data class RunProgress(
 
             return when (status) {
                 RunStatus.DONE -> make(Stage.FINISHED, 1f)
+
                 RunStatus.PUSHING -> make(Stage.PUSHING, PUSHING_AT)
+
                 RunStatus.CI_WAITING -> make(Stage.CI, CI_AT)
+
                 RunStatus.FIXING -> make(Stage.FIXING, FIXING_AT)
+
                 RunStatus.PARTIAL -> make(Stage.PARTIAL, nodesOverall)
+
                 RunStatus.FAILED -> make(Stage.FAILED, nodesOverall)
+
                 RunStatus.CANCELLED -> make(Stage.CANCELLED, nodesOverall)
+
                 RunStatus.PAUSED -> if (planning) make(Stage.PAUSED, 0f) else make(Stage.PAUSED, nodesOverall)
+
                 RunStatus.PREPARING, RunStatus.RUNNING ->
                     if (planning) {
                         make(Stage.PLANNING, 0f, indeterminate = true)
