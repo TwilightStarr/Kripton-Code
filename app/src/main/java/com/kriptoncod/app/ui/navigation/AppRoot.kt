@@ -1,6 +1,7 @@
 package com.kriptoncod.app.ui.navigation
 
 import com.kriptoncod.app.ui.screens.ModesScreen
+import com.kriptoncod.app.ui.screens.ArchiveScreen
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.core.FastOutLinearInEasing
@@ -389,8 +390,11 @@ fun AppRoot(
                             composable(ExtraRoutes.PERMISSIONS) {
                                 AdaptiveFrame(Adaptive.FormMaxWidth) { PermissionScreen(onDone = { navController.popBackStack() }) }
                             }
-                            composable(Route.History.path) {
-                                HistoryScreen(onOpenRun = { runId -> navController.navigate(ExtraRoutes.run(runId)) })
+                            composable(Route.Archive.path) {
+                                ArchiveScreen(
+                                    container = container,
+                                    onOpenRun = { runId -> navController.navigate(ExtraRoutes.run(runId)) },
+                                )
                             }
                             composable(Route.Settings.path) {
                                 AdaptiveFrame(Adaptive.FormMaxWidth) {

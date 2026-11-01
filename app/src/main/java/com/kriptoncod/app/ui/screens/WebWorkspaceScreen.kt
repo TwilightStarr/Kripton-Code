@@ -281,8 +281,9 @@ fun WebWorkspaceScreen(container: AppContainer, onBack: () -> Unit, onOpenMonito
         val visible = pagedItems(open.toList(), pinnedId, page, perPage)
         unseen.removeAll { it in visible || it !in open }
     }
-    // Ekrandan çıkınca bu ekranın açtığı tüm oturumlar kapanır (çerezler kaydedilir).
-    DisposableEffect(Unit) { onDispose { open.toList().forEach { hub.release(it) } } }
+    // Ekrandan/sekmeden çıkınca oturumlar AÇIK kalır (dönünce kaldığı yerden); yalnız çerezler kaydedilir.
+    // Pencereyi kapatmak (closePane) oturumu gerçekten kapatır.
+    DisposableEffect(Unit) { onDispose { open.toList().forEach { hub.leave(it) } } }
 
     BackHandler(enabled = maximizedId != null) { maximizedId = null }
     // Dosya seçici bütün pencereler için TEK kez kurulur.
@@ -721,20 +722,20 @@ private fun WorkspacePane(
                 }
                 Box(Modifier.padding(horizontal = 6.dp).size(8.dp).clip(CircleShape).background(dot))
                 if (account != null && provider != null && state !is WebChatHub.State.Opening) {
-                    IconButton(onClick = { hub.reopen(account) }, modifier = Modifier.size(34.dp)) {
+                    IconButton(onClick = { hub.reopen(account) }, modifier = Modifier.size(44.dp)) {
                         Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.web_chats_reload), modifier = Modifier.size(18.dp))
                     }
                 }
                 if (!maximized) {
                     val pinDesc = stringResource(if (pinned) R.string.ws_unpin else R.string.ws_pin)
-                    IconButton(onClick = onTogglePin, modifier = Modifier.size(34.dp)) {
+                    IconButton(onClick = onTogglePin, modifier = Modifier.size(44.dp)) {
                         PinGlyph(pinned = pinned, tint = if (pinned) tint else scheme.onSurface, desc = pinDesc)
                     }
                 }
-                IconButton(onClick = onToggleMax, modifier = Modifier.size(34.dp)) {
+                IconButton(onClick = onToggleMax, modifier = Modifier.size(44.dp)) {
                     MaxGlyph(restore = maximized, tint = scheme.onSurface)
                 }
-                IconButton(onClick = onClose, modifier = Modifier.size(34.dp)) {
+                IconButton(onClick = onClose, modifier = Modifier.size(44.dp)) {
                     Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.ws_close), modifier = Modifier.size(18.dp))
                 }
             }

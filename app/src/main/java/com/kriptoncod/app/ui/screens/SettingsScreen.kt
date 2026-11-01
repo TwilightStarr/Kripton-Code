@@ -1,5 +1,11 @@
 package com.kriptoncod.app.ui.screens
 
+import com.kriptoncod.app.data.github.GitHubTokenGuide
+import com.kriptoncod.app.domain.ModeProfile
+import com.kriptoncod.app.data.settings.ModeState
+import android.text.format.Formatter
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -74,6 +80,8 @@ fun SettingsScreen(
     val context = LocalContext.current
     val store = remember { (context.applicationContext as KriptonCodApp).container.themeStore }
     val notify by store.notifyFlow.collectAsStateWithLifecycle(initialValue = true)
+    val container = remember { (context.applicationContext as KriptonCodApp).container }
+    val modeState by container.modeStore.state.collectAsStateWithLifecycle(initialValue = ModeState(emptyList(), ModeProfile.ID_BALANCED))
     val scope = rememberCoroutineScope()
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     Column(
@@ -85,6 +93,7 @@ fun SettingsScreen(
     ) {
         Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineMedium)
 
+        SectionHeader(stringResource(R.string.settings_section_general))
         // Görünüm kartı
         NodeCard(modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.settings_appearance), style = MaterialTheme.typography.titleMedium)
@@ -108,6 +117,44 @@ fun SettingsScreen(
             }
         }
 
+        // Dil: seçim kaydedilir ve ekran yeniden kurulur.
+        var language by remember { mutableStateOf(com.kriptoncod.app.data.settings.AppLanguage.get(context)) }
+        NodeCard(modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.language_title), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.language_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = k.muted,
+                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+            )
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(
+                    com.kriptoncod.app.data.settings.AppLanguage.SYSTEM to R.string.language_system,
+                    com.kriptoncod.app.data.settings.AppLanguage.TR to R.string.language_tr,
+                    com.kriptoncod.app.data.settings.AppLanguage.EN to R.string.language_en,
+                ).forEach { (code, label) ->
+                    KChip(
+                        label = stringResource(label),
+                        selected = language == code,
+                        onClick = {
+                            if (language != code) {
+                                language = code
+                                com.kriptoncod.app.data.settings.AppLanguage.set(context, code)
+                                var c: android.content.Context = context
+                                while (c is android.content.ContextWrapper) {
+                                    if (c is android.app.Activity) {
+                                        c.recreate()
+                                        break
+                                    }
+                                    c = c.baseContext
+                                }
+                            }
+                        },
+                    )
+                }
+            }
+        }
+
         // Animasyonlar: logo animasyonu, yükleme göstergeleri ve ekran geçişleri tek anahtarla kapanır.
         val animations by store.animationsFlow.collectAsStateWithLifecycle(initialValue = true)
         NodeCard(modifier = Modifier.fillMaxWidth()) {
@@ -123,12 +170,20 @@ fun SettingsScreen(
             }
         }
 
+        SectionHeader(stringResource(R.string.settings_section_work))
         // Mod Merkezi: tüm sınırlar ve otomasyonlar tek yerde, hazır modlarla.
         NodeCard(modifier = Modifier.fillMaxWidth(), onClick = onOpenModes) {
             Text(stringResource(R.string.settings_modes_title), style = MaterialTheme.typography.titleMedium)
             Text(
+                stringResource(R.string.settings_modes_active, modeState.active.label(context)),
+                style = MaterialTheme.typography.bodyMedium,
+                color = k.arrow,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+            Text(
                 stringResource(R.string.settings_modes_hint),
                 style = MaterialTheme.typography.bodySmall,
+                color = k.muted,
                 color = k.muted,
                 modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
             )
@@ -219,6 +274,154 @@ fun SettingsScreen(
             }
         }
 
+        NodeCard(modifier = Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.settings_permissions), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(R.string.settings_permissions_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = k.muted,
+                )
+                KButton(
+                    text = stringResource(R.string.action_open),
+                    onClick = onOpenPermissions,
+                    style = KButtonStyle.Outline,
+                )
+            }
+        }
+
+        SectionHeader(stringResource(R.string.settings_section_data))
+        // Zip arşivi: GitHub'dan çekilen projeler ve AI değişiklikleri cihazda yer tutar; buradan görülür ve temizlenir.
+        val zipRecords by container.zipArchive.records.collectAsStateWithLifecycle()
+        var confirmClearZips by remember { mutableStateOf(false) }
+        val doneText = stringResource(R.string.settings_done)
+        NodeCard(modifier = Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.settings_zip_title), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.settings_zip_hint), style = MaterialTheme.typography.bodySmall, color = k.muted)
+                Text(
+                    if (zipRecords.isEmpty()) {
+                        stringResource(R.string.settings_zip_empty)
+                    } else {
+                        stringResource(
+                            R.string.settings_zip_value,
+                            zipRecords.size,
+                            Formatter.formatShortFileSize(context, zipRecords.sumOf { it.sizeBytes }),
+                        )
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                if (zipRecords.isNotEmpty()) {
+                    KButton(text = stringResource(R.string.settings_zip_clear), onClick = { confirmClearZips = true }, style = KButtonStyle.Danger)
+                }
+            }
+        }
+        NodeCard(modifier = Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.settings_reset_title), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.settings_reset_hint), style = MaterialTheme.typography.bodySmall, color = k.muted)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    KButton(
+                        text = stringResource(R.string.settings_reset_webwarn),
+                        style = KButtonStyle.Outline,
+                        onClick = {
+                            scope.launch { store.setWebWarningAccepted(false) }
+                            Toast.makeText(context, doneText, Toast.LENGTH_SHORT).show()
+                        },
+                    )
+                    KButton(
+                        text = stringResource(R.string.settings_reset_workspace),
+                        style = KButtonStyle.Outline,
+                        onClick = {
+                            scope.launch { store.setWorkspaceLayout("") }
+                            Toast.makeText(context, doneText, Toast.LENGTH_SHORT).show()
+                        },
+                    )
+                }
+            }
+        }
+        if (confirmClearZips) {
+            AlertDialog(
+                onDismissRequest = { confirmClearZips = false },
+                title = { Text(stringResource(R.string.settings_zip_clear_title)) },
+                text = { Text(stringResource(R.string.settings_zip_clear_text)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        confirmClearZips = false
+                        container.zipArchive.clear()
+                    }) { Text(stringResource(R.string.settings_zip_clear)) }
+                },
+                dismissButton = { TextButton(onClick = { confirmClearZips = false }) { Text(stringResource(R.string.action_cancel)) } },
+            )
+        }
+
+        SectionHeader(stringResource(R.string.settings_section_links))
+        // GitHub ve izinler
+        NodeCard(modifier = Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.settings_github), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(R.string.settings_github_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = k.muted,
+                )
+                // Önce yönlendirme: GitHub'da dar izinli token oluştur; sonra token'ı girmek için ayar ekranı.
+                KButton(
+                    text = stringResource(R.string.settings_github_guide),
+                    onClick = {
+                        runCatching {
+                            context.startActivity(
+                                Intent(Intent.ACTION_VIEW, android.net.Uri.parse(GitHubTokenGuide.createUrl()))
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                KButton(
+                    text = stringResource(R.string.settings_github_enter),
+                    onClick = onOpenGitHub,
+                    style = KButtonStyle.Outline,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+        // Google OAuth ayarları — yalnızca Gemini için; gelişmiş olduğundan varsayılan kapalı (doluysa açık).
+        var showGoogle by remember { mutableStateOf(googleClientId.isNotBlank()) }
+        NodeCard(modifier = Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        stringResource(R.string.settings_google_auth),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = { showGoogle = !showGoogle }) {
+                        Text(stringResource(if (showGoogle) R.string.settings_hide else R.string.settings_show))
+                    }
+                }
+                Text(
+                    stringResource(R.string.settings_google_auth_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = k.muted,
+                )
+                if (showGoogle) OutlinedTextField(
+                    value = googleClientId,
+                    onValueChange = onGoogleClientIdChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(R.string.settings_google_client_id_label)) },
+                    placeholder = { Text(stringResource(R.string.settings_google_client_id_placeholder)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = k.nodeBorder,
+                    ),
+                )
+            }
+        }
+        SectionHeader(stringResource(R.string.settings_section_about))
         // Kurulu sürüm: güncellemenin gerçekten yüklendiğini uygulamanın içinden doğrulamak için.
         NodeCard(modifier = Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -283,67 +486,18 @@ fun SettingsScreen(
             }
         }
 
-        // GitHub ve izinler
-        NodeCard(modifier = Modifier.fillMaxWidth()) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.settings_github), style = MaterialTheme.typography.titleMedium)
-                Text(
-                    stringResource(R.string.settings_github_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = k.muted,
-                )
-                KButton(
-                    text = stringResource(R.string.action_open),
-                    onClick = onOpenGitHub,
-                    style = KButtonStyle.Outline,
-                )
-            }
-        }
-        NodeCard(modifier = Modifier.fillMaxWidth()) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.settings_permissions), style = MaterialTheme.typography.titleMedium)
-                Text(
-                    stringResource(R.string.settings_permissions_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = k.muted,
-                )
-                KButton(
-                    text = stringResource(R.string.action_open),
-                    onClick = onOpenPermissions,
-                    style = KButtonStyle.Outline,
-                )
-            }
-        }
-
-        // Google OAuth ayarları — yalnızca Gemini için
-        NodeCard(modifier = Modifier.fillMaxWidth()) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    stringResource(R.string.settings_google_auth),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    stringResource(R.string.settings_google_auth_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = k.muted,
-                )
-                OutlinedTextField(
-                    value = googleClientId,
-                    onValueChange = onGoogleClientIdChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text(stringResource(R.string.settings_google_client_id_label)) },
-                    placeholder = { Text(stringResource(R.string.settings_google_client_id_placeholder)) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = k.nodeBorder,
-                    ),
-                )
-            }
-        }
     }
+}
+
+/** Ayarlar bölüm başlığı: kartları Genel / Çalışma / Bağlantılar / Hakkında altında gruplar. */
+@Composable
+private fun SectionHeader(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelLarge,
+        color = KriptonTheme.colors.muted,
+        modifier = Modifier.padding(top = 8.dp),
+    )
 }
 
 private fun ThemePreference.labelRes(): Int = when (this) {

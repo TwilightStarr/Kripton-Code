@@ -239,12 +239,12 @@ private fun ChatList(
                 ) {
                     Avatar(provider, 52.dp)
                     Column(Modifier.weight(1f)) {
-                        Text(a.displayName, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(a.displayName, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         Text(
                             provider.displayName + " · " + sub,
                             style = MaterialTheme.typography.bodySmall,
                             color = subColor,
-                            maxLines = 1,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
@@ -280,7 +280,9 @@ fun WebChatScreen(accountId: Long, container: AppContainer, onBack: () -> Unit, 
     LaunchedEffect(acc?.id) {
         if (acc != null && provider != null) hub.open(acc)
     }
-    DisposableEffect(accountId) { onDispose { hub.release(accountId) } }
+    // Ekrandan/sekmeden çıkınca oturum KAPANMAZ (sayfa ve sohbet yerinde kalır); yalnız çerezler kaydedilir.
+    var userClosed by remember(accountId) { mutableStateOf(false) }
+    DisposableEffect(accountId) { onDispose { hub.leave(accountId) } }
     BackHandler(enabled = showBack) { onBack() }
 
     Column(Modifier.fillMaxSize().imePadding()) {
@@ -312,7 +314,12 @@ fun WebChatScreen(accountId: Long, container: AppContainer, onBack: () -> Unit, 
                 )
             }
             if (acc != null && provider != null && state !is WebChatHub.State.Opening) {
-                androidx.compose.material3.TextButton(onClick = { hub.reopen(acc) }) { Text(stringResource(R.string.web_chats_reload)) }
+                androidx.compose.material3.TextButton(onClick = { userClosed = false; hub.reopen(acc) }) { Text(stringResource(R.string.web_chats_reload)) }
+                if (state is WebChatHub.State.Ready) {
+                    androidx.compose.material3.TextButton(onClick = { userClosed = true; hub.release(accountId) }) {
+                        Text(stringResource(R.string.web_chats_close_session))
+                    }
+                }
             }
         }
         HorizontalDivider(color = k.nodeBorder.copy(alpha = 0.5f))
@@ -321,6 +328,11 @@ fun WebChatScreen(accountId: Long, container: AppContainer, onBack: () -> Unit, 
             val s = state
             when {
                 loaded && (acc == null || provider == null) -> Notice(stringResource(R.string.web_chats_no_account), null, null)
+
+                userClosed && s is WebChatHub.State.Idle -> Notice(
+                    stringResource(R.string.web_chats_closed),
+                    stringResource(R.string.web_chats_retry),
+                ) { if (acc != null) { userClosed = false; hub.open(acc) } }
 
                 s is WebChatHub.State.Failed -> Notice(
                     stringResource(R.string.web_chats_failed),

@@ -184,7 +184,7 @@ private fun AccountRowCard(row: UsageReport.AccountRow, pool: PoolStatus.Entry?)
             Text(
                 row.account?.displayName ?: stringResource(R.string.usage_deleted_account),
                 style = MaterialTheme.typography.titleSmall,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
             row.account?.modelId?.let {

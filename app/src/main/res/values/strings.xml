@@ -158,7 +158,7 @@
     <!-- GitHub Ayarları -->
     <string name="github_settings_title">GitHub Ayarları</string>
     <string name="github_token_label">Kişisel Erişim Belirteci</string>
-    <string name="github_token_hint">GitHub → Settings → Developer Settings → Personal Access Tokens altından üret. `repo` ve `workflow` izinleri gerekir.</string>
+    <string name="github_token_hint">Önerilen: ince ayarlı (github_pat_…) token. Yalnız seçtiğin repolara, Contents (Read and write) ve Actions (Read-only) izniyle erişir. Üstteki rehberi izle.</string>
     <string name="github_token_clear">Token Sil</string>
     <string name="github_settings_info_title">Güvenlik</string>
     <string name="github_settings_info_body">Token yalnızca cihazda Android Keystore ile şifrelenir. Hiçbir loga, geçmişe veya üretilen dosyaya yazılmaz.</string>
@@ -191,7 +191,7 @@
 
     <!-- Ayarlar: bağlantılar -->
     <string name="settings_github">GitHub</string>
-    <string name="settings_github_hint">Token tanımla ve CI düzeltme ayarlarını yönet.</string>
+    <string name="settings_github_hint">Güvenli token oluştur (yalnız gerekli izinler) ve CI düzeltme ayarlarını yönet.</string>
     <string name="settings_permissions">İzinler</string>
     <string name="settings_permissions_hint">Uygulamanın hangi izinleri kullandığını gör.</string>
     <string name="action_open">Aç</string>

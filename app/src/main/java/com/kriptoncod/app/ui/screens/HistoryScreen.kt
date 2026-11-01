@@ -98,7 +98,7 @@ private fun RunHistoryRow(run: RunRecord, onClick: () -> Unit) {
                         text = repo,
                         style = MaterialTheme.typography.bodySmall,
                         color = k.muted,
-                        maxLines = 1,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }

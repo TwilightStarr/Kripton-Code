@@ -61,6 +61,8 @@ class GitHubSerialGit(
     private val timeoutMs: Long = 3L * 3_600_000L,
     private val sleep: suspend (Long) -> Unit = { delay(it) },
     private val now: () -> Long = System::currentTimeMillis,
+    /** GitHub'dan çekilen repo zip'i (ham bayt) alınınca çağrılır; "Zip'ler" arşivi için. Hatası yutulur. */
+    private val onSnapshot: ((repo: String, branch: String, zip: ByteArray, fileCount: Int) -> Unit)? = null,
 ) : SerialGit {
 
     private suspend fun token(): String = try {
@@ -70,7 +72,7 @@ class GitHubSerialGit(
     } ?: throw SerialGitException(true, "GitHub token tanımlı değil. Ayarlar > GitHub bölümünden ekleyin.")
 
     private fun fail(f: ApiResult.Fail, what: String): SerialGitException = when (f.error) {
-        ApiError.INVALID_KEY -> SerialGitException(true, "GitHub $what reddedildi: token geçersiz ya da izni yok (repo + workflow izni gerekir).")
+        ApiError.INVALID_KEY -> SerialGitException(true, "GitHub $what reddedildi: token geçersiz, süresi dolmuş ya da bu repoya erişemiyor (ince ayarlı token: Contents Read and write + Actions Read-only, repo seçili olmalı).")
         ApiError.NOT_FOUND -> SerialGitException(true, "GitHub $what bulunamadı: repo/dal yok, token erişemiyor ya da repo boş.")
         else -> SerialGitException(false, "GitHub $what başarısız (${f.error}${f.httpCode?.let { " $it" } ?: ""}).")
     }
@@ -89,6 +91,7 @@ class GitHubSerialGit(
             }
             // Boş sonuç eksik inmiş bir arşivin belirtisidir; boş proje AI'a "eksiksiz proje" diye verilmesin.
             if (files.isEmpty()) throw SerialGitException(false, "Repo zip'i boş geldi; yeniden denenecek.")
+            runCatching { onSnapshot?.invoke(repo, branch, r.value, files.size) }
             files
         }
 

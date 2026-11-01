@@ -273,7 +273,7 @@ private fun PreviewCard(
                 } else {
                     p.body
                 }
-                Text(full, fontFamily = FontFamily.Monospace, fontSize = 11.sp, color = k.muted)
+                Text(full, fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = k.muted)
             }
         }
     }

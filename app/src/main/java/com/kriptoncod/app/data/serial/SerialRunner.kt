@@ -53,6 +53,8 @@ class SerialRunner(
     private val errorDelayMs: () -> Long = { 60_000L + (Math.random() * 60_000L).toLong() },
     /** AI yanıtlarının ilk durağı: yanıt gelir gelmez ham haliyle yazılır, alışveriş bitince yalnız kod kalır. null: saklama yok. */
     private val rawLog: RawReplyLog? = null,
+    /** Bir adımın dosyaları commit'lenince çağrılır (başlık, ayrıntı, dosyalar); "Zip'ler" arşivi için. Hatası yutulur. */
+    private val onChange: (title: String, detail: String, files: Map<String, ByteArray>) -> Unit = { _, _, _ -> },
 ) {
 
     /** Duraklatıldı/iptal edildi/kayıt silindi: döngüden temiz çıkış. */
@@ -530,6 +532,7 @@ class SerialRunner(
         store.update(id) { it.copy(message = "Repoya commit atılıyor (${files.size} dosya)…") }
         val ghFiles = files.map { (path, bytes) -> GitHubFile(path, bytes) }
         val sha = retryGit(id, "commit") { git.commit(st.repo, st.branch, message, ghFiles) }
+        runCatching { onChange("${st.index + 1}/${st.total}: $title$fixNote", "${st.repo}@${st.branch} · ${sha.take(7)}", files) }
         store.clearFiles(id)
         store.update(id) { it.copy(phase = SerialPhase.CI, headSha = sha, message = "") }
         store.log(id, "Commit ${sha.take(7)}: ${files.size} dosya → ${st.repo}@${st.branch}")

@@ -141,7 +141,7 @@ fun HomeScreen(
         Row(Modifier.fillMaxWidth().appear(2), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             StatCard(accounts.size, stringResource(R.string.home_stat_ais), { onOpenRoute(Route.Ais) }, Modifier.weight(1f))
             StatCard(sets.size, stringResource(R.string.home_stat_sets), { onOpenRoute(Route.Prompts) }, Modifier.weight(1f))
-            StatCard(runs.size, stringResource(R.string.home_stat_runs), { onOpenRoute(Route.History) }, Modifier.weight(1f))
+            StatCard(runs.size, stringResource(R.string.home_stat_runs), { onOpenRoute(Route.Archive) }, Modifier.weight(1f))
         }
     }
     val usageCard: @Composable () -> Unit = {
@@ -177,7 +177,7 @@ fun HomeScreen(
                     )
                     KButton(
                         text = stringResource(R.string.home_recent_all),
-                        onClick = { onOpenRoute(Route.History) },
+                        onClick = { onOpenRoute(Route.Archive) },
                         style = KButtonStyle.Outline,
                     )
                 }
@@ -191,7 +191,7 @@ fun HomeScreen(
                                         (r.repo?.let { " · $it" } ?: ""),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = k.muted,
-                                    maxLines = 1,
+                                    maxLines = 2,
                                     overflow = TextOverflow.Ellipsis,
                                 )
                             }
@@ -274,7 +274,7 @@ private fun UsageCard(accounts: List<AiAccount>, usage: List<AccountUsage>, onOp
                         Text(
                             account.displayName,
                             style = MaterialTheme.typography.titleSmall,
-                            maxLines = 1,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
                         Text(
@@ -325,7 +325,7 @@ private fun StatCard(value: Int, label: String, onClick: () -> Unit, modifier: M
                 label,
                 style = MaterialTheme.typography.bodySmall,
                 color = KriptonTheme.colors.muted,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
         }

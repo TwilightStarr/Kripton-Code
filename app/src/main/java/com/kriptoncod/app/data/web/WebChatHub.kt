@@ -17,8 +17,10 @@ import kotlinx.coroutines.launch
 /**
  * "AI sohbetleri": kullanıcının bir AI'ın web arayüzünü istediği an elle açıp gezmesi (WhatsApp benzeri liste -> sohbet).
  *
- * Açılan oturum, çalışmalarla AYNI sürücüyü ve hesabın kayıtlı oturumunu kullanır; ekrandan çıkılınca ([release]) kapanır
- * ve (giriş yapıldıysa) yenilenen çerezler kaydedilir. Hesap bir çalışma tarafından zaten kullanılıyorsa sayfa yeniden
+ * Açılan oturum, çalışmalarla AYNI sürücüyü ve hesabın kayıtlı oturumunu kullanır. Kullanıcı başka ekrana/sekmeye geçince
+ * ([leave]) oturum AÇIK kalır (sayfa, yazılan metin ve sohbet yerinde durur; dönünce kaldığı yerden devam); çerezler yine de
+ * kaydedilir. Yalnız kullanıcı kapatınca ([release]), bir otomasyon aynı hesabı isteyince ([preempt]) ya da açık oturum sayısı
+ * [MAX_HELD]'i aşınca (en eskisi) kapanır. Hesap bir çalışma tarafından zaten kullanılıyorsa sayfa yeniden
  * açılmaz ve yeniden boyutlandırılmaz (otomasyon bozulmasın): durum "ödünç" olarak bildirilir.
  */
 class WebChatHub(
@@ -39,7 +41,9 @@ class WebChatHub(
         data class Failed(val kind: Kind?) : State
     }
 
-    private class Held(val session: WebChatSession, val provider: WebProvider)
+    private class Held(val session: WebChatSession, val provider: WebProvider) {
+        @Volatile var lastUsed: Long = System.nanoTime()
+    }
 
     private val states = ConcurrentHashMap<Long, MutableStateFlow<State>>()
     private val held = ConcurrentHashMap<Long, Held>()
@@ -59,11 +63,13 @@ class WebChatHub(
             return
         }
         if (jobs[account.id]?.isActive == true) return
+        held[account.id]?.lastUsed = System.nanoTime()
         val live = monitor.entries.value.firstOrNull { it.accountId == account.id && it.isLive }
         if (live != null) {
             f.value = State.Ready(live.id, borrowed = !held.containsKey(account.id))
             return
         }
+        evictOldest(except = account.id)
         f.value = State.Opening
         jobs[account.id] = scope.launch {
             try {
@@ -105,9 +111,45 @@ class WebChatHub(
         }
     }
 
+    /** Kullanıcı bu ekrandan ayrıldı: oturum açık kalır, yalnız güncel çerezler kaydedilir. */
+    fun leave(accountId: Long) {
+        val h = held[accountId] ?: return
+        h.lastUsed = System.nanoTime()
+        scope.launch {
+            runCatching { h.session.saveCookies() }
+            runCatching {
+                val saved = sessions.load(accountId)
+                if (saved != null && h.provider.isLoggedIn(saved)) onLoggedIn(accountId)
+            }
+        }
+    }
+
+    /** Kullanıcının elle açık bıraktığı hesap kimlikleri (çalışma alanı dönüşünde sayfaları geri bulmak için). */
+    fun heldIds(): Set<Long> = held.keys.toSet()
+
+    /** Otomasyon bu hesabı açacak: elle açık oturum çekilir ([exclusive] ise hepsi). Kilit, kapanış bitince çözülür. */
+    fun preempt(accountId: Long, exclusive: Boolean) {
+        val ids = if (exclusive) held.keys.toList() else listOfNotNull(accountId.takeIf { held.containsKey(it) })
+        ids.forEach { release(it) }
+    }
+
+    /** Açık oturum sayısı sınırı: sayfalar ağırdır; sınır aşılırken en uzun süredir kullanılmayan kapanır. */
+    @Synchronized
+    private fun evictOldest(except: Long) {
+        while (held.size >= MAX_HELD) {
+            val victim = held.entries.filter { it.key != except }.minByOrNull { it.value.lastUsed }?.key ?: return
+            release(victim)
+        }
+    }
+
     /** Açılışı baştan dener (hata ya da kapanmış sayfa sonrası). */
     fun reopen(account: AiAccount) {
         release(account.id)
         open(account)
+    }
+
+    companion object {
+        /** Aynı anda elle açık tutulabilecek en çok web oturumu. */
+        const val MAX_HELD = 6
     }
 }

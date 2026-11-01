@@ -12,7 +12,7 @@ class KriptonCodApp : Application() {
         private set
 
     override fun attachBaseContext(base: Context) {
-        super.attachBaseContext(base)
+        super.attachBaseContext(com.kriptoncod.app.data.settings.AppLanguage.wrap(base))
         // Yerel çökme günlüğü (ACRA): olabildiğince erken kurulur. Hiçbir şey ağa gönderilmez.
         CrashReporting.install(this)
     }

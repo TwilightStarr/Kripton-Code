@@ -150,7 +150,7 @@ private fun PromptSetContent(
                     Text(
                         state.setName,
                         style = MaterialTheme.typography.headlineMedium,
-                        maxLines = 1,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                     if (state.prompts.isNotEmpty()) {

@@ -252,12 +252,12 @@ fun SerialRunsSection(container: AppContainer, onOpen: (Long) -> Unit) {
             NodeCard(modifier = Modifier.fillMaxWidth(), accent = accentOf(s.status), onClick = { onOpen(s.id) }) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Column(Modifier.weight(1f)) {
-                        Text(s.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(s.name, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         Text(
                             SerialProgress.of(s).let { p -> stringResource(R.string.serial_progress_short, p.completed, p.total, p.percent) } + " · " + s.repo,
                             style = MaterialTheme.typography.bodySmall,
                             color = k.muted,
-                            maxLines = 1,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }

@@ -5,6 +5,28 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
+### Değişti (GitHub token)
+- GitHub ayarlarına **güvenli token rehberi** eklendi: ince ayarlı (fine-grained) token, yalnız seçilen repolar, yalnız Contents (Read and write) + Actions (Read-only); Workflows izni isteğe bağlı. Düğme GitHub'ın token sayfasını ad, süre (90 gün) ve izinler hazır dolu açar. Klasik (ghp_…) token kaydedilirse uyarı çıkar. Ayarlar'daki GitHub kartı önce bu rehbere yönlendirir.
+
+### Değişti (Ayarlar)
+- Modlar kartı etkin modu gösteriyor. Yeni **Veri ve depolama** bölümü: zip arşivinin boyutu ve temizleme, web uyarısını yeniden gösterme, çalışma alanı düzenini sıfırlama. Google OAuth alanı (yalnız Gemini için) varsayılan kapalı, "Göster" ile açılıyor.
+
+### Düzeltildi (AI sohbetleri)
+- Başka ekrana ya da sekmeye geçince web sohbetleri kapanıyordu; artık oturum açık kalır, dönünce sayfa ve sohbet yerinde durur (çalışma alanı dahil). Çerezler ayrılırken kaydedilir. Sohbet başlığında "Oturumu kapat" düğmesi var. Aynı anda en çok 6 açık oturum tutulur (en eskisi kapanır). Akış/seri mod aynı hesabı kullanacağı an elle açık oturum otomatik çekilir.
+
+### Düzeltildi (okunabilirlik)
+- Küçük yazılar büyütüldü (ipucu/alt satır 12sp → 13sp, küçük başlık 14sp → 15sp, kod önizleme 11sp → 12sp).
+- Başlıklar ve alt satırlar tek satırda kesilmek yerine 2 satıra sığıyor (hesap, seri, geçmiş, prompt seti, kullanım, AI sohbetleri, ana ekran istatistik etiketleri).
+- Çalışma alanındaki panel düğmeleri 34dp → 44dp (dokunma alanı).
+
+### Değişti (düzen)
+- Alt menü 5 öğede kaldı: Ana, Hesaplar, Prompt, **Arşiv** (Geçmiş + Zip'ler alt sekmeleri), Ayarlar.
+- Ayarlar dört bölümde gruplandı: Genel, Çalışma, Bağlantılar, Hakkında ve tanılama.
+
+### Eklendi (Zip'ler sekmesi, dil)
+- **Zip'ler** sekmesi: GitHub'dan çekilen proje zip'leri, AI'ların her adımda yaptığı değişiklik zip'leri ve run sonuçları tek listede; gezilebilir (dosya listesi + metin önizleme) ve indirilebilir. En çok 60 kayıt / 300 MB tutulur, aynı içerik tekrar eklenmez.
+- Ayarlar'da **Dil** seçimi (Sistem / Türkçe / English); hazır mod adları ve açıklamaları artık dile göre.
+
 ### Eklendi (Mod Merkezi)
 - Hazır modlar (Dengeli, Hızlı, Sabırlı, Kota tasarrufu, Titiz), özel mod oluşturma/kopyalama/düzenleme/silme, dışa-içe aktarma ve tek dokunuşla seçim. Paralellik, yeniden deneme, devre kesici ve seri mod sınırları artık modda. Ayrıntı: `docs/MODLAR.md`.
 

@@ -158,7 +158,7 @@
     <!-- GitHub settings -->
     <string name="github_settings_title">GitHub Settings</string>
     <string name="github_token_label">Personal Access Token</string>
-    <string name="github_token_hint">Generate one under GitHub → Settings → Developer Settings → Personal Access Tokens. The `repo` and `workflow` scopes are required.</string>
+    <string name="github_token_hint">Recommended: a fine-grained (github_pat_…) token limited to chosen repos with Contents (Read and write) and Actions (Read-only). Follow the guide above.</string>
     <string name="github_token_clear">Delete Token</string>
     <string name="github_settings_info_title">Security</string>
     <string name="github_settings_info_body">The token is encrypted on the device with Android Keystore only. It is never written to any log, history, or generated file.</string>
@@ -191,7 +191,7 @@
 
     <!-- Settings: links -->
     <string name="settings_github">GitHub</string>
-    <string name="settings_github_hint">Set a token and manage CI fix settings.</string>
+    <string name="settings_github_hint">Create a safe token (only the needed permissions) and manage CI fix settings.</string>
     <string name="settings_permissions">Permissions</string>
     <string name="settings_permissions_hint">See which permissions the app uses.</string>
     <string name="action_open">Open</string>

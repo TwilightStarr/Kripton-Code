@@ -1,5 +1,8 @@
 package com.kriptoncod.app.ui.screens
 
+import androidx.compose.ui.platform.LocalContext
+import com.kriptoncod.app.ui.components.NodeAccent
+import com.kriptoncod.app.data.github.GitHubTokenGuide
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -58,6 +61,7 @@ fun GitHubSettingsScreen(
     onBack: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val k = KriptonTheme.colors
 
     var token by remember { mutableStateOf("") }
@@ -66,6 +70,8 @@ fun GitHubSettingsScreen(
     var isError by remember { mutableStateOf(false) }
 
     var ciAttempts by remember { mutableIntStateOf(3) }
+    val classicWarning = stringResource(R.string.github_classic_warning)
+    val savedText = stringResource(R.string.github_token_saved)
 
     LaunchedEffect(Unit) {
         hasToken = container.githubTokenStore.has()
@@ -92,6 +98,35 @@ fun GitHubSettingsScreen(
             )
         }
 
+        // Rehber: token'ı elle girmeden ÖNCE güvenli (dar izinli) token'ın nasıl alınacağı.
+        NodeCard(modifier = Modifier.fillMaxWidth(), accent = NodeAccent.Green) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.github_guide_title), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.github_guide_intro), style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.github_guide_step1), style = MaterialTheme.typography.bodySmall, color = k.muted)
+                Text(stringResource(R.string.github_guide_step2), style = MaterialTheme.typography.bodySmall, color = k.muted)
+                Text(stringResource(R.string.github_guide_step3), style = MaterialTheme.typography.bodySmall, color = k.muted)
+                Text(stringResource(R.string.github_guide_step4), style = MaterialTheme.typography.bodySmall, color = k.muted)
+                Text(stringResource(R.string.github_guide_perms_title), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
+                Text(stringResource(R.string.github_guide_perm_contents), style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.github_guide_perm_actions), style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.github_guide_perm_meta), style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.github_guide_optional), style = MaterialTheme.typography.bodySmall, color = k.muted)
+                Text(stringResource(R.string.github_guide_avoid), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
+                KButton(
+                    text = stringResource(R.string.github_guide_open),
+                    onClick = { openUrl(context, GitHubTokenGuide.createUrl(withWorkflows = false)) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                KButton(
+                    text = stringResource(R.string.github_guide_open_workflows),
+                    onClick = { openUrl(context, GitHubTokenGuide.createUrl(withWorkflows = true)) },
+                    style = KButtonStyle.Outline,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+
         NodeCard(modifier = Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
@@ -113,7 +148,7 @@ fun GitHubSettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.github_token_label)) },
                     placeholder = {
-                        Text(if (hasToken) "••••••••••••" else "ghp_xxxxxxxxxxxx")
+                        Text(if (hasToken) "••••••••••••" else "github_pat_xxxxxxxx")
                     },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
@@ -131,10 +166,11 @@ fun GitHubSettingsScreen(
                         onClick = {
                             scope.launch {
                                 try {
+                                    val classic = GitHubTokenGuide.isClassic(token)
                                     container.githubTokenStore.save(token)
                                     hasToken = true
                                     token = ""
-                                    statusMessage = "Token kaydedildi."
+                                    statusMessage = if (classic) "$savedText $classicWarning" else savedText
                                     isError = false
                                 } catch (e: IllegalArgumentException) {
                                     statusMessage = e.message
@@ -214,5 +250,15 @@ fun GitHubSettingsScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+/** Tarayıcıda (ya da GitHub uygulamasında) bağlantıyı açar; açacak uygulama yoksa sessizce vazgeçer. */
+private fun openUrl(context: android.content.Context, url: String) {
+    runCatching {
+        context.startActivity(
+            android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+        )
     }
 }

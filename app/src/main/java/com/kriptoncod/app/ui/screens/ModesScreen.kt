@@ -107,6 +107,25 @@ private val GROUPS: List<SettingGroup> = listOf(
     ),
 )
 
+/** Hazır modların adı/açıklaması uygulama diline göre; özel modlar kullanıcının yazdığı gibi. */
+fun ModeProfile.label(context: Context): String = if (!builtIn) name else when (id) {
+    ModeProfile.ID_BALANCED -> R.string.mode_name_balanced
+    ModeProfile.ID_FAST -> R.string.mode_name_fast
+    ModeProfile.ID_PATIENT -> R.string.mode_name_patient
+    ModeProfile.ID_SAVER -> R.string.mode_name_saver
+    ModeProfile.ID_STRICT -> R.string.mode_name_strict
+    else -> null
+}?.let { context.getString(it) } ?: name
+
+fun ModeProfile.about(context: Context): String = if (!builtIn) description else when (id) {
+    ModeProfile.ID_BALANCED -> R.string.mode_desc_balanced
+    ModeProfile.ID_FAST -> R.string.mode_desc_fast
+    ModeProfile.ID_PATIENT -> R.string.mode_desc_patient
+    ModeProfile.ID_SAVER -> R.string.mode_desc_saver
+    ModeProfile.ID_STRICT -> R.string.mode_desc_strict
+    else -> null
+}?.let { context.getString(it) } ?: description
+
 /** Mod Merkezi: hazır modları tek dokunuşla seç, kendi modunu kopyala/düzenle, dışa/içe aktar. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -157,7 +176,7 @@ fun ModesScreen(container: AppContainer, onBack: () -> Unit) {
             NodeCard(modifier = Modifier.fillMaxWidth(), accent = if (isActive) NodeAccent.Green else NodeAccent.Blue) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        mode.name,
+                        mode.label(context),
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.weight(1f),
                         maxLines = 2,
@@ -169,8 +188,8 @@ fun ModesScreen(container: AppContainer, onBack: () -> Unit) {
                         KBadge(text = stringResource(if (mode.builtIn) R.string.mode_builtin else R.string.mode_custom))
                     }
                 }
-                if (mode.description.isNotBlank()) {
-                    Text(mode.description, style = MaterialTheme.typography.bodySmall, color = k.muted, modifier = Modifier.padding(top = 4.dp))
+                if (mode.about(context).isNotBlank()) {
+                    Text(mode.about(context), style = MaterialTheme.typography.bodySmall, color = k.muted, modifier = Modifier.padding(top = 4.dp))
                 }
                 Text(
                     summaryLine(mode),
@@ -190,14 +209,14 @@ fun ModesScreen(container: AppContainer, onBack: () -> Unit) {
                         KButton(
                             text = stringResource(R.string.mode_copy_edit),
                             style = KButtonStyle.Outline,
-                            onClick = { editing = mode.copy(id = ModeProfile.newId(), name = copyName(context, mode.name), builtIn = false) },
+                            onClick = { editing = mode.copy(id = ModeProfile.newId(), name = copyName(context, mode.label(context)), description = mode.about(context), builtIn = false) },
                         )
                     } else {
                         KButton(text = stringResource(R.string.mode_edit), style = KButtonStyle.Outline, onClick = { editing = mode })
                         KButton(
                             text = stringResource(R.string.mode_duplicate),
                             style = KButtonStyle.Outline,
-                            onClick = { scope.launch { container.modeStore.duplicate(mode, copyName(context, mode.name)) } },
+                            onClick = { scope.launch { container.modeStore.duplicate(mode, copyName(context, mode.label(context))) } },
                         )
                     }
                     KButton(
@@ -221,7 +240,7 @@ fun ModesScreen(container: AppContainer, onBack: () -> Unit) {
             ) {
                 KButton(
                     text = stringResource(R.string.mode_new),
-                    onClick = { editing = state.active.copy(id = ModeProfile.newId(), name = copyName(context, state.active.name), builtIn = false) },
+                    onClick = { editing = state.active.copy(id = ModeProfile.newId(), name = copyName(context, state.active.label(context)), description = state.active.about(context), builtIn = false) },
                 )
                 KButton(
                     text = stringResource(R.string.mode_import),
@@ -255,7 +274,7 @@ fun ModesScreen(container: AppContainer, onBack: () -> Unit) {
         AlertDialog(
             onDismissRequest = { confirmDelete = null },
             title = { Text(stringResource(R.string.mode_delete_title)) },
-            text = { Text(stringResource(R.string.mode_delete_text, m.name)) },
+            text = { Text(stringResource(R.string.mode_delete_text, m.label(context))) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmDelete = null
@@ -380,6 +399,7 @@ private fun ToggleRow(@StringRes title: Int, @StringRes hint: Int, checked: Bool
 @Composable
 fun ModePickerRow(modifier: Modifier = Modifier) {
     val container = rememberContainer()
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val state by container.modeStore.state.collectAsStateWithLifecycle(initialValue = ModeState(emptyList(), ModeProfile.ID_BALANCED))
     FlowRow(
@@ -389,7 +409,7 @@ fun ModePickerRow(modifier: Modifier = Modifier) {
     ) {
         state.all.forEach { m ->
             KChip(
-                label = m.name,
+                label = m.label(context),
                 selected = m.id == state.active.id,
                 onClick = { scope.launch { container.modeStore.activate(m.id) } },
             )
@@ -401,13 +421,14 @@ fun ModePickerRow(modifier: Modifier = Modifier) {
 @Composable
 fun ModeHomeCard(onOpenModes: () -> Unit, modifier: Modifier = Modifier) {
     val container = rememberContainer()
+    val context = LocalContext.current
     val state by container.modeStore.state.collectAsStateWithLifecycle(initialValue = ModeState(emptyList(), ModeProfile.ID_BALANCED))
     val k = KriptonTheme.colors
     NodeCard(modifier = modifier.fillMaxWidth(), onClick = onOpenModes) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.modes_home_title), style = MaterialTheme.typography.titleSmall)
-                Text(state.active.name, style = MaterialTheme.typography.bodyMedium)
+                Text(state.active.label(context), style = MaterialTheme.typography.bodyMedium)
                 Text(summaryLine(state.active), style = MaterialTheme.typography.bodySmall, color = k.muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
             KBadge(text = stringResource(R.string.mode_active), accent = NodeAccent.Green)
@@ -424,7 +445,8 @@ private fun summaryLine(m: ModeProfile): String = stringResource(
     m.serialMaxFixRounds,
 )
 
-private fun copyName(context: Context, base: String): String = context.getString(R.string.mode_copy_name, base).take(ModeProfile.Limits.NAME_MAX)
+private fun copyName(context: Context, base: String): String =
+    context.getString(R.string.mode_copy_name, base).take(ModeProfile.Limits.NAME_MAX)
 
 private fun shareText(context: Context, text: String) {
     val send = Intent(Intent.ACTION_SEND).apply {

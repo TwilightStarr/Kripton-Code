@@ -141,7 +141,10 @@ class AppContainer(context: Context) {
     /** Açık web sohbetlerinin canlı kaydı; "Canlı web" ekranı bunu izler (akış ve seri mod ortak). */
     val webMonitor: WebMonitor by lazy { WebMonitor() }
     val webChatDriver: WebChatDriver by lazy {
-        WebViewChatDriver(appContext, webSessionStore, File(appContext.filesDir, "web-selectors.json"), webMonitor)
+        WebViewChatDriver(
+            appContext, webSessionStore, File(appContext.filesDir, "web-selectors.json"), webMonitor,
+            beforeAutomation = { accountId, exclusive -> webChatHub.preempt(accountId, exclusive) },
+        )
     }
 
     /** "AI sohbetleri": web arayüzünü istediği an elle açma (liste -> sohbet). */
@@ -230,7 +233,16 @@ class AppContainer(context: Context) {
 
     // --- Seri mod (tek AI, tek sohbet, sıralı) ---
     val serialStore: SerialStore by lazy { SerialStore(File(appContext.filesDir, "serial")) }
-    val serialGit: SerialGit by lazy { GitHubSerialGit(githubService, githubTokenStore) }
+    /** "Zip'ler" sekmesi: GitHub'dan çekilen projeler ve AI değişiklik zip'leri. */
+    val zipArchive: com.kriptoncod.app.data.files.ZipArchive by lazy { com.kriptoncod.app.data.files.ZipArchive(appContext.filesDir) }
+    val serialGit: SerialGit by lazy {
+        GitHubSerialGit(
+            githubService, githubTokenStore,
+            onSnapshot = { repo, branch, zip, count ->
+                zipArchive.add(com.kriptoncod.app.data.files.ZipArchive.KIND_REPO, "$repo@$branch", "GitHub", zip, count)
+            },
+        )
+    }
     val serialRunner: SerialRunner by lazy {
         SerialRunner(
             store = serialStore,
@@ -238,6 +250,9 @@ class AppContainer(context: Context) {
             driver = webChatDriver,
             git = serialGit,
             rawLog = rawReplyLog,
+            onChange = { title, detail, files ->
+                zipArchive.add(com.kriptoncod.app.data.files.ZipArchive.KIND_AI, title, detail, com.kriptoncod.app.data.serial.RepoZip.toZip(files), files.size)
+            },
             notify = { state, event ->
                 val (kind, title) = when (event) {
                     SerialEvent.DONE -> RunNotifier.KIND_DONE to "Seri mod tamamlandı"

@@ -47,6 +47,12 @@ class WebViewChatDriver(
     private val selectorsFile: File? = null,
     /** Açık oturumları "Canlı web" ekranına bildirir; null ise izleme yapılmaz. */
     private val monitor: WebMonitor? = null,
+    /**
+     * Otomasyon (akış/seri mod) bir hesabın sayfasını açmadan hemen önce çağrılır: kullanıcının elle açık bıraktığı
+     * sohbet oturumu varsa çekilsin (aksi halde hesap kilidi yüzünden otomasyon sonsuza dek beklerdi).
+     * [exclusive]: cihaz hesap başına ayrı profil desteklemiyor; tek çerez deposu olduğundan HEPSİ çekilmeli.
+     */
+    private val beforeAutomation: (accountId: Long, exclusive: Boolean) -> Unit = { _, _ -> },
 ) : WebChatDriver {
 
     private val appContext = context.applicationContext
@@ -78,6 +84,7 @@ class WebViewChatDriver(
         val saved = sessions.load(account.id)?.takeIf { !it.isEmpty }
             ?: if (interactive) WebSession() else throw AiGenerationException(Kind.UNAUTHORIZED)
         val profiled = profilesSupported()
+        if (!interactive) runCatching { beforeAutomation(account.id, !profiled) }
         val lock = if (profiled) accountLocks.getOrPut(account.id) { Mutex() } else globalLock
         lock.lock()
         val s = ChatSession(account, provider, WebSelectors.load(provider, selectorsFile), lock, profiled, startUrl, interactive)
@@ -407,16 +414,25 @@ class WebViewChatDriver(
             return provider.hostSuffixes.any { host == it || host.endsWith(".$it") }
         }
 
+        /** Güncel çerezleri kaydeder; sayfaya ve çerez deposuna dokunmaz. */
+        private suspend fun persistCookies() {
+            val wv = webView ?: return
+            val snap = WebCookies.capture(provider, wv, cookieManager)
+            // Oturum düştüyse (çerezler boşaldı) eski kaydı ezme; bir sonraki işte UNAUTHORIZED döner.
+            // Elle aktarılan ek localStorage kayıtları (ör. Kimi tokenları) ilk oturumdan sonra silinmesin.
+            val merged = base?.let { b -> snap.copy(localStorage = b.localStorage + snap.localStorage) } ?: snap
+            // Yalnız GİRİŞLİ oturum kaydedilir: girişsiz (anonim) çerezler çalışan eski oturumu ezmesin.
+            if (!snap.isEmpty && (provider.isLoggedIn(merged) || provider.isLoggedIn(base ?: WebSession()).not())) sessions.save(account.id, merged)
+        }
+
+        override suspend fun saveCookies() {
+            runCatching { persistCookies() }
+        }
+
         override suspend fun close() {
             try {
-                val wv = webView
-                if (wv != null) {
-                    val snap = WebCookies.capture(provider, wv, cookieManager)
-                    // Oturum düştüyse (çerezler boşaldı) eski kaydı ezme; bir sonraki işte UNAUTHORIZED döner.
-                    // Elle aktarılan ek localStorage kayıtları (ör. Kimi tokenları) ilk oturumdan sonra silinmesin.
-                    val merged = base?.let { b -> snap.copy(localStorage = b.localStorage + snap.localStorage) } ?: snap
-                    // Yalnız GİRİŞLİ oturum kaydedilir: girişsiz (anonim) çerezler çalışan eski oturumu ezmesin.
-                    if (!snap.isEmpty && (provider.isLoggedIn(merged) || provider.isLoggedIn(base ?: WebSession()).not())) sessions.save(account.id, merged)
+                if (webView != null) {
+                    persistCookies()
                     WebCookies.clearAll(cookieManager, webStorage)
                 }
             } finally {

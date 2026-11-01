@@ -13,6 +13,9 @@ interface WebChatSession {
     /** Çerezleri kaydeder ve kaynakları serbest bırakır. */
     suspend fun close()
 
+    /** Oturumu AÇIK tutarak güncel çerezleri kaydeder (kullanıcı başka ekrana geçerken; sayfa kapanmaz). */
+    suspend fun saveCookies() {}
+
     /**
      * Açık sohbetin adresi (ör. `https://chatgpt.com/c/...`); sohbet henüz oluşmadıysa ya da desteklenmiyorsa null.
      * Seri modda aynı sohbete sayfa yenilendikten sonra da dönebilmek için saklanır.
