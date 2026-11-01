@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="desktop_nav_label">Desktop</string>
+    <string name="desktop_start">Apps</string>
+    <string name="desktop_menu_ai">AI assistants</string>
+    <string name="desktop_menu_apps">Apps</string>
+    <string name="desktop_menu_no_ai">No web-session AI accounts. Add one from the AIs tab in the Kripton Code window.</string>
+    <string name="desktop_app_files">Files</string>
+    <string name="desktop_app_kripton">Kripton Code</string>
+    <string name="desktop_menu_side_by_side">Open app side by side</string>
+    <string name="desktop_menu_tile">Tile windows</string>
+    <string name="desktop_menu_cascade">Cascade windows</string>
+    <string name="desktop_menu_show_desktop">Show desktop</string>
+    <string name="desktop_menu_fullscreen">Full screen</string>
+    <string name="desktop_menu_exit">Exit desktop mode</string>
+    <string name="desktop_empty">The desktop is empty. Open an AI or an app from the button at the bottom left.</string>
+
+    <string name="desktop_win_minimize">Minimize</string>
+    <string name="desktop_win_maximize">Maximize</string>
+    <string name="desktop_win_restore">Restore</string>
+    <string name="desktop_win_close">Close</string>
+    <string name="desktop_win_resize">Resize window</string>
+    <string name="desktop_win_busy">This AI is currently used by a run.</string>
+    <string name="desktop_win_open_monitor">Watch live</string>
+
+    <string name="desktop_files_title">Files</string>
+    <string name="desktop_files_need_title">All files access</string>
+    <string name="desktop_files_need_body">Browsing files and dropping them into AI windows needs Android’s “all files access” permission. A file is handed to a window’s web page only when you drop it there; it is not sent anywhere else.</string>
+    <string name="desktop_files_grant">Grant access</string>
+    <string name="desktop_files_home">Device</string>
+    <string name="desktop_files_up">Parent folder</string>
+    <string name="desktop_files_hidden">Show hidden</string>
+    <string name="desktop_files_refresh">Refresh</string>
+    <string name="desktop_files_empty">This folder is empty</string>
+    <string name="desktop_files_hint">Long-press a file and drag it onto an AI window, or send it from the row menu.</string>
+    <string name="desktop_files_send_menu">Send to AI</string>
+    <string name="desktop_files_send_to">%1$s</string>
+    <string name="desktop_files_no_ai">No AI window is open. Open one first.</string>
+    <string name="desktop_files_folder_items">%1$d items</string>
+
+    <string name="desktop_drop_here">Drop to attach to %1$s</string>
+    <string name="desktop_upload_sending">Attaching %1$s…</string>
+    <string name="desktop_upload_ok">%1$s attached to %2$s</string>
+    <string name="desktop_upload_failed">Could not attach %1$s</string>
+    <string name="desktop_upload_too_big">%1$s is too large (max %2$s)</string>
+    <string name="desktop_upload_unreadable">The file could not be read, or a folder was dropped</string>
+    <string name="desktop_upload_not_ready">The %1$s page is not ready yet</string>
+
+    <string name="desktop_sbs_title">Side-by-side app</string>
+    <string name="desktop_sbs_hint">The chosen app opens next to Kripton Code using Android split screen.</string>
+    <string name="desktop_sbs_search">Search apps</string>
+    <string name="desktop_sbs_not_split">Split screen looks off. Open Kripton Code in “Split screen” from Recents, then start the app from here.</string>
+    <string name="desktop_sbs_failed">Could not open the app</string>
+    <string name="desktop_sbs_empty">No matching app</string>
+
+    <string name="desktop_perm_title">Desktop mode permissions</string>
+    <string name="desktop_perm_body">Desktop mode runs full screen; system bars appear briefly when you swipe from the edge. The Files window asks for all-files access; grant it now or the first time you open Files. The side-by-side list reads the names of installed apps. Nothing leaves the device on its own.</string>
+    <string name="desktop_perm_grant">Grant file access</string>
+    <string name="desktop_perm_later">Not now</string>
+
+    <string name="desktop_setting_title">Desktop mode (tablet)</string>
+    <string name="desktop_setting_hint">Full screen, draggable windows, a taskbar and a file manager. Once turned on the app always starts in this mode; turn it off here or from the taskbar.</string>
+    <string name="desktop_setting_unavailable">This mode is for tablets (short screen side of at least 600 dp).</string>
+    <string name="desktop_enable_title">Switch to desktop mode?</string>
+    <string name="desktop_enable_body">The app becomes a full-screen windowed desktop: AI web UIs move and resize like simple windows, and files are dropped onto an AI by drag and drop. Once on, every launch starts in this mode; you can turn it off any time.</string>
+    <string name="desktop_enable_confirm">Switch to desktop</string>
+    <string name="desktop_exit_title">Exit desktop mode?</string>
+    <string name="desktop_exit_body">The app will start with the normal view next time. You can turn desktop mode back on from Settings or the side menu.</string>
+    <string name="desktop_exit_confirm">Exit</string>
+</resources>

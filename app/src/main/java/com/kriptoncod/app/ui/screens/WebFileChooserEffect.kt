@@ -17,6 +17,8 @@ import com.kriptoncod.app.data.web.WebFileChooser
  */
 @Composable
 fun WebFileChooserEffect() {
+    // Masaüstü kabuğu seçiciyi zaten kurdu; içerideki ekran kendi seçicisini kurup onu silmesin.
+    if (com.kriptoncod.app.ui.desktop.LocalFileChooserOwnedByShell.current) return
     val pending = remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
         val cb = pending.value

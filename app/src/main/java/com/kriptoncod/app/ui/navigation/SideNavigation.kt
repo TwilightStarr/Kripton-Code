@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kriptoncod.app.R
 import com.kriptoncod.app.ui.components.KriptonCodLogo
+import com.kriptoncod.app.ui.desktop.MonitorGlyph
 import com.kriptoncod.app.ui.theme.KriptonTheme
 import com.kriptoncod.app.ui.theme.LocalAppBusy
 
@@ -43,6 +44,8 @@ fun SideNavigation(
     /** Yalnız tablet gezinmesinde görünen "AI sohbetleri" sekmesi. */
     chatsSelected: Boolean,
     onOpenChats: () -> Unit,
+    /** Masaüstü modunu açma isteği; null ise (telefon / zaten açık) öğe gösterilmez. */
+    onOpenDesktop: (() -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     val k = KriptonTheme.colors
@@ -97,6 +100,20 @@ fun SideNavigation(
                         unselectedTextColor = k.muted,
                     ),
                 )
+                if (onOpenDesktop != null) {
+                    NavigationDrawerItem(
+                        label = { Text(stringResource(R.string.desktop_nav_label), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        selected = false,
+                        onClick = onOpenDesktop,
+                        icon = { MonitorGlyph(k.muted) },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
+                        colors = NavigationDrawerItemDefaults.colors(
+                            unselectedContainerColor = scheme.surface,
+                            unselectedIconColor = k.muted,
+                            unselectedTextColor = k.muted,
+                        ),
+                    )
+                }
             }
         } else {
             NavigationRail(
@@ -137,6 +154,19 @@ fun SideNavigation(
                         unselectedTextColor = k.muted,
                     ),
                 )
+                if (onOpenDesktop != null) {
+                    NavigationRailItem(
+                        selected = false,
+                        onClick = onOpenDesktop,
+                        icon = { MonitorGlyph(k.muted) },
+                        label = { Text(stringResource(R.string.desktop_nav_label), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        alwaysShowLabel = true,
+                        colors = NavigationRailItemDefaults.colors(
+                            unselectedIconColor = k.muted,
+                            unselectedTextColor = k.muted,
+                        ),
+                    )
+                }
             }
         }
         VerticalDivider(thickness = 1.5.dp, color = k.nodeBorder)

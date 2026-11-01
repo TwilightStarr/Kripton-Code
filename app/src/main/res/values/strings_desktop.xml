@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Masaüstü modu (tablet): tam ekran, pencereli arayüz, görev çubuğu, dosya yöneticisi -->
+<resources>
+    <string name="desktop_nav_label">Masaüstü</string>
+    <string name="desktop_start">Uygulamalar</string>
+    <string name="desktop_menu_ai">Yapay zekâlar</string>
+    <string name="desktop_menu_apps">Uygulamalar</string>
+    <string name="desktop_menu_no_ai">Web oturumlu AI hesabı yok. Kripton Code penceresinde AI sekmesinden ekleyebilirsin.</string>
+    <string name="desktop_app_files">Dosyalar</string>
+    <string name="desktop_app_kripton">Kripton Code</string>
+    <string name="desktop_menu_side_by_side">Yan yana uygulama aç</string>
+    <string name="desktop_menu_tile">Pencereleri döşe</string>
+    <string name="desktop_menu_cascade">Pencereleri diz</string>
+    <string name="desktop_menu_show_desktop">Masaüstünü göster</string>
+    <string name="desktop_menu_fullscreen">Tam ekran</string>
+    <string name="desktop_menu_exit">Masaüstü modundan çık</string>
+    <string name="desktop_empty">Masaüstü boş. Sol alttaki düğmeden bir AI ya da uygulama aç.</string>
+
+    <string name="desktop_win_minimize">Küçült</string>
+    <string name="desktop_win_maximize">Büyüt</string>
+    <string name="desktop_win_restore">Geri al</string>
+    <string name="desktop_win_close">Kapat</string>
+    <string name="desktop_win_resize">Pencereyi yeniden boyutlandır</string>
+    <string name="desktop_win_busy">Bu AI şu an bir çalışmada kullanılıyor.</string>
+    <string name="desktop_win_open_monitor">Canlı izle</string>
+
+    <string name="desktop_files_title">Dosyalar</string>
+    <string name="desktop_files_need_title">Tüm dosyalara erişim</string>
+    <string name="desktop_files_need_body">Dosyalara göz atmak ve AI pencerelerine bırakmak için Android’in “tüm dosyalara erişim” izni gerekir. Bir dosya yalnız sen onu bir AI penceresine bıraktığında o pencerenin web sayfasına verilir; başka hiçbir yere gönderilmez.</string>
+    <string name="desktop_files_grant">İzin ver</string>
+    <string name="desktop_files_home">Cihaz</string>
+    <string name="desktop_files_up">Üst klasör</string>
+    <string name="desktop_files_hidden">Gizlileri göster</string>
+    <string name="desktop_files_refresh">Yenile</string>
+    <string name="desktop_files_empty">Bu klasör boş</string>
+    <string name="desktop_files_hint">Bir dosyayı basılı tutup AI penceresinin üstüne sürükle ya da satırdaki menüden gönder.</string>
+    <string name="desktop_files_send_menu">AI’a gönder</string>
+    <string name="desktop_files_send_to">%1$s</string>
+    <string name="desktop_files_no_ai">Açık AI penceresi yok. Önce bir AI aç.</string>
+    <string name="desktop_files_folder_items">%1$d öğe</string>
+
+    <string name="desktop_drop_here">Bırak: %1$s sayfasına eklenir</string>
+    <string name="desktop_upload_sending">%1$s ekleniyor…</string>
+    <string name="desktop_upload_ok">%1$s, %2$s sayfasına eklendi</string>
+    <string name="desktop_upload_failed">%1$s eklenemedi</string>
+    <string name="desktop_upload_too_big">%1$s çok büyük (en çok %2$s)</string>
+    <string name="desktop_upload_unreadable">Dosya okunamadı ya da klasör bırakıldı</string>
+    <string name="desktop_upload_not_ready">%1$s sayfası henüz hazır değil</string>
+
+    <string name="desktop_sbs_title">Yan yana uygulama</string>
+    <string name="desktop_sbs_hint">Seçtiğin uygulama Kripton Code’un yanında açılır. Android bölünmüş ekranını kullanır.</string>
+    <string name="desktop_sbs_search">Uygulama ara</string>
+    <string name="desktop_sbs_not_split">Bölünmüş ekran kapalı görünüyor. Son uygulamalardan Kripton Code’u “Bölünmüş ekran” ile aç, sonra uygulamayı buradan başlat.</string>
+    <string name="desktop_sbs_failed">Uygulama açılamadı</string>
+    <string name="desktop_sbs_empty">Eşleşen uygulama yok</string>
+
+    <string name="desktop_perm_title">Masaüstü modu izinleri</string>
+    <string name="desktop_perm_body">Masaüstü modu tam ekran çalışır; sistem çubukları kenardan kaydırınca geçici görünür. “Dosyalar” penceresi için tüm dosyalara erişim izni istenir; istersen şimdi ver, istersen Dosyalar’ı ilk açtığında. Yan yana uygulama listesi için kurulu uygulamaların adları okunur. Hiçbir veri cihazdan kendiliğinden çıkmaz.</string>
+    <string name="desktop_perm_grant">Dosya erişimini ver</string>
+    <string name="desktop_perm_later">Şimdi değil</string>
+
+    <string name="desktop_setting_title">Masaüstü modu (tablet)</string>
+    <string name="desktop_setting_hint">Tam ekran, sürüklenebilir pencereler, görev çubuğu ve dosya yöneticisi. Bir kez açınca uygulama hep bu modla başlar; buradan ya da görev çubuğundan kapatabilirsin.</string>
+    <string name="desktop_setting_unavailable">Bu mod tablet içindir (ekranın kısa kenarı en az 600 dp).</string>
+    <string name="desktop_enable_title">Masaüstü moduna geçilsin mi?</string>
+    <string name="desktop_enable_body">Uygulama tam ekran, pencereli bir masaüstüne dönüşür: AI web arayüzleri sade pencereler gibi taşınır ve boyutlandırılır, dosyalar sürükle-bırak ile AI’a verilir. Bir kez açılırsa her açılışta bu modla başlar; istediğin zaman kapatabilirsin.</string>
+    <string name="desktop_enable_confirm">Masaüstüne geç</string>
+    <string name="desktop_exit_title">Masaüstü modundan çıkılsın mı?</string>
+    <string name="desktop_exit_body">Uygulama bir sonraki açılışta normal görünümle başlar. İstediğin zaman Ayarlar’dan ya da yan menüden tekrar açabilirsin.</string>
+    <string name="desktop_exit_confirm">Çık</string>
+</resources>

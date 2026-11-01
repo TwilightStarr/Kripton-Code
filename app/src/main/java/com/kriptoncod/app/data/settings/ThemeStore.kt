@@ -76,7 +76,47 @@ class ThemeStore(private val context: Context) {
         context.settingsDataStore.edit { it[WORKSPACE_LAYOUT] = value }
     }
 
+    // ---- Masaüstü modu (tablet): bir kez açılırsa uygulama hep bu modla açılır; ayarlardan/görev çubuğundan kapatılır ----
+    val desktopModeFlow: Flow<Boolean> = context.settingsDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[DESKTOP_MODE] ?: false }
+
+    suspend fun setDesktopMode(value: Boolean) {
+        context.settingsDataStore.edit { it[DESKTOP_MODE] = value }
+    }
+
+    /** Masaüstü modunda sistem çubukları gizlenir (tam ekran); varsayılan açık. */
+    val desktopFullscreenFlow: Flow<Boolean> = context.settingsDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[DESKTOP_FULLSCREEN] ?: true }
+
+    suspend fun setDesktopFullscreen(value: Boolean) {
+        context.settingsDataStore.edit { it[DESKTOP_FULLSCREEN] = value }
+    }
+
+    /** Masaüstü pencere düzeni (açık pencereler, konum/boyut); metin biçimi DesktopCodec'te. */
+    val desktopLayoutFlow: Flow<String?> = context.settingsDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[DESKTOP_LAYOUT] }
+
+    suspend fun setDesktopLayout(value: String) {
+        context.settingsDataStore.edit { it[DESKTOP_LAYOUT] = value }
+    }
+
+    /** Masaüstü modunun izin açıklaması bir kez gösterilir. */
+    val desktopPermissionAsked: Flow<Boolean> = context.settingsDataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[DESKTOP_PERM_ASKED] ?: false }
+
+    suspend fun setDesktopPermissionAsked(value: Boolean) {
+        context.settingsDataStore.edit { it[DESKTOP_PERM_ASKED] = value }
+    }
+
     private companion object {
+        val DESKTOP_MODE = booleanPreferencesKey("desktop_mode")
+        val DESKTOP_FULLSCREEN = booleanPreferencesKey("desktop_fullscreen")
+        val DESKTOP_LAYOUT = stringPreferencesKey("desktop_layout")
+        val DESKTOP_PERM_ASKED = booleanPreferencesKey("desktop_perm_asked")
         val WORKSPACE_LAYOUT = stringPreferencesKey("workspace_layout")
         val WEB_WARNING_ACCEPTED = booleanPreferencesKey("web_warning_accepted")
         val ANIMATIONS = booleanPreferencesKey("animations")

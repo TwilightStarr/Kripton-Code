@@ -171,6 +171,26 @@ fun SettingsScreen(
         }
 
         SectionHeader(stringResource(R.string.settings_section_work))
+        // Masaüstü modu (yalnız tablet): bir kez açılırsa uygulama hep bu modla başlar.
+        val desktop = com.kriptoncod.app.ui.desktop.LocalDesktopMode.current
+        NodeCard(modifier = Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(stringResource(R.string.desktop_setting_title), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(if (desktop.available) R.string.desktop_setting_hint else R.string.desktop_setting_unavailable),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = k.muted,
+                    )
+                }
+                Switch(
+                    checked = desktop.enabled,
+                    enabled = desktop.available,
+                    onCheckedChange = { on -> if (on) desktop.requestEnable() else desktop.requestExit() },
+                )
+            }
+        }
+
         // Mod Merkezi: tüm sınırlar ve otomasyonlar tek yerde, hazır modlarla.
         NodeCard(modifier = Modifier.fillMaxWidth(), onClick = onOpenModes) {
             Text(stringResource(R.string.settings_modes_title), style = MaterialTheme.typography.titleMedium)

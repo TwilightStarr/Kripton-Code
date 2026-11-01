@@ -28,6 +28,12 @@ interface WebMonitorHandle {
 
     /** Sayfanın o anki adresi; yoksa null. */
     fun currentUrl(): String?
+
+    /**
+     * Kullanıcının elle bıraktığı dosyayı açık sayfaya ekler (masaüstü modu: dosya yöneticisinden / başka uygulamadan sürükle-bırak).
+     * Yükleme bitmesini beklemez. Desteklemeyen/hazır olmayan oturumda false döner.
+     */
+    suspend fun attachManual(name: String, mime: String, bytes: ByteArray): Boolean = false
 }
 
 /** İzlenen bir oturumun anlık aşaması. */

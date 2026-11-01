@@ -166,7 +166,7 @@
     <!-- Permissions screen -->
     <string name="permissions_title">Permissions</string>
     <string name="permissions_internet_title">Internet Access</string>
-    <string name="permissions_internet_body">Krypton Code uses the internet permission to send requests to AI providers and to communicate with GitHub. No other permission is required.</string>
+    <string name="permissions_internet_body">Krypton Code uses the internet permission to send requests to AI providers and to communicate with GitHub. The Files window in desktop mode optionally asks for “all files access”; it is granted only if you approve.</string>
     <string name="permissions_note_title">Data Privacy</string>
     <string name="permissions_note_body">All keys and tokens are stored encrypted on the device only. They are never sent outside the app.</string>
 

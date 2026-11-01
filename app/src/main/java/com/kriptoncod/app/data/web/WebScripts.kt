@@ -89,8 +89,55 @@ object WebScripts {
         return "(function(cfg,name,mime){$ATTACH_BODY})($cfg,$n,$m);"
     }
 
+    /**
+     * Elle (sürükle-bırak ile) verilen dosya: [attachFinish]'in aksine gönder düğmesini/yüklemeyi BEKLEMEZ; dosyayı sayfadaki
+     * dosya girdisine verip olayları tetikler, girdi yoksa yazma alanına "drop" olayı gönderir. Sonuç [ATTACH_POLL] ile okunur.
+     */
+    fun attachQuick(sel: SiteSelectors, name: String, mime: String): String {
+        val cfg = json.encodeToString(sel)
+        val n = json.encodeToString(name)
+        val m = json.encodeToString(mime)
+        return "(function(cfg,name,mime){$ATTACH_QUICK_BODY})($cfg,$n,$m);"
+    }
+
     /** Ekleme yoklaması: bitmediyse boş, bittiyse "OK" ya da "FAIL". */
     const val ATTACH_POLL = "(function(){var d=window.__kra;return d&&d.done?(d.ok?'OK':'FAIL'):'';})()"
+
+    private val ATTACH_QUICK_BODY = """
+    window.__kra = {done:false, ok:false};
+    var sleep = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
+    var pick = function(sels){ for (var i=0;i<sels.length;i++){ try{ var e=document.querySelector(sels[i]); if(e) return e; }catch(x){} } return null; };
+    (async function(){
+      try {
+        var parts = (window.__krup && window.__krup.parts) || [];
+        var chunks = [];
+        for (var i=0;i<parts.length;i++){
+          var bin = atob(parts[i]); var arr = new Uint8Array(bin.length);
+          for (var j=0;j<bin.length;j++) arr[j] = bin.charCodeAt(j);
+          chunks.push(arr);
+        }
+        window.__krup = null;
+        var file = new File(chunks, name, {type: mime});
+        var dt = new DataTransfer(); dt.items.add(file);
+        var inp = null;
+        for (var k=0;k<6 && !inp;k++){ inp = pick(cfg.fileInput); if(!inp) await sleep(500); }
+        if (inp) {
+          inp.files = dt.files;
+          inp.dispatchEvent(new Event('input', {bubbles:true}));
+          inp.dispatchEvent(new Event('change', {bubbles:true}));
+          window.__kra.ok = true; window.__kra.done = true; return;
+        }
+        var target = pick(['textarea', '[contenteditable="true"]', '[role="textbox"]', 'main']) || document.body;
+        ['dragenter','dragover','drop'].forEach(function(t){
+          target.dispatchEvent(new DragEvent(t, {bubbles:true, cancelable:true, dataTransfer: dt}));
+        });
+        window.__kra.ok = true; window.__kra.done = true;
+      } catch (e) {
+        window.__krup = null;
+        window.__kra.done = true;
+      }
+    })();
+    """.trimIndent()
 
     private val ATTACH_BODY = """
     window.__kra = {done:false, ok:false};

@@ -338,6 +338,29 @@ class WebViewChatDriver(
             return false
         }
 
+        override suspend fun attachManual(name: String, mime: String, bytes: ByteArray): Boolean {
+            val wv = webView ?: return false
+            if (bytes.isEmpty()) return false
+            WebCookies.evalString(wv, WebScripts.ATTACH_BEGIN)
+            var off = 0
+            while (off < bytes.size) {
+                val end = minOf(off + ATTACH_CHUNK_BYTES, bytes.size)
+                val b64 = Base64.encodeToString(bytes.copyOfRange(off, end), Base64.NO_WRAP)
+                val r = WebCookies.unquote(WebCookies.evalString(wv, WebScripts.attachChunk(b64)))
+                if (r != "ok") return false
+                off = end
+            }
+            WebCookies.evalString(wv, WebScripts.attachQuick(selectors, name, mime.ifBlank { "application/octet-stream" }))
+            val deadline = System.currentTimeMillis() + MANUAL_ATTACH_TIMEOUT_MS
+            while (System.currentTimeMillis() < deadline) {
+                delay(300)
+                val st = WebCookies.unquote(WebCookies.evalString(wv, WebScripts.ATTACH_POLL))
+                if (st.isEmpty()) continue
+                return st == "OK"
+            }
+            return false
+        }
+
         override suspend fun download(url: String): WebFile? {
             val wv = webView ?: return null
             if (!allowedUrl(url)) return null
@@ -475,5 +498,6 @@ class WebViewChatDriver(
         const val CHUNK_TIMEOUT_MS = 60_000L
         const val ATTACH_CHUNK_BYTES = 96 * 1024
         const val ATTACH_TIMEOUT_MS = 6L * 60_000L
+        const val MANUAL_ATTACH_TIMEOUT_MS = 20_000L
     }
 }

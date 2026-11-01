@@ -1,3 +1,15 @@
+# Masaüstü modu (tablet)
+- **Yeni mod:** yan menüdeki **Masaüstü** öğesi ya da Ayarlar > Masaüstü modu ile açılır. Bir kez açılınca uygulama HEP bu modla başlar (ayar kalıcıdır); Ayarlar'dan, başlat menüsündeki "Masaüstü modundan çık"tan kapatılır. Yalnız tablette (ekranın kısa kenarı ≥ 600dp) sunulur.
+- **Tam ekran:** sistem çubukları gizlenir (kenardan kaydırınca geçici görünür); görev çubuğundan açılıp kapanır.
+- **Pencereler:** her AI web arayüzü sade bir penceredir: başlıktan sürükle = taşı, 8 yönlü kenar/köşe = boyutlandır, çift dokun = büyüt, kenara/köşeye sürükle = yarım/çeyrek/tam ekrana yaslan (önizlemeli), küçült/büyüt/kapat. Düzen kaydedilir.
+- **Mesaj yazma:** pencerelere normal klavyeyle yazılır; klavye açılınca alan küçülür, pencere sığdırılır. Küçültülen pencere bileşimde kalır (sayfa/oturum kaybolmaz).
+- **Görev çubuğu + başlat menüsü:** pencere düğmeleri, AI'lar, Dosyalar, Kripton Code, yan yana uygulama, pencereleri döşe/diz, masaüstünü göster, saat.
+- **Kripton Code penceresi:** uygulamanın bütün ekranları pencere içinde çalışır (pencere genişliğine göre telefon/tablet düzeni).
+- **Dosyalar penceresi:** "tüm dosyalara erişim" izni kullanıcıdan istenir; gezinme, gizli dosyalar, sık klasörler. Dosyayı basılı tutup AI penceresine sürükle ya da satır menüsünden gönder; başka uygulamadan (bölünmüş ekran) bırakılan dosyalar da kabul edilir. Dosya sayfadaki dosya girdisine verilir (`WebMonitorHandle.attachManual`), yükleme beklenmez.
+- **Yan yana uygulama:** kurulu bir uygulama Android bölünmüş ekranında Kripton Code'un yanında açılır (`FLAG_ACTIVITY_LAUNCH_ADJACENT`). Android bölünmüş ekranı açık değilse kullanıcı uyarılır.
+- **Altyapı:** pencere kuralları (`ui/desktop/DesktopWindows.kt`) ekrandan bağımsız saf mantıktır; ileride harici ekran / DeX benzeri doğrudan UI yalnızca yeni bir alan verir. Etkinlik yapılandırma değişiminde yeniden kurulmaz (web oturumları yenilenmez).
+- Manifest: `MANAGE_EXTERNAL_STORAGE` (+ ≤32 için `READ_EXTERNAL_STORAGE`), başlatıcı uygulamaları listelemek için `<queries>`, `resizeableActivity`, `configChanges`.
+
 # Tema: gri-beyaz (gümüş) tonlar + AMOLED saf siyah
 - Zümrüt yeşil vurgu kaldırıldı; tüm vurgu, durum ("tamamlandı", "canlı", "önerilen") ve rozet renkleri logo gibi gri/beyaz tonlara çevrildi. Yalnız hata rengi kırmızı kalır.
 - Koyu temanın zemini saf siyah (#000000): AMOLED ekranda pikseller kapanır. Kartlar/yüzeyler siyahtan birkaç kademe açık gri; Material "tint" kapatıldı, menü ve iletişim kutuları griye boyanmaz.

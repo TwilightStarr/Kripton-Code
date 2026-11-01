@@ -14,7 +14,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.kriptoncod.app.ui.navigation.AppRoot
+import com.kriptoncod.app.ui.desktop.DesktopModeHost
 import com.kriptoncod.app.ui.theme.KriptonCodTheme
 import com.kriptoncod.app.ui.theme.LocalAnimationsEnabled
 import kotlinx.coroutines.flow.first
@@ -40,6 +40,7 @@ class MainActivity : ComponentActivity() {
         // İlk karede tema yanıp sönmesin diye tek seferlik, küçük bir okuma.
         val initial = runBlocking { store.preference.first() }
         val initialAnimations = runBlocking { store.animationsFlow.first() }
+        val initialDesktop = runBlocking { store.desktopModeFlow.first() }
         setContent {
             val preference by store.preference.collectAsStateWithLifecycle(initialValue = initial)
             val animationsPref by store.animationsFlow.collectAsStateWithLifecycle(initialValue = initialAnimations)
@@ -48,7 +49,9 @@ class MainActivity : ComponentActivity() {
             val scope = rememberCoroutineScope()
             KriptonCodTheme(preference = preference, animate = animationsOn) {
                 CompositionLocalProvider(LocalAnimationsEnabled provides animationsOn) {
-                    AppRoot(
+                    DesktopModeHost(
+                        container = (application as KriptonCodApp).container,
+                        initialEnabled = initialDesktop,
                         themePreference = preference,
                         onThemeChange = { scope.launch { store.set(it) } },
                     )

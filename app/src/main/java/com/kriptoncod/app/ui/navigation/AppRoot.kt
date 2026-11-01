@@ -82,6 +82,7 @@ import com.kriptoncod.app.ui.adaptive.Adaptive
 import com.kriptoncod.app.ui.adaptive.LocalWindowClass
 import com.kriptoncod.app.ui.adaptive.WindowClass
 import com.kriptoncod.app.ui.adaptive.rememberWindowClass
+import com.kriptoncod.app.ui.desktop.LocalDesktopMode
 import com.kriptoncod.app.ui.theme.KriptonTheme
 import com.kriptoncod.app.ui.theme.LocalAnimationsEnabled
 import com.kriptoncod.app.ui.theme.LocalAppBusy
@@ -94,6 +95,10 @@ import kotlinx.coroutines.launch
 fun AppRoot(
     themePreference: ThemePreference,
     onThemeChange: (ThemePreference) -> Unit,
+    /** false: açılış logosu oynatılmaz (masaüstü penceresi içinde / mod değişiminde). */
+    playIntro: Boolean = true,
+    /** Verilirse pencere sınıfı ekran genişliğinden değil bundan alınır (masaüstü penceresinin genişliği). */
+    windowClassOverride: WindowClass? = null,
 ) {
     val navController = rememberNavController()
     val context = LocalContext.current
@@ -108,7 +113,7 @@ fun AppRoot(
     val backStack by navController.currentBackStackEntryAsState()
     val scheme = MaterialTheme.colorScheme
     val currentRoute = backStack?.destination?.route
-    val windowClass = rememberWindowClass()
+    val windowClass = windowClassOverride ?: rememberWindowClass()
     // Tablette "AI sohbetleri" (liste + sohbet yan yana) da yan çubukla birlikte görünür.
     val onChats = currentRoute == ExtraRoutes.WEB_CHATS || currentRoute == ExtraRoutes.WEB_CHAT || currentRoute == ExtraRoutes.WEB_WORKSPACE
     val showNav = currentRoute == null || Route.entries.any { it.path == currentRoute } ||
@@ -122,7 +127,7 @@ fun AppRoot(
     val animationsOn = LocalAnimationsEnabled.current
 
     // Açılış: logo bir kez çizilir, sonra uygulamaya kaybolarak geçilir (animasyonlar kapalıysa atlanır).
-    var showIntro by rememberSaveable { mutableStateOf(true) }
+    var showIntro by rememberSaveable { mutableStateOf(playIntro) }
     LaunchedEffect(Unit) {
         if (showIntro) {
             if (animationsOn) delay(1700)
@@ -171,6 +176,7 @@ fun AppRoot(
                             onNavigate = { route -> navController.navigateTo(route) },
                             chatsSelected = onChats,
                             onOpenChats = { navController.navigateTo(ExtraRoutes.WEB_CHATS) },
+                            onOpenDesktop = LocalDesktopMode.current.takeIf { it.available && !it.enabled }?.requestEnable,
                         )
                     }
                     Box(Modifier.weight(1f).fillMaxHeight()) {
