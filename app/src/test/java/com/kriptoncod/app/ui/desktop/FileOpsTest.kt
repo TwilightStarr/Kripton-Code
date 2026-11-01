@@ -20,7 +20,8 @@ class FileOpsTest {
     }
 
     @Test fun copyAvoidsOverwrite() {
-        val d = tmp(); val a = File(d, "a.txt").apply { writeText("1") }
+        val d = tmp()
+        val a = File(d, "a.txt").apply { writeText("1") }
         val c1 = FileOps.copy(a, d).getOrThrow()
         assertEquals("a (1).txt", c1.name)
         assertEquals("a (2).txt", FileOps.copy(a, d).getOrThrow().name)
@@ -28,21 +29,27 @@ class FileOpsTest {
     }
 
     @Test fun folderIntoItselfRejected() {
-        val d = tmp(); val sub = File(d, "s").apply { mkdir() }
+        val d = tmp()
+        val sub = File(d, "s").apply { mkdir() }
         assertTrue(FileOps.copy(d, sub).isFailure)
         assertTrue(FileOps.move(d, sub).isFailure)
     }
 
     @Test fun moveAndDelete() {
-        val d = tmp(); val dst = File(d, "dst").apply { mkdir() }
+        val d = tmp()
+        val dst = File(d, "dst").apply { mkdir() }
         val a = File(d, "a.txt").apply { writeText("x") }
         val m = FileOps.move(a, dst).getOrThrow()
-        assertFalse(a.exists()); assertTrue(m.exists())
-        assertTrue(FileOps.delete(dst)); assertFalse(dst.exists())
+        assertFalse(a.exists())
+        assertTrue(m.exists())
+        assertTrue(FileOps.delete(dst))
+        assertFalse(dst.exists())
     }
 
     @Test fun renameValidation() {
-        val d = tmp(); val a = File(d, "a.txt").apply { writeText("x") }; File(d, "b.txt").writeText("y")
+        val d = tmp()
+        val a = File(d, "a.txt").apply { writeText("x") }
+        File(d, "b.txt").writeText("y")
         assertTrue(FileOps.rename(a, "b.txt").isFailure)
         assertTrue(FileOps.rename(a, "../x").isFailure)
         assertTrue(FileOps.rename(a, " ").isFailure)

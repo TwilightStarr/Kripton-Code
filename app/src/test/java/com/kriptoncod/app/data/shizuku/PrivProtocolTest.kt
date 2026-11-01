@@ -24,8 +24,10 @@ class PrivProtocolTest {
 
     @Test fun `siralama klasor once, gizliler filtrelenir`() {
         val l = listOf(
-            PrivEntry("b.txt", false, 1, 1), PrivEntry(".hid", false, 1, 1),
-            PrivEntry("Zed", true, 0, 1), PrivEntry("alpha", true, 0, 1),
+            PrivEntry("b.txt", false, 1, 1),
+            PrivEntry(".hid", false, 1, 1),
+            PrivEntry("Zed", true, 0, 1),
+            PrivEntry("alpha", true, 0, 1),
         )
         assertEquals(listOf("alpha", "Zed", "b.txt"), PrivProtocol.arrange(l, false).map { it.name })
         assertEquals(listOf("alpha", "Zed", ".hid", "b.txt"), PrivProtocol.arrange(l, true).map { it.name })

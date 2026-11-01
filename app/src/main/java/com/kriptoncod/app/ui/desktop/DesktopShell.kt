@@ -523,7 +523,10 @@ private fun DesktopShellContent(
                         showClock = prefs.showClock,
                         dropHoverApp = dropHover,
                         hasOpenTabs = state.tabs.isNotEmpty(),
-                        onLauncher = { dockPeekTick++; launcher = !launcher },
+                        onLauncher = {
+                            dockPeekTick++
+                            launcher = !launcher
+                        },
                         onItem = { item ->
                             dockPeekTick++
                             launcher = false
@@ -531,12 +534,14 @@ private fun DesktopShellContent(
                             when {
                                 // Harici uygulamaya dokunmak onu yeniden öne getirir.
                                 DesktopApps.isExternal(item.info.app) -> openApp(item.info.app)
+
                                 // Görünen sekmede değilse öne getirir (grupta: görünen ya da ilk pencere); açık değilse açar.
                                 !item.active && tabId != null -> {
                                     state = Desktop.activate(state, tabId)
                                 }
 
                                 !item.active -> openApp(item.info.app)
+
                                 // Zaten görünen grupta yeniden dokunmak sıradaki pencereye geçer; tek pencerede bir şey yapmaz.
                                 item.grouped -> {
                                     state = Desktop.cycleInGroup(state, item.info.app)
@@ -600,7 +605,10 @@ private fun DesktopShellContent(
 
             if (!dockVisible && !imeVisible) {
                 DockHandle(
-                    onReveal = { dockPeek = true; dockPeekTick++ },
+                    onReveal = {
+                        dockPeek = true
+                        dockPeekTick++
+                    },
                     modifier = Modifier.align(Alignment.BottomCenter).zIndex(8000f),
                 )
             }
@@ -677,9 +685,7 @@ private fun AiWindowContent(
             val entry = entries.firstOrNull { it.id == s.entryId && it.isLive }
             when {
                 entry == null -> Notice(stringResource(R.string.web_chats_closed), stringResource(R.string.web_chats_retry)) { hub.reopen(account) }
-
                 s.borrowed -> Notice(stringResource(R.string.web_chats_busy), stringResource(R.string.web_chats_open_monitor), onOpenMonitor)
-
                 else -> ChatPage(handle = container.webMonitor.handle(entry.id), installFileChooser = false)
             }
         }
