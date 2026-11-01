@@ -62,11 +62,8 @@ fun ShizukuSettingsCard() {
                     stringResource(
                         when (state.status) {
                             ShizukuStatus.NOT_INSTALLED -> R.string.shizuku_status_not_installed
-
                             ShizukuStatus.NOT_RUNNING -> R.string.shizuku_status_not_running
-
                             ShizukuStatus.NEEDS_PERMISSION -> R.string.shizuku_status_needs_permission
-
                             ShizukuStatus.READY -> when (state.mode) {
                                 PrivMode.ROOT -> R.string.shizuku_status_ready_root
                                 PrivMode.ADB -> R.string.shizuku_status_ready_adb

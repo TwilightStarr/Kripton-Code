@@ -184,7 +184,6 @@ fun DesktopFilesWindow(
 
                 FileSource.SYSTEM -> when (val r = ShizukuFiles.list(dirPath, showHidden)) {
                     is PrivListing.Ok -> FilesListing.Entries(r.entries.map { FileBrowse.fromPriv(File(dirPath), it) })
-
                     // Shizuku yok / izin yok / erişim reddedildi: normal erişimle okunabiliyorsa onu göster (zarif geri düşüş).
                     is PrivListing.Fail -> FileBrowse.list(File(dirPath), showHidden).takeIf { it.isNotEmpty() }
                         ?.let { FilesListing.Entries(it) } ?: FilesListing.Failed(r.reason)
@@ -199,7 +198,8 @@ fun DesktopFilesWindow(
         }
     }
 
-    fun appPath(pkg: String): String = if (pkg == context.packageName) context.applicationInfo.dataDir else ShizukuFiles.appDataPath(pkg, storageRoot.path)
+    fun appPath(pkg: String): String =
+        if (pkg == context.packageName) context.applicationInfo.dataDir else ShizukuFiles.appDataPath(pkg, storageRoot.path)
 
     val scope = rememberCoroutineScope()
     var viewing by remember { mutableStateOf<Pair<File, FileKind>?>(null) }
@@ -238,7 +238,6 @@ fun DesktopFilesWindow(
             val kind = FileOps.kindOf(f.name)
             when (kind) {
                 FileKind.TEXT, FileKind.MARKDOWN, FileKind.PDF, FileKind.IMAGE -> viewing = f to kind
-
                 else -> {
                     val pkg = FileOpen.remembered(context, f)
                     if (pkg == null || !FileOpen.launch(context, f, pkg)) openWith = f
@@ -250,23 +249,11 @@ fun DesktopFilesWindow(
     fun act(a: FileAction, e: FileEntry) {
         when (a) {
             FileAction.OPEN -> if (e.isDir) dirPath = e.file.path else openFile(e)
-
             FileAction.OPEN_WITH -> scope.launch { readable(e.file)?.let { openWith = it } ?: say(context.getString(R.string.desktop_files_unreadable)) }
-
-            FileAction.COPY -> {
-                clip = e.file to false
-                say(context.getString(R.string.desktop_files_copied, e.name))
-            }
-
-            FileAction.MOVE -> {
-                clip = e.file to true
-                say(context.getString(R.string.desktop_files_cut, e.name))
-            }
-
+            FileAction.COPY -> { clip = e.file to false; say(context.getString(R.string.desktop_files_copied, e.name)) }
+            FileAction.MOVE -> { clip = e.file to true; say(context.getString(R.string.desktop_files_cut, e.name)) }
             FileAction.RENAME -> renaming = e.file
-
             FileAction.DELETE -> deleting = e.file
-
             FileAction.PROPS -> props = e
         }
     }
@@ -673,10 +660,7 @@ private fun FileItem(
             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                 @Composable
                 fun entryItem(label: Int, action: FileAction) {
-                    DropdownMenuItem(text = { Text(stringResource(label)) }, onClick = {
-                        menu = false
-                        onAction(action)
-                    })
+                    DropdownMenuItem(text = { Text(stringResource(label)) }, onClick = { menu = false; onAction(action) })
                 }
                 entryItem(R.string.desktop_files_open, FileAction.OPEN)
                 if (!entry.isDir) entryItem(R.string.desktop_files_open_with, FileAction.OPEN_WITH)

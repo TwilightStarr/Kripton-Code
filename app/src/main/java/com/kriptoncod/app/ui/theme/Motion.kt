@@ -77,7 +77,8 @@ class MotionScale(
         return if (d <= 0) snap() else tween(durationMillis = d, easing = easing)
     }
 
-    override fun equals(other: Any?): Boolean = other is MotionScale && other.enabled == enabled && other.speed == speed && other.systemScale == systemScale
+    override fun equals(other: Any?): Boolean =
+        other is MotionScale && other.enabled == enabled && other.speed == speed && other.systemScale == systemScale
 
     override fun hashCode(): Int = (enabled.hashCode() * 31 + speed.hashCode()) * 31 + systemScale.hashCode()
 }

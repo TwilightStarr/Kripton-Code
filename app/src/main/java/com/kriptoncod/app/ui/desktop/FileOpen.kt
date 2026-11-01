@@ -52,7 +52,8 @@ object FileOpen {
 
     private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-    fun remembered(context: Context, file: File): String? = FileBrowse.extension(file.name).takeIf { it.isNotEmpty() }?.let { prefs(context).getString(it, null) }
+    fun remembered(context: Context, file: File): String? =
+        FileBrowse.extension(file.name).takeIf { it.isNotEmpty() }?.let { prefs(context).getString(it, null) }
 
     fun remember(context: Context, file: File, pkg: String) {
         val ext = FileBrowse.extension(file.name).ifEmpty { return }
