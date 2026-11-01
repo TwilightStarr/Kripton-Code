@@ -225,7 +225,9 @@ private fun ZipBrowserDialog(title: String, entries: List<Pair<String, ByteArray
             Column(Modifier.fillMaxWidth().heightIn(max = 420.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 when {
                     entries == null -> Text(stringResource(R.string.zips_loading), color = k.muted)
+
                     entries.isEmpty() -> Text(stringResource(R.string.zips_open_failed), color = k.muted)
+
                     current != null -> {
                         TextButton(onClick = { selected = null }) { Text(stringResource(R.string.action_back)) }
                         Text(current.first, style = MaterialTheme.typography.labelLarge)
@@ -237,6 +239,7 @@ private fun ZipBrowserDialog(title: String, entries: List<Pair<String, ByteArray
                         }
                         Text(text, fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                     }
+
                     else -> entries.forEach { (path, bytes) ->
                         TextButton(onClick = { selected = path }, modifier = Modifier.fillMaxWidth()) {
                             Text(path, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
