@@ -34,6 +34,12 @@ interface WebMonitorHandle {
      * Yükleme bitmesini beklemez. Desteklemeyen/hazır olmayan oturumda false döner.
      */
     suspend fun attachManual(name: String, mime: String, bytes: ByteArray): Boolean = false
+
+    /**
+     * Launcher "AI'a sor": [text]'i açık sohbetin giriş kutusuna yazıp gönderir. Yanıtı beklemez ve çalışma kaydına
+     * (monitör) işlemez; kullanıcı yanıtı AI sekmesinde kendisi izler. Desteklemeyen/hazır olmayan oturumda false döner.
+     */
+    suspend fun sendPromptManual(text: String): Boolean = false
 }
 
 /** İzlenen bir oturumun anlık aşaması. */

@@ -45,7 +45,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
-import android.widget.Toast
+import com.kriptoncod.app.data.files.ArchiveCancelled
+import com.kriptoncod.app.data.files.ArchiveFormat
+import com.kriptoncod.app.data.files.ArchiveProgress
+import com.kriptoncod.app.data.files.ArchiveTool
+import com.kriptoncod.app.launcher.ui.LocalInAppMessage
+import androidx.compose.material3.LinearProgressIndicator
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -184,7 +190,6 @@ fun DesktopFilesWindow(
 
                 FileSource.SYSTEM -> when (val r = ShizukuFiles.list(dirPath, showHidden)) {
                     is PrivListing.Ok -> FilesListing.Entries(r.entries.map { FileBrowse.fromPriv(File(dirPath), it) })
-
                     // Shizuku yok / izin yok / erişim reddedildi: normal erişimle okunabiliyorsa onu göster (zarif geri düşüş).
                     is PrivListing.Fail -> FileBrowse.list(File(dirPath), showHidden).takeIf { it.isNotEmpty() }
                         ?.let { FilesListing.Entries(it) } ?: FilesListing.Failed(r.reason)
@@ -199,7 +204,8 @@ fun DesktopFilesWindow(
         }
     }
 
-    fun appPath(pkg: String): String = if (pkg == context.packageName) context.applicationInfo.dataDir else ShizukuFiles.appDataPath(pkg, storageRoot.path)
+    fun appPath(pkg: String): String =
+        if (pkg == context.packageName) context.applicationInfo.dataDir else ShizukuFiles.appDataPath(pkg, storageRoot.path)
 
     val scope = rememberCoroutineScope()
     var viewing by remember { mutableStateOf<Pair<File, FileKind>?>(null) }
@@ -207,11 +213,14 @@ fun DesktopFilesWindow(
     var renaming by remember { mutableStateOf<File?>(null) }
     var deleting by remember { mutableStateOf<File?>(null) }
     var props by remember { mutableStateOf<FileEntry?>(null) }
+    var browsing by remember { mutableStateOf<File?>(null) }
+    var job by remember { mutableStateOf<ArchiveJob?>(null) }
     var clip by remember { mutableStateOf<Pair<File, Boolean>?>(null) } // (öğe, taşınacak mı)
     val privCache = remember { File(context.cacheDir, "privview") }
     DisposableEffect(Unit) { onDispose { runCatching { privCache.deleteRecursively() } } }
 
-    fun say(text: String) = Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+    val message = LocalInAppMessage.current
+    fun say(text: String) = message(text)
 
     /** Dosya doğrudan okunabiliyorsa kendisi; değilse (Shizuku) önbelleğe kopyası. Yoksa null. */
     suspend fun readable(f: File): File? = withContext(Dispatchers.IO) {
@@ -232,13 +241,60 @@ fun DesktopFilesWindow(
         }
     }
 
+    /** Arşiv işi (açma/sıkıştırma): arka planda çalışır, alttaki çubukta ilerler, iptal edilebilir. Aynı anda tek iş. */
+    fun runJob(label: String, work: (ArchiveProgress, () -> Boolean) -> Result<Any>) {
+        if (job != null) return say(context.getString(R.string.l_ar_busy))
+        val cancel = AtomicBoolean(false)
+        job = ArchiveJob(label, 0f, cancel)
+        scope.launch {
+            var lastPercent = -1
+            val result = withContext(Dispatchers.IO) {
+                work(ArchiveProgress { d, t ->
+                    val p = if (t > 0) (d.toFloat() / t).coerceIn(0f, 1f) else -1f
+                    val pct = (p * 100).toInt()
+                    if (pct != lastPercent) {
+                        lastPercent = pct
+                        job = job?.copy(progress = p)
+                    }
+                }, { cancel.get() })
+            }
+            job = null
+            result.onSuccess { say(context.getString(R.string.l_ar_done, label)) }
+                .onFailure { say(if (it is ArchiveCancelled) context.getString(R.string.l_ar_cancelled) else it.message ?: context.getString(R.string.desktop_files_op_failed)) }
+            tick++
+        }
+    }
+
+    fun extractTo(archive: File, target: File, only: Set<String>?) {
+        runJob(context.getString(R.string.l_ar_extracting, archive.name)) { prog, cancelled -> ArchiveTool.extract(archive, target, only, prog, cancelled) }
+    }
+
+    fun compress(src: File, format: ArchiveFormat) {
+        val ext = if (format == ArchiveFormat.ZIP) ".zip" else ".tar.gz"
+        runJob(context.getString(R.string.l_ar_compressing, src.name)) { prog, cancelled ->
+            ArchiveTool.compress(listOf(src), File(dir, src.name + ext), format, 6, prog, cancelled)
+        }
+    }
+
+    fun previewEntry(archive: File, e: com.kriptoncod.app.data.files.ArchiveEntry) {
+        scope.launch {
+            val out = File(privCache, "ar-" + System.currentTimeMillis() + "-" + e.name)
+            val r = withContext(Dispatchers.IO) { ArchiveTool.extractEntry(archive, e.path, out) }
+            r.onSuccess { f ->
+                val kind = FileOps.kindOf(f.name)
+                if (kind == FileKind.OTHER || kind == FileKind.ARCHIVE) openWith = f else viewing = f to kind
+                browsing = null
+            }.onFailure { say(it.message ?: context.getString(R.string.desktop_files_op_failed)) }
+        }
+    }
+
     fun openFile(e: FileEntry) {
         scope.launch {
             val f = readable(e.file) ?: return@launch say(context.getString(R.string.desktop_files_unreadable))
             val kind = FileOps.kindOf(f.name)
-            when (kind) {
-                FileKind.TEXT, FileKind.MARKDOWN, FileKind.PDF, FileKind.IMAGE -> viewing = f to kind
-
+            when {
+                kind == FileKind.ARCHIVE && ArchiveTool.isSupported(f.name) -> browsing = f
+                kind == FileKind.TEXT || kind == FileKind.MARKDOWN || kind == FileKind.PDF || kind == FileKind.IMAGE -> viewing = f to kind
                 else -> {
                     val pkg = FileOpen.remembered(context, f)
                     if (pkg == null || !FileOpen.launch(context, f, pkg)) openWith = f
@@ -250,24 +306,17 @@ fun DesktopFilesWindow(
     fun act(a: FileAction, e: FileEntry) {
         when (a) {
             FileAction.OPEN -> if (e.isDir) dirPath = e.file.path else openFile(e)
-
             FileAction.OPEN_WITH -> scope.launch { readable(e.file)?.let { openWith = it } ?: say(context.getString(R.string.desktop_files_unreadable)) }
-
-            FileAction.COPY -> {
-                clip = e.file to false
-                say(context.getString(R.string.desktop_files_copied, e.name))
-            }
-
-            FileAction.MOVE -> {
-                clip = e.file to true
-                say(context.getString(R.string.desktop_files_cut, e.name))
-            }
-
+            FileAction.COPY -> { clip = e.file to false; say(context.getString(R.string.desktop_files_copied, e.name)) }
+            FileAction.MOVE -> { clip = e.file to true; say(context.getString(R.string.desktop_files_cut, e.name)) }
             FileAction.RENAME -> renaming = e.file
-
             FileAction.DELETE -> deleting = e.file
-
             FileAction.PROPS -> props = e
+            FileAction.BROWSE_ARCHIVE -> browsing = e.file
+            FileAction.EXTRACT_HERE -> extractTo(e.file, dir, null)
+            FileAction.EXTRACT_FOLDER -> extractTo(e.file, FileOps.uniqueTarget(dir, ArchiveTool.baseName(e.name)), null)
+            FileAction.COMPRESS_ZIP -> compress(e.file, ArchiveFormat.ZIP)
+            FileAction.COMPRESS_TGZ -> compress(e.file, ArchiveFormat.TAR_GZ)
         }
     }
 
@@ -383,6 +432,20 @@ fun DesktopFilesWindow(
                     }
                 }
             }
+            job?.let { j ->
+                HorizontalDivider(color = KriptonTheme.colors.nodeBorder.copy(alpha = 0.5f))
+                Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(j.label, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                        TextButton(onClick = { j.cancel.set(true) }) { Text(stringResource(R.string.desktop_files_cancel), maxLines = 1) }
+                    }
+                    if (j.progress < 0f) {
+                        LinearProgressIndicator(Modifier.fillMaxWidth())
+                    } else {
+                        LinearProgressIndicator(progress = { j.progress }, modifier = Modifier.fillMaxWidth())
+                    }
+                }
+            }
             val pending = clip
             if (pending != null && source == FileSource.STORAGE) {
                 HorizontalDivider(color = KriptonTheme.colors.nodeBorder.copy(alpha = 0.5f))
@@ -435,6 +498,15 @@ fun DesktopFilesWindow(
         })
     }
     props?.let { e -> PropsDialog(e, onDismiss = { props = null }) }
+    browsing?.let { a ->
+        ArchiveBrowserDialog(
+            archive = a,
+            onExtractSelected = { sel -> browsing = null; extractTo(a, FileOps.uniqueTarget(dir, ArchiveTool.baseName(a.name)), sel) },
+            onExtractAll = { browsing = null; extractTo(a, FileOps.uniqueTarget(dir, ArchiveTool.baseName(a.name)), null) },
+            onPreview = { e -> previewEntry(a, e) },
+            onDismiss = { browsing = null },
+        )
+    }
 }
 
 /** Dosyalar penceresinin kaynağı: normal depolama, Shizuku ile sistem (/), ya da uygulama veri klasörleri. */
@@ -673,10 +745,7 @@ private fun FileItem(
             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                 @Composable
                 fun entryItem(label: Int, action: FileAction) {
-                    DropdownMenuItem(text = { Text(stringResource(label)) }, onClick = {
-                        menu = false
-                        onAction(action)
-                    })
+                    DropdownMenuItem(text = { Text(stringResource(label)) }, onClick = { menu = false; onAction(action) })
                 }
                 entryItem(R.string.desktop_files_open, FileAction.OPEN)
                 if (!entry.isDir) entryItem(R.string.desktop_files_open_with, FileAction.OPEN_WITH)
@@ -701,7 +770,16 @@ private fun FileItem(
                     }
                 }
                 HorizontalDivider()
+                if (modifiable && !entry.isDir && ArchiveTool.isSupported(entry.name)) {
+                    entryItem(R.string.l_ar_browse, FileAction.BROWSE_ARCHIVE)
+                    entryItem(R.string.l_ar_extract_here, FileAction.EXTRACT_HERE)
+                    entryItem(R.string.l_ar_extract_folder, FileAction.EXTRACT_FOLDER)
+                    HorizontalDivider()
+                }
                 if (modifiable) {
+                    entryItem(R.string.l_ar_zip, FileAction.COMPRESS_ZIP)
+                    entryItem(R.string.l_ar_tgz, FileAction.COMPRESS_TGZ)
+                    HorizontalDivider()
                     entryItem(R.string.desktop_files_copy, FileAction.COPY)
                     entryItem(R.string.desktop_files_move, FileAction.MOVE)
                     entryItem(R.string.desktop_files_rename, FileAction.RENAME)
@@ -757,3 +835,6 @@ private fun FileItem(
     }
     if (!grid) HorizontalDivider(color = k.nodeBorder.copy(alpha = 0.25f))
 }
+
+/** Çalışan arşiv işi (alttaki ilerleme çubuğu). [progress] -1: belirsiz. */
+private data class ArchiveJob(val label: String, val progress: Float, val cancel: AtomicBoolean)

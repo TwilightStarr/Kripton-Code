@@ -18,6 +18,10 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
     <!--
+        Launcher arama: kişi araması YALNIZ kullanıcı Launcher ayarlarında açıp izin verirse çalışır; rehber saklanmaz ve gönderilmez.
+    -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <!--
         Pil kısıtlamasını kaldırma iletişim kutusunu açmak için (Ayarlar > Pil). Kullanıcı onaylamadan hiçbir şey değişmez.
         Uzun süren arka plan üretimi için gereklidir; Xiaomi gibi cihazlar işi aksi hâlde sonlandırabilir.
     -->
@@ -31,6 +35,10 @@
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <!-- Launcher: widget sağlayıcıları. -->
+        <intent>
+            <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
         </intent>
         <!-- Dosyalar penceresi "Aç": dosyayı açabilen uygulamaları listelemek için. -->
         <intent>
@@ -76,6 +84,12 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Başka uygulamadan "Paylaş > Kripton Code": metin launcher'ın "AI'a sor" sayfasında hazır açılır. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
         </activity>
 
         <!--
@@ -99,6 +113,20 @@
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
+
+        <!--
+            Launcher bildirim paneli: yalnız kullanıcı Android ayarlarından "Bildirim erişimi"ni verirse çalışır.
+            Bildirimler bellekte tutulur, diske yazılmaz ve ağa gönderilmez.
+        -->
+        <service
+            android:name=".launcher.notify.KriptonNotificationListener"
+            android:exported="true"
+            android:label="@string/l_listener_label"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
 
         <!-- Dosyayı başka uygulamada açmak için salt okuma URI'si (yalnız kullanıcı "Aç" dediğinde, seçilen uygulamaya). -->
         <provider

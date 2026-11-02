@@ -338,6 +338,13 @@ class WebViewChatDriver(
             return false
         }
 
+        override suspend fun sendPromptManual(text: String): Boolean {
+            val wv = webView ?: return false
+            if (text.isBlank()) return false
+            WebCookies.evalString(wv, WebScripts.runChat(selectors, text))
+            return true
+        }
+
         override suspend fun attachManual(name: String, mime: String, bytes: ByteArray): Boolean {
             val wv = webView ?: return false
             if (bytes.isEmpty()) return false

@@ -5,6 +5,12 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
+### Eklendi (Launcher: masaüstü modu gerçek bir ana ekrana dönüştü)
+- Ana ekran sayfaları (kısayollar, Kripton panoları, Android widget'ları), canlı uygulama çekmecesi, evrensel arama (uygulama, dosya, kişi, hesap makinesi, sistem ayarı, "AI'a sor", web), AI hızlı erişim çubuğu ve "AI'a sor" sayfası; **Paylaş > Kripton Code** ile metin gönderme.
+- Kendi bildirim sistemi: Kripton olay kutusu, sistem bildirimleri paneli (bildirim erişimi ile), rozetler, hızlı düğmeler.
+- Dosyalar: zip/tar/tar.gz/gz içine bakma, çıkarma, sıkıştırma (`ArchiveTool`), ilerleme ve iptal; Toast yerine uygulamanın kendi mesaj şeridi.
+- Ayrıntı: `docs/LAUNCHER.md`.
+
 ### Eklendi (Masaüstü modu: animasyonlar, sekme gruplama, görev çubuğu)
 - Uygulama açılışı simgeden büyüyerek, sekme geçişi zoom + solma ile, kapanış aşağı küçülerek oynar. Süreler tek bir hareket ölçeğinden (`Motion`/`MotionScale`) gelir; Ayarlar'da pencere animasyonları anahtarı, geçiş hızı kaydırıcısı (0,5×–2×) ve sistem Animatör ölçeğini izleme var. Genel "Animasyonlar" kapalıyken hiçbiri oynamaz.
 - Birden çok pencereli uygulamalar (Dosyalar) çubukta gruplanır: sayı rozeti, pencere önizleme kartları, "yeni pencere", "tümünü kapat". Çubukta uzun basış ya da sağ tık menüsü; masaüstünü göster düğmesinde "tüm sekmeleri kapat".
@@ -16,7 +22,7 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ### Eklendi (Evrensel dosya açıcı)
 - Dosyalar penceresinde dosyaya dokununca açılır. **Uygulama içi:** metin/log/json/xml/kod (renklendirmeli, `OutputMarkdownView`), markdown, **PDF** (`PdfRenderer`), **görüntü** (yakınlaştırmalı). Büyük metinde ilk 512 KB gösterilir.
-- Diğer türler (docx, 7z, tar.gz, apk…) harici uygulamaya gider: `FileProvider` + `ACTION_VIEW`, kurulu uygulamalar listelenir; "bu uzantıyı her zaman bununla aç" tercihi saklanır (kaldırılabilir); "Sistem seçicisi" düğmesi de var. Kendi arşiv motoru yazılmadı.
+- Diğer türler (docx, 7z, tar.gz, apk…) harici uygulamaya gider: `FileProvider` + `ACTION_VIEW`, kurulu uygulamalar listelenir; "bu uzantıyı her zaman bununla aç" tercihi saklanır (kaldırılabilir); "Sistem seçicisi" düğmesi de var. Zip/tar/tar.gz için kendi arşiv motoru vardır (bkz. docs/LAUNCHER.md); 7z/rar harici uygulamaya gider.
 - Satır menüsü: Aç, Şununla aç, AI'a gönder, **Kopyala, Taşı** (hedef klasörde "Buraya yapıştır"), **Yeniden adlandır, Sil** (onaylı), **Özellikler** (yol, boyut, tarih, isteğe bağlı MD5/SHA-256). Dosya işlemleri yalnız normal depolamada; Shizuku kaynağı salt okunurdur (açma/özellik için dosya geçici önbelleğe kopyalanır, pencere kapanınca silinir).
 - Yeni: `FileOps`, `FileOpen`, `FileViewer`, `FileActions`, `res/xml/file_paths.xml`, `FileOpsTest`.
 

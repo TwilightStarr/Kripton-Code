@@ -31,6 +31,8 @@ fun DesktopModeHost(
     initialEnabled: Boolean,
     /** Ana ekran (launcher) olarak açıldı: masaüstü modu zorunlu. */
     asHome: Boolean = false,
+    /** Geçici masaüstü (ör. "Paylaş" ile gelen metin): ayarı değiştirmeden launcher'ı gösterir. */
+    transientDesktop: Boolean = false,
     themePreference: ThemePreference,
     onThemeChange: (ThemePreference) -> Unit,
 ) {
@@ -55,7 +57,7 @@ fun DesktopModeHost(
 
     CompositionLocalProvider(LocalDesktopMode provides controller) {
         Box(Modifier.fillMaxSize()) {
-            if ((enabled || asHome) && available) {
+            if ((enabled || asHome || transientDesktop) && available) {
                 DesktopShell(container = container, themePreference = themePreference, onThemeChange = onThemeChange, isHome = asHome)
             } else {
                 AppRoot(themePreference = themePreference, onThemeChange = onThemeChange, playIntro = !switched)

@@ -30,10 +30,24 @@ class MainActivity : ComponentActivity() {
 
     private fun isHomeIntent(i: Intent?): Boolean = i?.hasCategory(Intent.CATEGORY_HOME) == true
 
+    /** Başka uygulamadan "Paylaş" ile gelen düz metin: launcher'ın "AI'a sor" sayfasında hazır açılır. */
+    private var shareTransient by mutableStateOf(false)
+
+    private fun readShare(i: Intent?) {
+        if (i?.action == Intent.ACTION_SEND && i.type?.startsWith("text/") == true) {
+            val text = i.getStringExtra(Intent.EXTRA_TEXT)
+            if (!text.isNullOrBlank()) {
+                com.kriptoncod.app.launcher.LauncherBus.share(text)
+                shareTransient = true
+            }
+        }
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         if (isHomeIntent(intent)) launchedAsHome = true
+        readShare(intent)
     }
 
     override fun attachBaseContext(newBase: android.content.Context) {
@@ -43,6 +57,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         launchedAsHome = isHomeIntent(intent)
+        readShare(intent)
         enableEdgeToEdge()
         // Android 13+: bildirim izni ilk açılışta istenir (reddedilirse çalışma yine sürer, yalnız bildirim görünmez).
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -68,6 +83,7 @@ class MainActivity : ComponentActivity() {
                         container = (application as KriptonCodApp).container,
                         initialEnabled = initialDesktop,
                         asHome = launchedAsHome,
+                        transientDesktop = shareTransient,
                         themePreference = preference,
                         onThemeChange = { scope.launch { store.set(it) } },
                     )

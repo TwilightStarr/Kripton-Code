@@ -76,6 +76,8 @@ class DockItem(
     val active: Boolean,
     val tabs: List<DockTab> = emptyList(),
     val multi: Boolean = false,
+    /** Okunmamış bildirim sayısı (launcher rozeti); 0 ise çizilmez. */
+    val badge: Int = 0,
 ) {
     val open: Boolean get() = tabId != null
     val grouped: Boolean get() = tabs.size > 1
@@ -304,6 +306,7 @@ private fun DockChip(
                     .background(tint),
             )
         }
+        com.kriptoncod.app.launcher.ui.CountBadge(item.badge, Modifier.align(Alignment.TopStart).padding(top = 1.dp, start = 1.dp))
         // Grup rozeti: aynı uygulamanın pencere sayısı.
         if (item.grouped) {
             Box(

@@ -24,6 +24,8 @@ class KriptonCodApp : Application() {
         // Debug: LeakCanary bildirimleri yerine çökme günlüğü + tek bildirim (release'te boş).
         DebugTools.install(this)
         container = AppContainer(this)
+        // Launcher: Kripton'un kendi bildirim kutusu (arka plan işleri de buraya yazar).
+        com.kriptoncod.app.launcher.notify.KriptonInbox.init(this)
         container.startRecovery()
         RunWidgetUpdater.syncWithRuns(this, container.appScope, container.runRepository)
     }

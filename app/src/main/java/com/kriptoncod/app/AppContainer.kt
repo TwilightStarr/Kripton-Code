@@ -78,6 +78,9 @@ class AppContainer(context: Context) {
 
     val themeStore: ThemeStore by lazy { ThemeStore(appContext) }
 
+    /** Launcher: uygulama listesi, widget sunucusu, dosya dizini. */
+    val launcher: com.kriptoncod.app.launcher.LauncherServices by lazy { com.kriptoncod.app.launcher.LauncherServices(appContext) }
+
     /** Mod Merkezi: hazır/özel modlar ve etkin mod. Etkin mod [ModeRuntime]'a yansır. */
     val modeStore: ModeStore by lazy { ModeStore(appContext) }
 

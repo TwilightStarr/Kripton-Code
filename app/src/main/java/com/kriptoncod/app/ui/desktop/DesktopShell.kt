@@ -42,6 +42,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
@@ -68,6 +70,30 @@ import com.kriptoncod.app.ui.screens.Notice
 import com.kriptoncod.app.ui.screens.WebFileChooserEffect
 import com.kriptoncod.app.ui.screens.tint
 import com.kriptoncod.app.ui.screens.webProvider
+import com.kriptoncod.app.launcher.AppCatalog
+import com.kriptoncod.app.launcher.LauncherPrefs
+import com.kriptoncod.app.launcher.LauncherBus
+import com.kriptoncod.app.launcher.Wallpaper
+import com.kriptoncod.app.launcher.home.Home
+import com.kriptoncod.app.launcher.home.HomeCodec
+import com.kriptoncod.app.launcher.home.HomeItem
+import com.kriptoncod.app.launcher.home.HomeState
+import com.kriptoncod.app.launcher.notify.KriptonInbox
+import com.kriptoncod.app.launcher.notify.LauncherRuntime
+import com.kriptoncod.app.launcher.notify.NotificationHub
+import com.kriptoncod.app.launcher.notify.Notifs
+import com.kriptoncod.app.launcher.notify.QuickToggles
+import com.kriptoncod.app.launcher.search.SearchEngine
+import com.kriptoncod.app.launcher.ui.AppDrawer
+import com.kriptoncod.app.launcher.ui.AskSheet
+import com.kriptoncod.app.launcher.ui.DrawerActions
+import com.kriptoncod.app.launcher.ui.HomeActions
+import com.kriptoncod.app.launcher.ui.LauncherHome
+import com.kriptoncod.app.launcher.ui.LauncherSettings
+import com.kriptoncod.app.launcher.ui.LocalInAppMessage
+import com.kriptoncod.app.launcher.ui.NotificationPanel
+import com.kriptoncod.app.launcher.ui.WidgetPicker
+import com.kriptoncod.app.launcher.widgets.rememberWidgetAdder
 import com.kriptoncod.app.ui.theme.KriptonTheme
 import com.kriptoncod.app.ui.theme.LocalAnimationsEnabled
 import com.kriptoncod.app.ui.theme.LocalMotionScale
@@ -160,7 +186,21 @@ private fun DesktopShellContent(
     var toastText by remember { mutableStateOf<String?>(null) }
     var minuteOfDay by remember { mutableIntStateOf(0) }
     var dateText by remember { mutableStateOf("") }
-    var installed by remember { mutableStateOf<List<InstalledApp>?>(null) }
+    val launcherApps by container.launcher.apps.apps.collectAsStateWithLifecycle()
+    val installed: List<InstalledApp>? = launcherApps?.map { InstalledApp(it.label, it.packageName) }
+    val launcherPrefs by store.launcherPrefsFlow.collectAsStateWithLifecycle(initialValue = LauncherPrefs())
+    var homeState by remember { mutableStateOf(HomeState()) }
+    var homeLoaded by remember { mutableStateOf(false) }
+    var drawerFocus by remember { mutableStateOf(false) }
+    var panelOpen by remember { mutableStateOf(false) }
+    var settingsOpen by remember { mutableStateOf(false) }
+    var widgetPicker by remember { mutableStateOf(false) }
+    var askOpen by remember { mutableStateOf(false) }
+    var askTarget by remember { mutableStateOf<Long?>(null) }
+    var askText by remember { mutableStateOf("") }
+    val sysNotifs by NotificationHub.items.collectAsStateWithLifecycle()
+    val inbox by KriptonInbox.items.collectAsStateWithLifecycle()
+    val sharedText by LauncherBus.sharedText.collectAsStateWithLifecycle()
     val fileDrag = remember { FileDrag() }
     // Alt çubuk: tam ekranda (ayara bağlı) ya da "otomatik gizle" açıkken gizlenir; alt kenardaki tutamaçla geçici açılır.
     var dockPeek by remember { mutableStateOf(false) }
@@ -197,10 +237,39 @@ private fun DesktopShellContent(
         snapshotFlow { DesktopCodec.encode(state) }.distinctUntilChanged().drop(1).debounce(500).collect { store.setDesktopLayout(it) }
     }
     // Cihazdaki uygulamalar: açılışta ve başlatıcı her açıldığında yenilenir (yeni kurulanlar görünsün).
-    LaunchedEffect(launcher) {
-        if (launcher || installed == null) {
-            installed = withContext(Dispatchers.Default) { runCatching { InstalledApps.list(context) }.getOrDefault(emptyList()) }
+    // Uygulama listesi canlıdır (kurulum/kaldırma anında kendiliğinden güncellenir); widget sunucusu kabukla birlikte çalışır.
+    LaunchedEffect(Unit) { withContext(Dispatchers.Default) { container.launcher.apps.start() } }
+    DisposableEffect(Unit) {
+        container.launcher.widgets.start()
+        QuickToggles.watchTorch(context)
+        onDispose { container.launcher.widgets.stop() }
+    }
+    LaunchedEffect(launcherPrefs.kriptonNotificationsInPanel) { LauncherRuntime.kriptonEventsInPanel = launcherPrefs.kriptonNotificationsInPanel }
+    // Ana ekran düzeni: yükle / kaydet.
+    LaunchedEffect(Unit) {
+        homeState = HomeCodec.decode(store.homeLayoutFlow.first()) ?: Home.initial(listOf(DesktopApps.KRIPTON, DesktopApps.FILES))
+        homeLoaded = true
+    }
+    LaunchedEffect(homeLoaded) {
+        if (!homeLoaded) return@LaunchedEffect
+        snapshotFlow { HomeCodec.encode(homeState) }.distinctUntilChanged().drop(1).debounce(500).collect { store.setHomeLayout(it) }
+    }
+    // Kaldırılan uygulamalar ve silinen AI hesapları ana ekrandan temizlenir (listeler yüklenmeden hiçbir şey silinmez).
+    LaunchedEffect(launcherApps, accountsState, homeLoaded) {
+        val apps = launcherApps ?: return@LaunchedEffect
+        if (accountsState == null || !homeLoaded) return@LaunchedEffect
+        val pkgs = apps.map { it.packageName }.toSet()
+        homeState = Home.retainApps(homeState) { app ->
+            DesktopApps.packageOf(app)?.let { it in pkgs } ?: DesktopApps.aiAccountId(app)?.let { it in rowsById } ?: true
         }
+    }
+    // Başka uygulamadan "Paylaş" ile gelen metin: AI'a sor sayfası hazır metinle açılır.
+    LaunchedEffect(sharedText) {
+        val t = sharedText ?: return@LaunchedEffect
+        askText = t
+        askTarget = null
+        askOpen = true
+        LauncherBus.consume()
     }
     // Saat ve tarih
     LaunchedEffect(Unit) {
@@ -251,6 +320,7 @@ private fun DesktopShellContent(
         // Cihazdaki uygulama: tam ekran açılır; çubukta açık sekme olarak izlenir.
         val activity = context.findActivity()
         if (activity != null && InstalledApps.launch(activity, pkg)) {
+            scope.launch { store.recordLaunch(pkg) }
             state = Desktop.open(state, app)
         } else {
             toastText = context.getString(R.string.desktop_app_launch_failed)
@@ -378,6 +448,129 @@ private fun DesktopShellContent(
         return AppInfo(app, label, scheme.primary)
     }
 
+    // ---- Launcher: rozetler, eylemler ----
+    val badgeCounts = remember(sysNotifs) { Notifs.badgeCounts(sysNotifs) }
+    val ownUnread = KriptonInbox.unread(inbox)
+    fun badgeOf(app: String): Int = when {
+        app == DesktopApps.KRIPTON -> ownUnread + (badgeCounts[context.packageName] ?: 0)
+        else -> DesktopApps.packageOf(app)?.let { badgeCounts[it] } ?: 0
+    }
+    val totalUnread = Notifs.visible(sysNotifs).count { !it.ongoing && !it.isSummary } + ownUnread
+    val ownApps = listOfNotNull(infoOf(DesktopApps.KRIPTON), infoOf(DesktopApps.FILES))
+    val aiApps = aiRows.mapNotNull { infoOf(DesktopApps.ai(it.id)) }
+    val isDefaultHome = remember(launcher, settingsOpen) { HomeRole.isDefault(context) }
+    val darkNow = androidx.compose.foundation.isSystemInDarkTheme()
+    val wallpaper by produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, launcherPrefs.wallpaper) {
+        value = withContext(Dispatchers.IO) { Wallpaper.load(context, launcherPrefs.wallpaper)?.asImageBitmap() }
+    }
+    val settingShortcuts = listOf(
+        stringResource(R.string.l_st_wifi) to android.provider.Settings.ACTION_WIFI_SETTINGS,
+        stringResource(R.string.l_st_bluetooth) to android.provider.Settings.ACTION_BLUETOOTH_SETTINGS,
+        stringResource(R.string.l_st_display) to android.provider.Settings.ACTION_DISPLAY_SETTINGS,
+        stringResource(R.string.l_st_sound) to android.provider.Settings.ACTION_SOUND_SETTINGS,
+        stringResource(R.string.l_st_battery) to android.provider.Settings.ACTION_BATTERY_SAVER_SETTINGS,
+        stringResource(R.string.l_st_apps) to android.provider.Settings.ACTION_APPLICATION_SETTINGS,
+        stringResource(R.string.l_st_storage) to android.provider.Settings.ACTION_INTERNAL_STORAGE_SETTINGS,
+        stringResource(R.string.l_st_access) to android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS,
+        stringResource(R.string.l_st_defaults) to android.provider.Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS,
+        stringResource(R.string.l_st_language) to android.provider.Settings.ACTION_LOCALE_SETTINGS,
+    )
+    val widgetAdder = rememberWidgetAdder(
+        controller = container.launcher.widgets,
+        onAdded = { id, rows -> homeState = Home.addItem(homeState, HomeItem.Widget(id, rows), homeState.pageCount - 1) },
+        onFailed = { toastText = context.getString(R.string.l_widget_failed) },
+    )
+    val wallpaperPicker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) scope.launch {
+            val v = withContext(Dispatchers.IO) { Wallpaper.import(context, uri) }
+            if (v != null) store.editLauncherPrefs { it.copy(wallpaper = v) } else toastText = context.getString(R.string.l_wallpaper_failed)
+        }
+    }
+    val contactsPermission = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { }
+
+    fun closeOverlays() {
+        launcher = false
+        panelOpen = false
+        askOpen = false
+        drawerFocus = false
+    }
+
+    fun startIntent(i: android.content.Intent): Boolean =
+        runCatching { context.startActivity(i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess
+
+    /** Yazıyı AI'a gönderir: sekmeyi açar, oturum hazır olunca giriş kutusuna yazıp yollar. */
+    fun askAi(accountId: Long, text: String) {
+        val aiName = rowsById[accountId]?.displayName.orEmpty()
+        closeOverlays()
+        openApp(DesktopApps.ai(accountId))
+        toastText = context.getString(R.string.l_ask_sending, aiName)
+        scope.launch {
+            val ready = kotlinx.coroutines.withTimeoutOrNull(40_000L) {
+                hub.state(accountId).first { it is WebChatHub.State.Ready && !it.borrowed }
+            } as? WebChatHub.State.Ready
+            val handle = ready?.let { r -> container.webMonitor.entries.value.firstOrNull { it.id == r.entryId && it.isLive }?.let { container.webMonitor.handle(it.id) } }
+            if (handle == null) {
+                toastText = context.getString(R.string.desktop_upload_not_ready, aiName)
+                return@launch
+            }
+            delay(700)
+            toastText = if (handle.sendPromptManual(text)) context.getString(R.string.l_ask_sent, aiName) else context.getString(R.string.l_ask_failed, aiName)
+        }
+    }
+
+    fun attachToAi(accountId: Long, uri: Uri) {
+        openApp(DesktopApps.ai(accountId))
+        sendToAi(accountId, queryName(context, uri)) { readDropped(context, uri) }
+    }
+
+    fun toggleTheme() {
+        val effectiveDark = when (themePreference) {
+            ThemePreference.DARK -> true
+            ThemePreference.LIGHT -> false
+            ThemePreference.SYSTEM -> darkNow
+        }
+        onThemeChange(if (effectiveDark) ThemePreference.LIGHT else ThemePreference.DARK)
+    }
+
+    val homeActions = HomeActions(
+        open = { openApp(it) },
+        change = { homeState = it },
+        togglePin = { state = Desktop.togglePin(state, it) },
+        openDrawer = { drawerFocus = false; launcher = true },
+        openNotifications = { panelOpen = true },
+        openSearch = { drawerFocus = true; launcher = true },
+        openAsk = { id -> askTarget = id; askText = ""; askOpen = true },
+        ask = { id, t -> askAi(id, t) },
+        addWidget = { widgetPicker = true },
+        openSettings = { settingsOpen = true },
+        removeWidget = { container.launcher.widgets.delete(it) },
+    )
+
+    val drawerActions = DrawerActions(
+        open = { openApp(it) },
+        addToHome = { homeState = Home.addApp(homeState, it, 0) },
+        removeFromHome = { homeState = Home.removeApp(homeState, it) },
+        togglePin = { state = Desktop.togglePin(state, it) },
+        setHidden = { pkg, hide -> scope.launch { store.editLauncherPrefs { it.copy(hiddenApps = if (hide) it.hiddenApps + pkg else it.hiddenApps - pkg) } } },
+        uninstall = { startIntent(AppCatalog.uninstallIntent(it)) },
+        appInfo = { startIntent(AppCatalog.appInfoIntent(it)) },
+        shortcut = { container.launcher.apps.startShortcut(it) },
+        openFile = { f ->
+            closeOverlays()
+            if (f.isDirectory) openApp(DesktopApps.FILES) else if (!FileOpen.launch(context, f, null)) toastText = context.getString(R.string.desktop_files_no_app)
+        },
+        dial = { startIntent(android.content.Intent(android.content.Intent.ACTION_DIAL, Uri.parse("tel:$it"))) },
+        setting = { closeOverlays(); startIntent(android.content.Intent(it)) },
+        web = { closeOverlays(); startIntent(android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse(SearchEngine.webUrl(it)))) },
+        ask = { id, t -> askAi(id, t) },
+        copy = { text ->
+            (context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager)?.setPrimaryClip(android.content.ClipData.newPlainText("", text))
+            toastText = context.getString(R.string.l_copied, text)
+        },
+        setSort = { sort -> scope.launch { store.editLauncherPrefs { it.copy(drawerSort = sort) } } },
+        dismiss = { launcher = false; drawerFocus = false },
+    )
+
     val activeId = state.activeId
     val dockItems = Desktop.dock(state).mapNotNull { e ->
         infoOf(e.app)?.let { info ->
@@ -386,7 +579,7 @@ private fun DesktopShellContent(
                 val label = if (e.grouped) context.getString(R.string.desktop_tab_window_label, info.title, i + 1) else info.title
                 DockTab(id, label, id == activeId)
             }
-            DockItem(info, e.tabId, e.pinned, tabs.any { it.active }, tabs, DesktopApps.allowsMultiple(e.app))
+            DockItem(info, e.tabId, e.pinned, tabs.any { it.active }, tabs, DesktopApps.allowsMultiple(e.app), if (launcherPrefs.badges) badgeOf(e.app) else 0)
         }
     }
     val openApps = state.tabs.map { it.app }.toSet()
@@ -395,11 +588,14 @@ private fun DesktopShellContent(
 
     // Ana ekran olarak: geri tuşu masaüstünden çıkmaz (yalnız açık katmanları kapatır).
     BackHandler(enabled = isHome) { }
-    BackHandler(enabled = launcher || showPerm) {
-        if (showPerm) {
-            showPerm = false
-        } else {
-            launcher = false
+    BackHandler(enabled = launcher || showPerm || panelOpen || askOpen || settingsOpen || widgetPicker) {
+        when {
+            showPerm -> showPerm = false
+            settingsOpen -> settingsOpen = false
+            widgetPicker -> widgetPicker = false
+            askOpen -> askOpen = false
+            panelOpen -> panelOpen = false
+            else -> { launcher = false; drawerFocus = false }
         }
     }
 
@@ -418,33 +614,28 @@ private fun DesktopShellContent(
                             areaRoot = it.positionInRoot()
                             areaSize = it.size
                         }
-                        .drawBehind {
-                            // Hafif nokta ızgarası: masaüstü dokusu.
-                            val step = 36.dp.toPx()
-                            var y = step / 2
-                            while (y < size.height) {
-                                var x = step / 2
-                                while (x < size.width) {
-                                    drawCircle(Color.White.copy(alpha = 0.05f), 1.4.dp.toPx(), Offset(x, y))
-                                    x += step
-                                }
-                                y += step
-                            }
-                        },
                 ) {
                     // Hiçbir sekme görünmüyorsa: boş masaüstü.
                     if (restored && state.active == null) {
-                        DesktopHome(
+                        LauncherHome(
+                            container = container,
+                            state = homeState,
+                            prefs = launcherPrefs,
                             clock = formatClock(minuteOfDay),
                             date = dateText,
-                            pinned = state.pinned.mapNotNull { infoOf(it) },
+                            infoOf = { infoOf(it) },
                             openApps = openApps,
-                            onOpen = { openApp(it.app) },
+                            pinned = pinnedSet,
+                            badgeOf = { badgeOf(it) },
+                            ai = aiApps,
+                            unread = totalUnread,
+                            wallpaper = wallpaper,
+                            actions = homeActions,
                         )
                     }
 
                     // Bütün sekmeler bileşimde kalır; yalnız görünen sekme ekrandadır (diğerleri ekran dışında, saydam).
-                    CompositionLocalProvider(LocalFileChooserOwnedByShell provides true) {
+                    CompositionLocalProvider(LocalFileChooserOwnedByShell provides true, LocalInAppMessage provides { toastText = it }) {
                         // Kapanmakta olan sekmeler de çizilir (animasyon bitene dek); anahtar aynı kaldığı için içerik korunur.
                         val closingIds = closing.map { it.id }.toSet()
                         val layers = (state.tabs + closing.filter { c -> state.tabs.none { it.id == c.id } })
@@ -523,10 +714,7 @@ private fun DesktopShellContent(
                         showClock = prefs.showClock,
                         dropHoverApp = dropHover,
                         hasOpenTabs = state.tabs.isNotEmpty(),
-                        onLauncher = {
-                            dockPeekTick++
-                            launcher = !launcher
-                        },
+                        onLauncher = { dockPeekTick++; launcher = !launcher },
                         onItem = { item ->
                             dockPeekTick++
                             launcher = false
@@ -534,14 +722,12 @@ private fun DesktopShellContent(
                             when {
                                 // Harici uygulamaya dokunmak onu yeniden öne getirir.
                                 DesktopApps.isExternal(item.info.app) -> openApp(item.info.app)
-
                                 // Görünen sekmede değilse öne getirir (grupta: görünen ya da ilk pencere); açık değilse açar.
                                 !item.active && tabId != null -> {
                                     state = Desktop.activate(state, tabId)
                                 }
 
                                 !item.active -> openApp(item.info.app)
-
                                 // Zaten görünen grupta yeniden dokunmak sıradaki pencereye geçer; tek pencerede bir şey yapmaz.
                                 item.grouped -> {
                                     state = Desktop.cycleInGroup(state, item.info.app)
@@ -576,39 +762,79 @@ private fun DesktopShellContent(
 
             if (launcher) {
                 Box(Modifier.fillMaxSize().padding(bottom = dockPad)) {
-                    Launcher(
-                        kripton = listOfNotNull(infoOf(DesktopApps.KRIPTON), infoOf(DesktopApps.FILES)),
-                        ai = aiRows.mapNotNull { infoOf(DesktopApps.ai(it.id)) },
-                        installed = installed?.map { AppInfo(DesktopApps.pkg(it.packageName), it.label, scheme.primary) },
+                    AppDrawer(
+                        container = container,
+                        prefs = launcherPrefs,
+                        apps = launcherApps,
+                        own = ownApps,
+                        ai = aiApps,
+                        infoOf = { infoOf(it) },
                         openApps = openApps,
                         pinned = pinnedSet,
-                        fullscreen = fullscreen,
-                        onOpen = { openApp(it.app) },
-                        onTogglePin = { state = Desktop.togglePin(state, it.app) },
-                        onToggleFullscreen = { scope.launch { store.setDesktopFullscreen(!fullscreen) } },
-                        onSetHome = if (isHome || HomeRole.isDefault(context)) {
-                            null
-                        } else {
-                            {
-                                launcher = false
-                                HomeRole.request(context)
-                            }
-                        },
-                        onExit = {
-                            launcher = false
-                            desktopMode.requestExit()
-                        },
-                        onDismiss = { launcher = false },
+                        onHome = homeState.pages.flatMap { p -> p.items.mapNotNull { (it as? HomeItem.App)?.app } }.toSet(),
+                        badgeOf = { badgeOf(it) },
+                        settingShortcuts = settingShortcuts,
+                        startFocused = drawerFocus,
+                        actions = drawerActions,
+                    )
+                }
+            }
+
+            if (panelOpen) {
+                NotificationPanel(
+                    clock = formatClock(minuteOfDay),
+                    date = dateText,
+                    onOpenKripton = { panelOpen = false; openApp(DesktopApps.KRIPTON) },
+                    onToggleTheme = { toggleTheme() },
+                    onSettings = { panelOpen = false; settingsOpen = true },
+                    onDismiss = { panelOpen = false },
+                )
+            }
+
+            if (askOpen) {
+                AskSheet(
+                    ai = aiApps,
+                    initialTarget = askTarget,
+                    initialText = askText,
+                    onSend = { id, t -> askAi(id, t) },
+                    onAttach = { id, uri -> askOpen = false; attachToAi(id, uri) },
+                    onOpenTab = { id -> askOpen = false; openApp(DesktopApps.ai(id)) },
+                    onDismiss = { askOpen = false },
+                )
+            }
+
+            if (widgetPicker) {
+                WidgetPicker(
+                    providers = remember(widgetPicker) { container.launcher.widgets.providers() },
+                    context = context,
+                    onPick = { widgetPicker = false; widgetAdder.start(it) },
+                    onDismiss = { widgetPicker = false },
+                )
+            }
+
+            if (settingsOpen) {
+                val hiddenLabels = launcherApps.orEmpty().filter { it.packageName in launcherPrefs.hiddenApps }.map { it.packageName to it.label }
+                Box(Modifier.fillMaxSize().zIndex(9200f)) {
+                    LauncherSettings(
+                        prefs = launcherPrefs,
+                        isDefaultHome = isDefaultHome,
+                        hiddenLabels = hiddenLabels,
+                        onChange = { change -> scope.launch { store.editLauncherPrefs(change) } },
+                        onPickWallpaper = { wallpaperPicker.launch("image/*") },
+                        onSystemWallpaper = { scope.launch { store.editLauncherPrefs { it.copy(wallpaper = Wallpaper.SYSTEM) } } },
+                        onClearWallpaper = { scope.launch { store.editLauncherPrefs { it.copy(wallpaper = "") } } },
+                        onRequestContacts = { contactsPermission.launch(android.Manifest.permission.READ_CONTACTS) },
+                        onSetHome = { HomeRole.request(context) },
+                        onAddWidget = { settingsOpen = false; widgetPicker = true },
+                        onAddPage = { homeState = Home.addPage(homeState) },
+                        onClose = { settingsOpen = false },
                     )
                 }
             }
 
             if (!dockVisible && !imeVisible) {
                 DockHandle(
-                    onReveal = {
-                        dockPeek = true
-                        dockPeekTick++
-                    },
+                    onReveal = { dockPeek = true; dockPeekTick++ },
                     modifier = Modifier.align(Alignment.BottomCenter).zIndex(8000f),
                 )
             }
@@ -685,7 +911,9 @@ private fun AiWindowContent(
             val entry = entries.firstOrNull { it.id == s.entryId && it.isLive }
             when {
                 entry == null -> Notice(stringResource(R.string.web_chats_closed), stringResource(R.string.web_chats_retry)) { hub.reopen(account) }
+
                 s.borrowed -> Notice(stringResource(R.string.web_chats_busy), stringResource(R.string.web_chats_open_monitor), onOpenMonitor)
+
                 else -> ChatPage(handle = container.webMonitor.handle(entry.id), installFileChooser = false)
             }
         }

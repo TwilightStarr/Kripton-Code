@@ -93,10 +93,19 @@ object RunNotifier {
 
     /** Duraklatılmış run: Devam et / İptal düğmeli, kapatılabilir bildirim. İzin yoksa sessizce atlanır. */
     fun paused(ctx: Context, runId: Long) {
+        val text = ctx.getString(R.string.notif_paused_text, runId)
+        // Launcher: Kripton'un kendi bildirim kutusu (her zaman yazılır).
+        com.kriptoncod.app.launcher.notify.KriptonInbox.init(ctx)
+        com.kriptoncod.app.launcher.notify.KriptonInbox.post(
+            com.kriptoncod.app.launcher.notify.KIND_PAUSED,
+            ctx.getString(R.string.notif_paused_title),
+            text,
+            runId,
+        )
+        if (com.kriptoncod.app.launcher.notify.LauncherRuntime.suppressSystemEvents(ctx)) return
         val nm = manager(ctx)
         if (!nm.areNotificationsEnabled()) return
         ensureChannels(ctx)
-        val text = ctx.getString(R.string.notif_paused_text, runId)
         val n = NotificationCompat.Builder(ctx, CHANNEL_EVENTS)
             .setSmallIcon(android.R.drawable.stat_notify_sync)
             .setContentTitle(ctx.getString(R.string.notif_paused_title))
@@ -112,6 +121,7 @@ object RunNotifier {
 
     /** Devam/iptal sonrası duraklatma bildirimini kaldırır. */
     fun clearPaused(ctx: Context, runId: Long) {
+        com.kriptoncod.app.launcher.notify.KriptonInbox.removeRun(runId, com.kriptoncod.app.launcher.notify.KIND_PAUSED)
         runCatching { manager(ctx).cancel(pausedId(runId)) }
     }
 
@@ -119,6 +129,21 @@ object RunNotifier {
 
     /** Olay bildirimi; izin yoksa veya bildirimler kapalıysa sessizce atlanır. Aynı [runId]+tür tek bildirimi günceller. */
     fun event(ctx: Context, runId: Long, kind: Int, title: String, text: String) {
+        // Launcher: Kripton'un kendi bildirim kutusu (her zaman yazılır; çalışma başına tek kart).
+        com.kriptoncod.app.launcher.notify.KriptonInbox.init(ctx)
+        com.kriptoncod.app.launcher.notify.KriptonInbox.post(
+            when (kind) {
+                KIND_DONE -> com.kriptoncod.app.launcher.notify.KIND_DONE
+                KIND_FAILED -> com.kriptoncod.app.launcher.notify.KIND_FAILED
+                KIND_WAITING -> com.kriptoncod.app.launcher.notify.KIND_WAITING
+                else -> com.kriptoncod.app.launcher.notify.KIND_INFO
+            },
+            title,
+            text,
+            runId,
+        )
+        // Kripton ana ekran uygulamasıysa ve panel çalışıyorsa olay yalnız panelde görünür (bkz. LauncherRuntime).
+        if (com.kriptoncod.app.launcher.notify.LauncherRuntime.suppressSystemEvents(ctx)) return
         val nm = manager(ctx)
         if (!nm.areNotificationsEnabled()) return
         ensureChannels(ctx)

@@ -38,7 +38,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /** Satır menüsündeki eylemler. */
-enum class FileAction { OPEN, OPEN_WITH, COPY, MOVE, RENAME, DELETE, PROPS }
+enum class FileAction { OPEN, OPEN_WITH, COPY, MOVE, RENAME, DELETE, PROPS, BROWSE_ARCHIVE, EXTRACT_HERE, EXTRACT_FOLDER, COMPRESS_ZIP, COMPRESS_TGZ }
 
 @Composable
 fun RenameDialog(file: File, onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
@@ -142,9 +142,7 @@ fun OpenWithDialog(file: File, onDismiss: () -> Unit, onFailed: () -> Unit) {
                 val list = apps
                 when {
                     list == null -> Text("…")
-
                     list.isEmpty() -> Text(stringResource(R.string.desktop_files_no_app))
-
                     else -> LazyColumn(Modifier.heightIn(max = 320.dp)) {
                         items(list, key = { it.packageName }) { a ->
                             Text(
@@ -168,10 +166,7 @@ fun OpenWithDialog(file: File, onDismiss: () -> Unit, onFailed: () -> Unit) {
                         Text(stringResource(R.string.desktop_files_always, ext), style = MaterialTheme.typography.bodySmall)
                     }
                     if (FileOpen.remembered(context, file) != null) {
-                        TextButton(onClick = {
-                            FileOpen.forget(context, file)
-                            onDismiss()
-                        }) { Text(stringResource(R.string.desktop_files_forget_default, ext)) }
+                        TextButton(onClick = { FileOpen.forget(context, file); onDismiss() }) { Text(stringResource(R.string.desktop_files_forget_default, ext)) }
                     }
                 }
             }
