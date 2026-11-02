@@ -58,8 +58,7 @@ data class LauncherPrefs(
         }
 
         /** En çok 200 kayıt tutulur (en çok kullanılanlar kalır). */
-        fun encodeCounts(m: Map<String, Int>): String =
-            m.entries.sortedByDescending { it.value }.take(200).joinToString(",") { "${it.key}=${it.value}" }
+        fun encodeCounts(m: Map<String, Int>): String = m.entries.sortedByDescending { it.value }.take(200).joinToString(",") { "${it.key}=${it.value}" }
 
         fun decodeSet(text: String?): Set<String> = text.orEmpty().split(',').filter { it.isNotBlank() }.toSet()
 

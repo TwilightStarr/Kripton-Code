@@ -96,8 +96,7 @@ object Home {
     }
 
     /** [key] anahtarlı öğeyi bütün sayfalardan kaldırır; boşalan (son sayfa dışındaki) sayfalar silinmez, kullanıcı kendi siler. */
-    fun remove(s: HomeState, key: String): HomeState =
-        s.copy(pages = s.pages.map { p -> p.copy(items = p.items.filter { it.key != key }) })
+    fun remove(s: HomeState, key: String): HomeState = s.copy(pages = s.pages.map { p -> p.copy(items = p.items.filter { it.key != key }) })
 
     fun removeApp(s: HomeState, app: String): HomeState = remove(s, HomeItem.App(app).key)
 
@@ -135,8 +134,7 @@ object Home {
     }
 
     /** [keep] false verdiği uygulamaları (ör. kaldırılan paketler, silinen AI hesapları) bütün sayfalardan temizler. */
-    fun retainApps(s: HomeState, keep: (String) -> Boolean): HomeState =
-        s.copy(pages = s.pages.map { p -> p.copy(items = p.items.filter { it !is HomeItem.App || keep(it.app) }) })
+    fun retainApps(s: HomeState, keep: (String) -> Boolean): HomeState = s.copy(pages = s.pages.map { p -> p.copy(items = p.items.filter { it !is HomeItem.App || keep(it.app) }) })
 }
 
 /**
@@ -146,8 +144,7 @@ object Home {
 object HomeCodec {
     private const val V1 = "h1"
 
-    fun encode(s: HomeState): String =
-        V1 + ";p=" + s.pages.joinToString("/") { p -> p.items.joinToString("|") { it.key } }
+    fun encode(s: HomeState): String = V1 + ";p=" + s.pages.joinToString("/") { p -> p.items.joinToString("|") { it.key } }
 
     fun decode(text: String?): HomeState? {
         if (text.isNullOrBlank()) return null
@@ -165,13 +162,16 @@ object HomeCodec {
         if (raw.length < 3) return null
         return when (raw.substring(0, 2)) {
             "a:" -> raw.substring(2).takeIf { it.isNotBlank() && seenApps.add(it) }?.let { HomeItem.App(it) }
+
             "p:" -> PanelKind.fromId(raw.substring(2))?.let { HomeItem.Panel(it) }
+
             "w:" -> {
                 val a = raw.substring(2).split(':')
                 val id = a.getOrNull(0)?.toIntOrNull()?.takeIf { it >= 0 } ?: return null
                 val rows = (a.getOrNull(1)?.toIntOrNull() ?: 2).coerceIn(1, 8)
                 HomeItem.Widget(id, rows)
             }
+
             else -> null
         }
     }

@@ -194,12 +194,18 @@ internal fun AppDrawer(
                         DrawerSort.entries.forEach { s ->
                             DropdownMenuItem(
                                 text = { Text(stringResource(sortLabel(s)) + if (s == prefs.drawerSort) "  ✓" else "") },
-                                onClick = { sortMenu = false; actions.setSort(s) },
+                                onClick = {
+                                    sortMenu = false
+                                    actions.setSort(s)
+                                },
                             )
                         }
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.l_show_hidden) + if (showHidden) "  ✓" else "") },
-                            onClick = { sortMenu = false; showHidden = !showHidden },
+                            onClick = {
+                                sortMenu = false
+                                showHidden = !showHidden
+                            },
                         )
                     }
                 }
@@ -394,19 +400,39 @@ private fun DrawerCell(
             Box(Modifier.padding(top = 3.dp).size(5.dp).clip(CircleShape).background(if (open) MaterialTheme.colorScheme.primary else Color.Transparent))
         }
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-            shortcuts.forEach { s -> DropdownMenuItem(text = { Text(s.label, maxLines = 1) }, onClick = { menu = false; actions.shortcut(s) }) }
+            shortcuts.forEach { s ->
+                DropdownMenuItem(text = { Text(s.label, maxLines = 1) }, onClick = {
+                    menu = false
+                    actions.shortcut(s)
+                })
+            }
             DropdownMenuItem(
                 text = { Text(stringResource(if (onHome) R.string.l_remove_home else R.string.l_add_home)) },
-                onClick = { menu = false; if (onHome) actions.removeFromHome(c.info.app) else actions.addToHome(c.info.app) },
+                onClick = {
+                    menu = false
+                    if (onHome) actions.removeFromHome(c.info.app) else actions.addToHome(c.info.app)
+                },
             )
-            DropdownMenuItem(text = { Text(stringResource(if (pinned) R.string.l_unpin_dock else R.string.l_pin_dock)) }, onClick = { menu = false; actions.togglePin(c.info.app) })
+            DropdownMenuItem(text = { Text(stringResource(if (pinned) R.string.l_unpin_dock else R.string.l_pin_dock)) }, onClick = {
+                menu = false
+                actions.togglePin(c.info.app)
+            })
             if (pkg != null) {
                 DropdownMenuItem(
                     text = { Text(stringResource(if (hidden) R.string.l_unhide else R.string.l_hide)) },
-                    onClick = { menu = false; actions.setHidden(pkg, !hidden) },
+                    onClick = {
+                        menu = false
+                        actions.setHidden(pkg, !hidden)
+                    },
                 )
-                DropdownMenuItem(text = { Text(stringResource(R.string.l_app_info)) }, onClick = { menu = false; actions.appInfo(pkg) })
-                DropdownMenuItem(text = { Text(stringResource(R.string.l_uninstall)) }, onClick = { menu = false; actions.uninstall(pkg) })
+                DropdownMenuItem(text = { Text(stringResource(R.string.l_app_info)) }, onClick = {
+                    menu = false
+                    actions.appInfo(pkg)
+                })
+                DropdownMenuItem(text = { Text(stringResource(R.string.l_uninstall)) }, onClick = {
+                    menu = false
+                    actions.uninstall(pkg)
+                })
             }
         }
     }

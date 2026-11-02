@@ -68,8 +68,16 @@ object Calc {
             var v = term()
             while (true) {
                 when (peek()) {
-                    '+' -> { i++; v += term() }
-                    '-' -> { i++; v -= term() }
+                    '+' -> {
+                        i++
+                        v += term()
+                    }
+
+                    '-' -> {
+                        i++
+                        v -= term()
+                    }
+
                     else -> return v
                 }
             }
@@ -79,17 +87,37 @@ object Calc {
             var v = unary()
             while (true) {
                 when (peek()) {
-                    '*' -> { i++; v *= unary() }
-                    '/' -> { i++; v /= unary() }
-                    '%' -> { i++; v %= unary() }
+                    '*' -> {
+                        i++
+                        v *= unary()
+                    }
+
+                    '/' -> {
+                        i++
+                        v /= unary()
+                    }
+
+                    '%' -> {
+                        i++
+                        v %= unary()
+                    }
+
                     else -> return v
                 }
             }
         }
 
         private fun unary(): Double = when (peek()) {
-            '-' -> { i++; -unary() }
-            '+' -> { i++; unary() }
+            '-' -> {
+                i++
+                -unary()
+            }
+
+            '+' -> {
+                i++
+                unary()
+            }
+
             else -> power()
         }
 

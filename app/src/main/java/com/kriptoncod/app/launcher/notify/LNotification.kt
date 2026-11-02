@@ -59,14 +59,12 @@ object Notifs {
     }
 
     /** Uygulama başına grupla; en yeni bildirimi olan grup üstte, grup içinde en yeni üstte. */
-    fun group(events: List<LNotification>): List<NotifGroup> =
-        events.groupBy { it.pkg }
-            .map { (pkg, list) -> NotifGroup(pkg, list.first().appLabel, list.sortedByDescending { it.postTime }) }
-            .sortedByDescending { it.latest }
+    fun group(events: List<LNotification>): List<NotifGroup> = events.groupBy { it.pkg }
+        .map { (pkg, list) -> NotifGroup(pkg, list.first().appLabel, list.sortedByDescending { it.postTime }) }
+        .sortedByDescending { it.latest }
 
     /** Simge rozetleri: paket başına temizlenebilir (okunmamış sayılan) bildirim sayısı; sürekli ve özet bildirimler sayılmaz. */
-    fun badgeCounts(all: List<LNotification>): Map<String, Int> =
-        visible(all).filter { !it.ongoing && !it.isSummary }.groupingBy { it.pkg }.eachCount()
+    fun badgeCounts(all: List<LNotification>): Map<String, Int> = visible(all).filter { !it.ongoing && !it.isSummary }.groupingBy { it.pkg }.eachCount()
 
     /** "az önce", "5 dk", "2 sa", "3 gün" (dil bağımsız kısa biçim). */
     fun ago(now: Long, then: Long, justNow: String): String {

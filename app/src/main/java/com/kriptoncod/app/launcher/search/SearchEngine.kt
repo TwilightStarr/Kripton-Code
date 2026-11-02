@@ -66,10 +66,9 @@ class SearchInput(
  */
 object SearchEngine {
     /** Boş sorguda önerilen uygulamalar: en çok başlatılanlar. */
-    fun suggestions(apps: List<LauncherApp>, prefs: LauncherPrefs, limit: Int = 8): List<LauncherApp> =
-        apps.filter { it.packageName !in prefs.hiddenApps && (prefs.launchCounts[it.packageName] ?: 0) > 0 }
-            .sortedByDescending { prefs.launchCounts[it.packageName] ?: 0 }
-            .take(limit)
+    fun suggestions(apps: List<LauncherApp>, prefs: LauncherPrefs, limit: Int = 8): List<LauncherApp> = apps.filter { it.packageName !in prefs.hiddenApps && (prefs.launchCounts[it.packageName] ?: 0) > 0 }
+        .sortedByDescending { prefs.launchCounts[it.packageName] ?: 0 }
+        .take(limit)
 
     fun quick(input: SearchInput): List<SearchResult> {
         val q = input.query.trim()

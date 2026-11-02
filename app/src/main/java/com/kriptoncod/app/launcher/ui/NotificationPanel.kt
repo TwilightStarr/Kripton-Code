@@ -98,7 +98,10 @@ internal fun NotificationPanel(
                     Text(clock, style = MaterialTheme.typography.headlineMedium)
                     Text(date, style = MaterialTheme.typography.bodySmall, color = k.muted)
                 }
-                TextButton(onClick = { NotificationHub.clearAll(); KriptonInbox.clear() }) { Text(stringResource(R.string.l_clear_all)) }
+                TextButton(onClick = {
+                    NotificationHub.clearAll()
+                    KriptonInbox.clear()
+                }) { Text(stringResource(R.string.l_clear_all)) }
             }
             Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Toggle(stringResource(R.string.l_qt_wifi), false, Modifier.weight(1f)) { QuickToggles.start(context, QuickToggles.internetPanel()) }

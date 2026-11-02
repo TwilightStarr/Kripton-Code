@@ -121,8 +121,11 @@ internal fun LauncherHome(
             override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
                 val a = acc
                 acc = 0f
-                if (prefs.gestureSwipeUp && (a < -120f || available.y < -1800f)) actions.openDrawer()
-                else if (prefs.gestureSwipeDown && (a > 120f || available.y > 1800f)) actions.openNotifications()
+                if (prefs.gestureSwipeUp && (a < -120f || available.y < -1800f)) {
+                    actions.openDrawer()
+                } else if (prefs.gestureSwipeDown && (a > 120f || available.y > 1800f)) {
+                    actions.openNotifications()
+                }
                 return Velocity.Zero
             }
         }
@@ -216,9 +219,18 @@ private fun rowKey(r: HomeRow): String = when (r) {
 private fun HomeMenu(show: Boolean, dismiss: () -> Unit, a: HomeActions) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         DropdownMenu(expanded = show, onDismissRequest = dismiss) {
-            DropdownMenuItem(text = { Text(stringResource(R.string.l_menu_widget)) }, onClick = { dismiss(); a.addWidget() })
-            DropdownMenuItem(text = { Text(stringResource(R.string.l_menu_apps)) }, onClick = { dismiss(); a.openDrawer() })
-            DropdownMenuItem(text = { Text(stringResource(R.string.l_menu_settings)) }, onClick = { dismiss(); a.openSettings() })
+            DropdownMenuItem(text = { Text(stringResource(R.string.l_menu_widget)) }, onClick = {
+                dismiss()
+                a.addWidget()
+            })
+            DropdownMenuItem(text = { Text(stringResource(R.string.l_menu_apps)) }, onClick = {
+                dismiss()
+                a.openDrawer()
+            })
+            DropdownMenuItem(text = { Text(stringResource(R.string.l_menu_settings)) }, onClick = {
+                dismiss()
+                a.openSettings()
+            })
         }
     }
 }
@@ -268,16 +280,31 @@ private fun AppsRow(
                         Box(Modifier.padding(top = 3.dp).size(5.dp).clip(CircleShape).background(if (item.app in openApps) info.tint else Color.Transparent))
                     }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                        DropdownMenuItem(text = { Text(stringResource(if (item.app in pinned) R.string.l_unpin_dock else R.string.l_pin_dock)) }, onClick = { menu = false; actions.togglePin(item.app) })
-                        DropdownMenuItem(text = { Text(stringResource(R.string.l_move_earlier)) }, onClick = { menu = false; actions.change(Home.move(state, item.key, -1)) })
-                        DropdownMenuItem(text = { Text(stringResource(R.string.l_move_later)) }, onClick = { menu = false; actions.change(Home.move(state, item.key, 1)) })
+                        DropdownMenuItem(text = { Text(stringResource(if (item.app in pinned) R.string.l_unpin_dock else R.string.l_pin_dock)) }, onClick = {
+                            menu = false
+                            actions.togglePin(item.app)
+                        })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.l_move_earlier)) }, onClick = {
+                            menu = false
+                            actions.change(Home.move(state, item.key, -1))
+                        })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.l_move_later)) }, onClick = {
+                            menu = false
+                            actions.change(Home.move(state, item.key, 1))
+                        })
                         if (state.pageCount > 1) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.l_move_page)) },
-                                onClick = { menu = false; actions.change(Home.moveToPage(state, item.key, (page + 1) % state.pageCount)) },
+                                onClick = {
+                                    menu = false
+                                    actions.change(Home.moveToPage(state, item.key, (page + 1) % state.pageCount))
+                                },
                             )
                         }
-                        DropdownMenuItem(text = { Text(stringResource(R.string.l_remove_home)) }, onClick = { menu = false; actions.change(Home.remove(state, item.key)) })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.l_remove_home)) }, onClick = {
+                            menu = false
+                            actions.change(Home.remove(state, item.key))
+                        })
                     }
                 }
             }
@@ -302,13 +329,17 @@ private fun SingleItem(
         when (item) {
             is HomeItem.Panel -> when (item.kind) {
                 PanelKind.CLOCK -> ClockPanel(clock, date)
+
                 PanelKind.AI_ASK -> AiAskPanel(
                     ai = ai.mapNotNull { a -> DesktopApps.aiAccountId(a.app)?.let { it to a.title } },
                     onAsk = actions.ask,
                     onOpenSheet = { actions.openAsk(null) },
                 )
+
                 PanelKind.RUN_STATUS -> RunStatusPanel(container) { actions.open(DesktopApps.KRIPTON) }
+
                 PanelKind.STORAGE -> StoragePanel { actions.open(DesktopApps.FILES) }
+
                 PanelKind.NOTIFICATIONS -> NotificationsPanel(actions.openNotifications)
             }
 
@@ -317,8 +348,14 @@ private fun SingleItem(
             is HomeItem.App -> infoOf(item.app)?.let { DesktopAppIcon(it, 48.dp) }
         }
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-            DropdownMenuItem(text = { Text(stringResource(R.string.l_move_up)) }, onClick = { menu = false; actions.change(Home.move(state, item.key, -1)) })
-            DropdownMenuItem(text = { Text(stringResource(R.string.l_move_down)) }, onClick = { menu = false; actions.change(Home.move(state, item.key, 1)) })
+            DropdownMenuItem(text = { Text(stringResource(R.string.l_move_up)) }, onClick = {
+                menu = false
+                actions.change(Home.move(state, item.key, -1))
+            })
+            DropdownMenuItem(text = { Text(stringResource(R.string.l_move_down)) }, onClick = {
+                menu = false
+                actions.change(Home.move(state, item.key, 1))
+            })
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.l_remove_home)) },
                 onClick = {
@@ -368,8 +405,14 @@ private fun AiRail(container: AppContainer, ai: List<AppInfo>, actions: HomeActi
                     Box(Modifier.size(7.dp).clip(CircleShape).background(if (live) scheme.primary else k.muted.copy(alpha = 0.4f)))
                 }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                    DropdownMenuItem(text = { Text(stringResource(R.string.l_rail_open)) }, onClick = { menu = false; actions.open(info.app) })
-                    DropdownMenuItem(text = { Text(stringResource(R.string.l_rail_ask_this)) }, onClick = { menu = false; actions.openAsk(id) })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.l_rail_open)) }, onClick = {
+                        menu = false
+                        actions.open(info.app)
+                    })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.l_rail_ask_this)) }, onClick = {
+                        menu = false
+                        actions.openAsk(id)
+                    })
                 }
             }
         }

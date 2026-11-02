@@ -86,13 +86,15 @@ class LauncherLogicTest {
         assertTrue(rows[2] is HomeRow.Single)
     }
 
-    private fun n(key: String, pkg: String, t: Long, ongoing: Boolean = false, summary: Boolean = false, group: String? = null) =
-        LNotification(key, pkg, pkg, "t$key", "x", "", t, ongoing, !ongoing, summary, groupKey = group)
+    private fun n(key: String, pkg: String, t: Long, ongoing: Boolean = false, summary: Boolean = false, group: String? = null) = LNotification(key, pkg, pkg, "t$key", "x", "", t, ongoing, !ongoing, summary, groupKey = group)
 
     @Test fun notificationGroupingAndBadges() {
         val all = listOf(
-            n("1", "a", 10, group = "g"), n("2", "a", 20, group = "g"), n("s", "a", 30, summary = true, group = "g"),
-            n("3", "b", 40), n("4", "c", 5, ongoing = true),
+            n("1", "a", 10, group = "g"),
+            n("2", "a", 20, group = "g"),
+            n("s", "a", 30, summary = true, group = "g"),
+            n("3", "b", 40),
+            n("4", "c", 5, ongoing = true),
         )
         val vis = Notifs.visible(all)
         assertTrue(vis.none { it.isSummary })

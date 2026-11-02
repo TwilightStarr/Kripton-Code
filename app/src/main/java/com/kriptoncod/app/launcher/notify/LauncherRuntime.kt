@@ -23,6 +23,5 @@ object LauncherRuntime {
      * Kripton ana ekran uygulaması ve bildirim erişimi verilmiş (panel gerçekten çalışıyor). Aksi hâlde olay her zamanki gibi
      * sistem bildirimi olur; böylece hiçbir olay sessizce kaybolmaz.
      */
-    fun suppressSystemEvents(context: Context): Boolean =
-        kriptonEventsInPanel && NotificationHub.connected.value && isDefaultHome(context)
+    fun suppressSystemEvents(context: Context): Boolean = kriptonEventsInPanel && NotificationHub.connected.value && isDefaultHome(context)
 }

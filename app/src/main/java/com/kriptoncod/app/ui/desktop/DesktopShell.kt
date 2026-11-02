@@ -481,9 +481,11 @@ private fun DesktopShellContent(
         onFailed = { toastText = context.getString(R.string.l_widget_failed) },
     )
     val wallpaperPicker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
-        if (uri != null) scope.launch {
-            val v = withContext(Dispatchers.IO) { Wallpaper.import(context, uri) }
-            if (v != null) store.editLauncherPrefs { it.copy(wallpaper = v) } else toastText = context.getString(R.string.l_wallpaper_failed)
+        if (uri != null) {
+            scope.launch {
+                val v = withContext(Dispatchers.IO) { Wallpaper.import(context, uri) }
+                if (v != null) store.editLauncherPrefs { it.copy(wallpaper = v) } else toastText = context.getString(R.string.l_wallpaper_failed)
+            }
         }
     }
     val contactsPermission = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { }
@@ -495,8 +497,7 @@ private fun DesktopShellContent(
         drawerFocus = false
     }
 
-    fun startIntent(i: android.content.Intent): Boolean =
-        runCatching { context.startActivity(i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess
+    fun startIntent(i: android.content.Intent): Boolean = runCatching { context.startActivity(i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess
 
     /** Yazıyı AI'a gönderir: sekmeyi açar, oturum hazır olunca giriş kutusuna yazıp yollar. */
     fun askAi(accountId: Long, text: String) {
@@ -536,10 +537,20 @@ private fun DesktopShellContent(
         open = { openApp(it) },
         change = { homeState = it },
         togglePin = { state = Desktop.togglePin(state, it) },
-        openDrawer = { drawerFocus = false; launcher = true },
+        openDrawer = {
+            drawerFocus = false
+            launcher = true
+        },
         openNotifications = { panelOpen = true },
-        openSearch = { drawerFocus = true; launcher = true },
-        openAsk = { id -> askTarget = id; askText = ""; askOpen = true },
+        openSearch = {
+            drawerFocus = true
+            launcher = true
+        },
+        openAsk = { id ->
+            askTarget = id
+            askText = ""
+            askOpen = true
+        },
         ask = { id, t -> askAi(id, t) },
         addWidget = { widgetPicker = true },
         openSettings = { settingsOpen = true },
@@ -557,18 +568,31 @@ private fun DesktopShellContent(
         shortcut = { container.launcher.apps.startShortcut(it) },
         openFile = { f ->
             closeOverlays()
-            if (f.isDirectory) openApp(DesktopApps.FILES) else if (!FileOpen.launch(context, f, null)) toastText = context.getString(R.string.desktop_files_no_app)
+            if (f.isDirectory) {
+                openApp(DesktopApps.FILES)
+            } else if (!FileOpen.launch(context, f, null)) {
+                toastText = context.getString(R.string.desktop_files_no_app)
+            }
         },
         dial = { startIntent(android.content.Intent(android.content.Intent.ACTION_DIAL, Uri.parse("tel:$it"))) },
-        setting = { closeOverlays(); startIntent(android.content.Intent(it)) },
-        web = { closeOverlays(); startIntent(android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse(SearchEngine.webUrl(it)))) },
+        setting = {
+            closeOverlays()
+            startIntent(android.content.Intent(it))
+        },
+        web = {
+            closeOverlays()
+            startIntent(android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse(SearchEngine.webUrl(it))))
+        },
         ask = { id, t -> askAi(id, t) },
         copy = { text ->
             (context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager)?.setPrimaryClip(android.content.ClipData.newPlainText("", text))
             toastText = context.getString(R.string.l_copied, text)
         },
         setSort = { sort -> scope.launch { store.editLauncherPrefs { it.copy(drawerSort = sort) } } },
-        dismiss = { launcher = false; drawerFocus = false },
+        dismiss = {
+            launcher = false
+            drawerFocus = false
+        },
     )
 
     val activeId = state.activeId
@@ -591,11 +615,19 @@ private fun DesktopShellContent(
     BackHandler(enabled = launcher || showPerm || panelOpen || askOpen || settingsOpen || widgetPicker) {
         when {
             showPerm -> showPerm = false
+
             settingsOpen -> settingsOpen = false
+
             widgetPicker -> widgetPicker = false
+
             askOpen -> askOpen = false
+
             panelOpen -> panelOpen = false
-            else -> { launcher = false; drawerFocus = false }
+
+            else -> {
+                launcher = false
+                drawerFocus = false
+            }
         }
     }
 
@@ -613,7 +645,7 @@ private fun DesktopShellContent(
                         .onGloballyPositioned {
                             areaRoot = it.positionInRoot()
                             areaSize = it.size
-                        }
+                        },
                 ) {
                     // Hiçbir sekme görünmüyorsa: boş masaüstü.
                     if (restored && state.active == null) {
@@ -714,7 +746,10 @@ private fun DesktopShellContent(
                         showClock = prefs.showClock,
                         dropHoverApp = dropHover,
                         hasOpenTabs = state.tabs.isNotEmpty(),
-                        onLauncher = { dockPeekTick++; launcher = !launcher },
+                        onLauncher = {
+                            dockPeekTick++
+                            launcher = !launcher
+                        },
                         onItem = { item ->
                             dockPeekTick++
                             launcher = false
@@ -722,12 +757,14 @@ private fun DesktopShellContent(
                             when {
                                 // Harici uygulamaya dokunmak onu yeniden öne getirir.
                                 DesktopApps.isExternal(item.info.app) -> openApp(item.info.app)
+
                                 // Görünen sekmede değilse öne getirir (grupta: görünen ya da ilk pencere); açık değilse açar.
                                 !item.active && tabId != null -> {
                                     state = Desktop.activate(state, tabId)
                                 }
 
                                 !item.active -> openApp(item.info.app)
+
                                 // Zaten görünen grupta yeniden dokunmak sıradaki pencereye geçer; tek pencerede bir şey yapmaz.
                                 item.grouped -> {
                                     state = Desktop.cycleInGroup(state, item.info.app)
@@ -784,9 +821,15 @@ private fun DesktopShellContent(
                 NotificationPanel(
                     clock = formatClock(minuteOfDay),
                     date = dateText,
-                    onOpenKripton = { panelOpen = false; openApp(DesktopApps.KRIPTON) },
+                    onOpenKripton = {
+                        panelOpen = false
+                        openApp(DesktopApps.KRIPTON)
+                    },
                     onToggleTheme = { toggleTheme() },
-                    onSettings = { panelOpen = false; settingsOpen = true },
+                    onSettings = {
+                        panelOpen = false
+                        settingsOpen = true
+                    },
                     onDismiss = { panelOpen = false },
                 )
             }
@@ -797,8 +840,14 @@ private fun DesktopShellContent(
                     initialTarget = askTarget,
                     initialText = askText,
                     onSend = { id, t -> askAi(id, t) },
-                    onAttach = { id, uri -> askOpen = false; attachToAi(id, uri) },
-                    onOpenTab = { id -> askOpen = false; openApp(DesktopApps.ai(id)) },
+                    onAttach = { id, uri ->
+                        askOpen = false
+                        attachToAi(id, uri)
+                    },
+                    onOpenTab = { id ->
+                        askOpen = false
+                        openApp(DesktopApps.ai(id))
+                    },
                     onDismiss = { askOpen = false },
                 )
             }
@@ -807,7 +856,10 @@ private fun DesktopShellContent(
                 WidgetPicker(
                     providers = remember(widgetPicker) { container.launcher.widgets.providers() },
                     context = context,
-                    onPick = { widgetPicker = false; widgetAdder.start(it) },
+                    onPick = {
+                        widgetPicker = false
+                        widgetAdder.start(it)
+                    },
                     onDismiss = { widgetPicker = false },
                 )
             }
@@ -825,7 +877,10 @@ private fun DesktopShellContent(
                         onClearWallpaper = { scope.launch { store.editLauncherPrefs { it.copy(wallpaper = "") } } },
                         onRequestContacts = { contactsPermission.launch(android.Manifest.permission.READ_CONTACTS) },
                         onSetHome = { HomeRole.request(context) },
-                        onAddWidget = { settingsOpen = false; widgetPicker = true },
+                        onAddWidget = {
+                            settingsOpen = false
+                            widgetPicker = true
+                        },
                         onAddPage = { homeState = Home.addPage(homeState) },
                         onClose = { settingsOpen = false },
                     )
@@ -834,7 +889,10 @@ private fun DesktopShellContent(
 
             if (!dockVisible && !imeVisible) {
                 DockHandle(
-                    onReveal = { dockPeek = true; dockPeekTick++ },
+                    onReveal = {
+                        dockPeek = true
+                        dockPeekTick++
+                    },
                     modifier = Modifier.align(Alignment.BottomCenter).zIndex(8000f),
                 )
             }
@@ -911,9 +969,7 @@ private fun AiWindowContent(
             val entry = entries.firstOrNull { it.id == s.entryId && it.isLive }
             when {
                 entry == null -> Notice(stringResource(R.string.web_chats_closed), stringResource(R.string.web_chats_retry)) { hub.reopen(account) }
-
                 s.borrowed -> Notice(stringResource(R.string.web_chats_busy), stringResource(R.string.web_chats_open_monitor), onOpenMonitor)
-
                 else -> ChatPage(handle = container.webMonitor.handle(entry.id), installFileChooser = false)
             }
         }

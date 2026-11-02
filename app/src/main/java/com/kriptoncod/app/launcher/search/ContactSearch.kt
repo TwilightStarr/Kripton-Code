@@ -11,8 +11,7 @@ import androidx.core.content.ContextCompat
  * ve saklanmaz, her aramada sistemden okunur.
  */
 object ContactSearch {
-    fun hasPermission(context: Context): Boolean =
-        ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
+    fun hasPermission(context: Context): Boolean = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
 
     fun search(context: Context, query: String, limit: Int = 5): List<SearchResult.Contact> {
         val q = query.trim()

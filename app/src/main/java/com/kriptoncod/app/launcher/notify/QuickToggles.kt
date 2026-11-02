@@ -32,11 +32,14 @@ object QuickToggles {
         val cm = context.applicationContext.getSystemService(Context.CAMERA_SERVICE) as? CameraManager ?: return
         registered = true
         runCatching {
-            cm.registerTorchCallback(object : CameraManager.TorchCallback() {
-                override fun onTorchModeChanged(cameraId: String, enabled: Boolean) {
-                    if (cameraId == torchId(cm)) _torch.value = enabled
-                }
-            }, null)
+            cm.registerTorchCallback(
+                object : CameraManager.TorchCallback() {
+                    override fun onTorchModeChanged(cameraId: String, enabled: Boolean) {
+                        if (cameraId == torchId(cm)) _torch.value = enabled
+                    }
+                },
+                null,
+            )
         }
     }
 
@@ -64,6 +67,5 @@ object QuickToggles {
 
     fun systemSettings(): List<Intent> = listOf(Intent(Settings.ACTION_SETTINGS))
 
-    fun start(context: Context, intents: List<Intent>): Boolean =
-        intents.any { i -> runCatching { context.startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess }
+    fun start(context: Context, intents: List<Intent>): Boolean = intents.any { i -> runCatching { context.startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess }
 }

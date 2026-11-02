@@ -69,7 +69,9 @@ fun ArchiveBrowserDialog(
                 )
                 when {
                     list == null -> Text("…")
+
                     list.isEmpty() -> Text(stringResource(R.string.l_ar_empty), color = k.muted)
+
                     else -> LazyColumn(Modifier.heightIn(max = 360.dp)) {
                         if (prefix.isNotEmpty()) {
                             item(key = "..") {

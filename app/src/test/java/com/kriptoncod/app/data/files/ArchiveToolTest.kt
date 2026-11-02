@@ -45,8 +45,12 @@ class ArchiveToolTest {
     @Test fun zipSlipBlocked() {
         val evil = File(tmp.root, "evil.zip")
         ZipOutputStream(evil.outputStream()).use {
-            it.putNextEntry(ZipEntry("../../escape.txt")); it.write(1); it.closeEntry()
-            it.putNextEntry(ZipEntry("ok.txt")); it.write(2); it.closeEntry()
+            it.putNextEntry(ZipEntry("../../escape.txt"))
+            it.write(1)
+            it.closeEntry()
+            it.putNextEntry(ZipEntry("ok.txt"))
+            it.write(2)
+            it.closeEntry()
         }
         val dest = tmp.newFolder("safe")
         ArchiveTool.extract(evil, dest).getOrThrow()
@@ -59,7 +63,8 @@ class ArchiveToolTest {
     @Test fun neverOverwritesAndBrowses() {
         val z = ArchiveTool.compress(listOf(tree()), File(tmp.root, "t.zip")).getOrThrow()
         val dest = tmp.newFolder("o3")
-        ArchiveTool.extract(z, dest); ArchiveTool.extract(z, dest)
+        ArchiveTool.extract(z, dest)
+        ArchiveTool.extract(z, dest)
         assertTrue(File(dest, "src/a (1).txt").exists())
         val kids = ArchiveTool.children(ArchiveTool.list(z), "src")
         assertEquals(listOf("sub", "a.txt"), kids.map { it.name })

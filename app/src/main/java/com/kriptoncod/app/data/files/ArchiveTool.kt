@@ -141,7 +141,13 @@ object ArchiveTool {
         val base = prefix.trim('/')
         val seen = LinkedHashMap<String, ArchiveEntry>()
         for (e in all) {
-            val rest = if (base.isEmpty()) e.path else if (e.path.startsWith("$base/")) e.path.removePrefix("$base/") else continue
+            val rest = if (base.isEmpty()) {
+                e.path
+            } else if (e.path.startsWith("$base/")) {
+                e.path.removePrefix("$base/")
+            } else {
+                continue
+            }
             if (rest.isEmpty()) continue
             val first = rest.substringBefore('/')
             val childPath = if (base.isEmpty()) first else "$base/$first"
@@ -541,7 +547,11 @@ object ArchiveTool {
             var v = 0L
             for (i in off until off + len) {
                 val c = b[i].toInt()
-                if (c in '0'.code..'7'.code) v = v * 8 + (c - '0'.code) else if (v > 0 || c == 0) break
+                if (c in '0'.code..'7'.code) {
+                    v = v * 8 + (c - '0'.code)
+                } else if (v > 0 || c == 0) {
+                    break
+                }
             }
             return v
         }
@@ -554,8 +564,14 @@ object ArchiveTool {
             header(path, size, '0', mtime)
             val counting = object : OutputStream() {
                 var n = 0L
-                override fun write(b: Int) { out.write(b); n++ }
-                override fun write(b: ByteArray, off: Int, len: Int) { out.write(b, off, len); n += len }
+                override fun write(b: Int) {
+                    out.write(b)
+                    n++
+                }
+                override fun write(b: ByteArray, off: Int, len: Int) {
+                    out.write(b, off, len)
+                    n += len
+                }
             }
             body(counting)
             // Dosya yazarken boyutu değiştiyse arşiv bozulmasın: başlıktaki boyut esas alınır.
@@ -573,7 +589,10 @@ object ArchiveTool {
             val bytes = path.toByteArray(Charsets.UTF_8)
             if (bytes.size > 100) {
                 // GNU uzun ad kaydı
-                val data = ByteArrayOutputStream().apply { write(bytes); write(0) }.toByteArray()
+                val data = ByteArrayOutputStream().apply {
+                    write(bytes)
+                    write(0)
+                }.toByteArray()
                 block("././@LongLink".toByteArray(), data.size.toLong(), 'L', 0L)
                 out.write(data)
                 val pad = ((512 - data.size % 512) % 512)

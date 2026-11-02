@@ -110,12 +110,10 @@ class AppCatalog(context: Context) {
 
     companion object {
         /** Uygulama ayrıntıları ekranı. */
-        fun appInfoIntent(packageName: String): Intent =
-            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        fun appInfoIntent(packageName: String): Intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
         /** Kaldırma onayı (sistemin kendi penceresi). */
-        fun uninstallIntent(packageName: String): Intent =
-            Intent(Intent.ACTION_DELETE, Uri.parse("package:$packageName")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        fun uninstallIntent(packageName: String): Intent = Intent(Intent.ACTION_DELETE, Uri.parse("package:$packageName")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
         fun isSystemApp(context: Context, packageName: String): Boolean = runCatching {
             val flags = context.packageManager.getApplicationInfo(packageName, 0).flags

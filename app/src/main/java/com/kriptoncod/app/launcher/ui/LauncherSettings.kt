@@ -83,7 +83,13 @@ internal fun LauncherSettings(
                 Row(Modifier.padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     DrawerSort.entries.forEach { s ->
                         Pill(
-                            stringResource(when (s) { DrawerSort.ALPHA -> R.string.l_sort_alpha; DrawerSort.MOST_USED -> R.string.l_sort_used; DrawerSort.NEWEST -> R.string.l_sort_new }),
+                            stringResource(
+                                when (s) {
+                                    DrawerSort.ALPHA -> R.string.l_sort_alpha
+                                    DrawerSort.MOST_USED -> R.string.l_sort_used
+                                    DrawerSort.NEWEST -> R.string.l_sort_new
+                                },
+                            ),
                             { onChange { it.copy(drawerSort = s) } },
                             selected = prefs.drawerSort == s,
                         )
