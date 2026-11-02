@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -141,7 +142,13 @@ fun DesktopShell(
     val animationsOn = LocalAnimationsEnabled.current && prefs.windowAnimations
     val systemScale = rememberSystemAnimatorScale(prefs.followSystemAnimatorScale)
     val motion = remember(animationsOn, prefs.motionSpeed, systemScale) { MotionScale(animationsOn, prefs.motionSpeed, systemScale) }
-    CompositionLocalProvider(LocalMotionScale provides motion) {
+    // Masaüstü kabuğu bir Surface/Scaffold içinde değil; varsayılan içerik rengi Material'de SİYAH olduğundan rengi
+    // verilmeyen her Text (başlatıcı arama/kutu adları, Dosyalar penceresi, menüler) koyu zeminde görünmez kalıyordu.
+    // Tema yazı rengini kökten sağlıyoruz; böylece alttaki her bileşen açık/koyu temaya uyar.
+    CompositionLocalProvider(
+        LocalMotionScale provides motion,
+        LocalContentColor provides MaterialTheme.colorScheme.onBackground,
+    ) {
         DesktopShellContent(container, themePreference, onThemeChange, isHome)
     }
 }
