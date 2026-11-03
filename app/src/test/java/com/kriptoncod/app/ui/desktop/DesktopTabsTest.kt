@@ -115,8 +115,8 @@ class DesktopTabsTest {
         val kept = Desktop.retain(s) { app -> DesktopApps.aiAccountId(app) != 5L }
         assertEquals(listOf(DesktopApps.ai(6), DesktopApps.FILES), kept.tabs.map { it.app })
         assertEquals(listOf(DesktopApps.KRIPTON), kept.pinned)
-        // Silinen sekme görünendi: yerine komşusu gelir.
-        assertEquals(DesktopApps.ai(6), kept.active?.app)
+        // Silinen pencere odaklıydı: odak z-sırasında bir sonrakine (en üstteki küçültülmemiş pencere) geçer.
+        assertEquals(DesktopApps.FILES, kept.active?.app)
         // Hiçbir şey silinmiyorsa durum aynı kalır.
         assertEquals(s, Desktop.retain(s) { true })
     }
@@ -233,9 +233,9 @@ class DesktopTabsTest {
         // Görünen pencere grupta olduğundan temsilci odur.
         assertEquals(s.activeId, files.tabId)
         assertFalse(dock[1].grouped)
-        // Görünen başka uygulamadaysa temsilci ilk penceredir.
+        // Odak başka uygulamadaysa temsilci, grubun görünen pencerelerinin en üsttekisidir (z-sırası).
         val onAi = Desktop.activate(s, s.byApp(DesktopApps.ai(2))!!.id)
-        assertEquals(onAi.tabsOf(DesktopApps.FILES).first().id, Desktop.dock(onAi)[0].tabId)
+        assertEquals(onAi.tabsOf(DesktopApps.FILES).last().id, Desktop.dock(onAi)[0].tabId)
     }
 
     @Test fun ordinalNumbersWindowsInsideTheirApp() {

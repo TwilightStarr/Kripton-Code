@@ -150,4 +150,9 @@
     <string name="desktop_prefs_system_scale_hint">Geliştirici seçeneklerindeki “Animatör süre ölçeği” süreleri uzatır ya da kısaltır; 0 ise animasyon oynamaz.</string>
     <string name="desktop_prefs_speed">Geçiş hızı</string>
     <string name="desktop_prefs_speed_hint">Yavaş ↔ hızlı. 1× normal hızdır.</string>
+    <!-- Serbest pencere yöneticisi -->
+    <string name="desktop_win_minimize">Küçült</string>
+    <string name="desktop_win_maximize">Büyüt</string>
+    <string name="desktop_win_restore">Geri al</string>
+    <string name="desktop_win_close">Kapat</string>
 </resources>

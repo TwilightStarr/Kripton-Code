@@ -149,4 +149,9 @@
     <string name="desktop_prefs_system_scale_hint">“Animator duration scale” in Developer options lengthens or shortens durations; 0 turns animations off.</string>
     <string name="desktop_prefs_speed">Transition speed</string>
     <string name="desktop_prefs_speed_hint">Slow ↔ fast. 1× is normal speed.</string>
+    <!-- Free window manager -->
+    <string name="desktop_win_minimize">Minimize</string>
+    <string name="desktop_win_maximize">Maximize</string>
+    <string name="desktop_win_restore">Restore</string>
+    <string name="desktop_win_close">Close</string>
 </resources>

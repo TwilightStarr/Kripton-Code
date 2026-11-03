@@ -42,6 +42,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
@@ -59,9 +60,9 @@ import com.kriptoncod.app.ui.theme.KriptonTheme
 import com.kriptoncod.app.ui.theme.LocalMotionScale
 import com.kriptoncod.app.ui.theme.Motion
 
-/** Bir uygulamanın tek penceresi (çubuktaki pencere kartı): [label] kartta yazan ad, [active] görünen pencere mi. */
+/** Bir uygulamanın tek penceresi (çubuktaki pencere kartı): [label] kartta yazan ad, [active] odaklı pencere mi, [minimized] küçültülmüş mü. */
 @Immutable
-class DockTab(val id: Int, val label: String, val active: Boolean)
+class DockTab(val id: Int, val label: String, val active: Boolean, val minimized: Boolean = false)
 
 /**
  * Alt çubuktaki bir uygulama. [tabId] null ise uygulama yalnız sabit (açık değil); [active] görünen sekme bu uygulamada
@@ -78,6 +79,10 @@ class DockItem(
     val multi: Boolean = false,
     /** Okunmamış bildirim sayısı (launcher rozeti); 0 ise çizilmez. */
     val badge: Int = 0,
+    /** Uygulamanın en az bir penceresi ekranda görünüyor (odaklı olmasa da). */
+    val shown: Boolean = active,
+    /** Uygulamanın bütün pencereleri küçültülmüş. */
+    val minimized: Boolean = false,
 ) {
     val open: Boolean get() = tabId != null
     val grouped: Boolean get() = tabs.size > 1
@@ -250,13 +255,14 @@ private fun DockChip(
         targetValue = when {
             hovered -> tint.copy(alpha = 0.28f)
             item.active -> k.nodeFill
+            item.shown -> k.nodeFill.copy(alpha = 0.5f)
             else -> Color.Transparent
         },
         animationSpec = motion.spec(Motion.SHORT),
         label = "dockChipFill",
     )
     val indicatorWidth by animateDpAsState(
-        targetValue = if (item.active) 24.dp else 8.dp,
+        targetValue = if (item.active) 24.dp else if (item.shown) 14.dp else 8.dp,
         animationSpec = motion.spec(Motion.MEDIUM),
         label = "dockIndicator",
     )
@@ -303,7 +309,7 @@ private fun DockChip(
                     .width(indicatorWidth)
                     .height(3.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(tint),
+                    .background(if (item.minimized) tint.copy(alpha = 0.5f) else tint),
             )
         }
         com.kriptoncod.app.launcher.ui.CountBadge(item.badge, Modifier.align(Alignment.TopStart).padding(top = 1.dp, start = 1.dp))
@@ -424,6 +430,7 @@ private fun TabCard(tab: DockTab, info: AppInfo, onActivate: () -> Unit, onClose
             .clip(shape)
             .background(k.nodeFill)
             .border(if (tab.active) 1.5.dp else 1.dp, if (tab.active) info.tint else k.nodeBorder, shape)
+            .alpha(if (tab.minimized) 0.6f else 1f)
             .semantics { contentDescription = switchText }
             .clickable(onClick = onActivate),
     ) {

@@ -45,10 +45,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.runtime.produceState
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -115,13 +115,17 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+/** Kapanış animasyonu oynayan pencere: son durumu ve z-sırası, animasyon bitene dek çerçeveyi çizmek için saklanır. */
+private class ClosingWin(val tab: DesktopTab, val win: WinState?, val z: Int)
+
 /**
  * Masaüstü modu: Linux başlatıcısı (launcher) düzeni.
  *
  *  - Alt çubuk (dock): sol baştaki düğme uygulama başlatıcıyı açar; yanında sabitlenmiş uygulamalar ve açık sekmeler durur.
  *    İstediğin uygulamayı başlatıcıdaki raptiyeyle (ya da uzun basışla) çubuğa ekler/çıkarırsın.
- *  - Uygulamalar SEKME gibi açılır: aynı anda tek sekme tüm alanı kaplar; diğerleri arkada açık kalır (AI oturumları ve
- *    sohbetler kaybolmaz). Sekme yokken boş masaüstü (saat + sabit uygulamalar) görünür.
+ *  - Uygulamalar serbest PENCERE olarak açılır ([WindowFrame]): aynı anda birden çok pencere görünür, üst üste biner, taşınır,
+ *    boyutlanır, yaslanır; küçültülen pencere arkada açık kalır (AI oturumları ve sohbetler kaybolmaz). Alan < 600dp ise
+ *    yeni pencereler büyütülmüş açılır. Çubuktan: görünen pencereye dokunmak küçültür, küçültülmüşü geri getirir.
  *  - AI web arayüzleri, "Dosyalar" ve "Kripton Code" (uygulamanın bütün ekranları) birer sekmedir.
  *  - Cihazdaki diğer Android uygulamaları tam ekran açılır ve çubukta açık sekme olarak izlenir (Android bir uygulamayı
  *    başka uygulamanın içine gömmeye izin vermez); çubuktan dokununca yeniden öne gelir.
@@ -183,8 +187,12 @@ private fun DesktopShellContent(
     var state by remember { mutableStateOf(DesktopState()) }
     var areaRoot by remember { mutableStateOf(Offset.Zero) }
     var areaSize by remember { mutableStateOf(IntSize.Zero) }
+    val density = LocalDensity.current.density
+    // Masaüstü alanı dp cinsinden (pencere modelinin birimi).
+    val areaDp = remember(areaSize, density) { WinArea(areaSize.width / density, areaSize.height / density) }
+    val dragHub = remember { WindowDragHub() }
     // Kapanış animasyonu oynayan sekmeler: durumdan hemen çıkar, içerik animasyon bitene dek bileşimde kalır.
-    var closing by remember { mutableStateOf<List<DesktopTab>>(emptyList()) }
+    var closing by remember { mutableStateOf<List<ClosingWin>>(emptyList()) }
     // Açılışta geri yüklenen sekmeler "ikondan büyüme" animasyonu oynamaz; yalnız sonradan açılanlar oynar.
     val restoredIds = remember { HashSet<Int>() }
     var restored by remember { mutableStateOf(false) }
@@ -231,13 +239,22 @@ private fun DesktopShellContent(
 
     // ---- Kayıt / geri yükleme ----
     LaunchedEffect(Unit) {
-        val saved = DesktopCodec.decode(store.desktopLayoutFlow.first())
-        state = saved ?: Desktop.open(DesktopState(pinned = DesktopApps.DEFAULT_PINNED), DesktopApps.KRIPTON)
+        val savedText = store.desktopLayoutFlow.first()
+        // Alan ölçülünce yüklenir: eski sürümler cascade/büyütülmüş pencerelere alan boyutuna göre çevrilir.
+        val px = snapshotFlow { areaSize }.first { it.width > 0 && it.height > 0 }
+        val startArea = WinArea(px.width / density, px.height / density)
+        state = DesktopCodec.decode(savedText, startArea)?.let { Windowing.clampToArea(it, startArea) }
+            ?: Desktop.open(DesktopState(pinned = DesktopApps.DEFAULT_PINNED), DesktopApps.KRIPTON, startArea)
         restoredIds += state.tabs.map { it.id }
         restored = true
         if (!store.desktopPermissionAsked.first()) {
             if (FilesAccess.isGranted(context)) store.setDesktopPermissionAsked(true) else showPerm = true
         }
+    }
+    // Alan ya da ekran yönü değişince pencereler geri sığdırılır. Klavye açıkken (alan geçici daralır) kalıcı değişiklik yapılmaz:
+    // pencereler yalnız gösterimde küçülür, klavye kapanınca eski boyutuna döner.
+    LaunchedEffect(areaDp, restored, imeVisible) {
+        if (restored && !imeVisible && areaDp.isUsable) state = Windowing.clampToArea(state, areaDp)
     }
     LaunchedEffect(restored) {
         if (!restored) return@LaunchedEffect
@@ -321,7 +338,7 @@ private fun DesktopShellContent(
         launcher = false
         val pkg = DesktopApps.packageOf(app)
         if (pkg == null) {
-            state = Desktop.open(state, app)
+            state = Desktop.open(state, app, areaDp)
             return
         }
         // Cihazdaki uygulama: tam ekran açılır; çubukta açık sekme olarak izlenir.
@@ -334,16 +351,16 @@ private fun DesktopShellContent(
         }
     }
 
-    // Pencere animasyonla kapanır (aşağı küçülerek): sekme durumdan hemen çıkar, içerik animasyon bitene dek bileşimde kalır;
+    // Pencere animasyonla kapanır (aşağı küçülerek): pencere durumdan hemen çıkar, içerik animasyon bitene dek bileşimde kalır;
     // AI oturumu animasyon bitince bırakılır (kapanırken sayfa boşalmasın).
     fun closeTab(id: Int) {
         val tab = state.byId(id) ?: return
-        if (!DesktopApps.isExternal(tab.app)) closing = closing + tab
+        if (!DesktopApps.isExternal(tab.app)) closing = closing + ClosingWin(tab, state.wins[id], state.z.indexOf(id))
         state = Desktop.close(state, id)
     }
 
     fun finishClose(tab: DesktopTab) {
-        closing = closing.filter { it.id != tab.id }
+        closing = closing.filter { it.tab.id != tab.id }
         val accountId = DesktopApps.aiAccountId(tab.app) ?: return
         // Aynı hesap bu arada yeniden açıldıysa oturum korunur.
         if (state.byApp(tab.app) == null) {
@@ -360,16 +377,9 @@ private fun DesktopShellContent(
         state.tabs.toList().forEach { closeTab(it.id) }
     }
 
-    /** Yeni açılan sekmenin "ikondan büyüme" başlangıç noktası: alt çubuktaki simgesinin merkezi (yoksa alt orta). */
-    fun revealOriginFor(app: String): () -> TransformOrigin = {
-        val r = dockBounds[app]
-        val w = areaSize.width.toFloat()
-        val h = areaSize.height.toFloat()
-        if (r == null || w <= 0f || h <= 0f) {
-            TransformOrigin(0.5f, 1f)
-        } else {
-            TransformOrigin(((r.center.x - areaRoot.x) / w).coerceIn(0f, 1f), ((r.center.y - areaRoot.y) / h).coerceIn(0f, 2f))
-        }
+    /** Pencere animasyonlarının (açılış, küçültme, geri getirme) simgesi: alt çubuktaki simgenin merkezi (alan koordinatı, piksel). */
+    fun iconCenterFor(app: String): () -> Offset? = {
+        dockBounds[app]?.let { Offset(it.center.x - areaRoot.x, it.center.y - areaRoot.y) }
     }
 
     fun trackBounds(app: String, rect: Rect?) {
@@ -429,6 +439,24 @@ private fun DesktopShellContent(
         uris.forEach { uri -> sendToAi(accountId, queryName(context, uri)) { readDropped(context, uri) } }
         return true
     }
+
+    /** Dosya sürüklenirken parmağın altındaki en üstteki pencere görünen bir AI penceresiyse onun anahtarı (yüzen pencereye bırakma). */
+    fun aiWindowAt(pointerPx: Offset): String? {
+        val px = pointerPx.x / density
+        val py = pointerPx.y / density
+        for (id in state.z.asReversed()) {
+            val w = state.wins[id] ?: continue
+            if (!w.visible) continue
+            if (Windowing.rectOf(w, areaDp).contains(px, py)) {
+                val app = state.byId(id)?.app ?: return null
+                return if (DesktopApps.aiAccountId(app) != null) app else null
+            }
+        }
+        return null
+    }
+
+    /** Dosya sürüklenirken parmağın altındaki bırakma hedefi: önce alt çubuktaki AI öğesi, yoksa yüzen AI penceresi. */
+    fun dropTargetAt(pointerPx: Offset): String? = dockAiAt(pointerPx) ?: aiWindowAt(pointerPx)
 
     /** Dosya sürüklenirken parmağın altındaki alt çubuk öğesi açık bir AI sekmesiyse onun anahtarı. */
     fun dockAiAt(pointerPx: Offset): String? {
@@ -608,14 +636,17 @@ private fun DesktopShellContent(
             // Aynı uygulamanın birden çok penceresi: kartlarda "Dosyalar · 2" gibi numaralanır.
             val tabs = e.tabIds.mapIndexed { i, id ->
                 val label = if (e.grouped) context.getString(R.string.desktop_tab_window_label, info.title, i + 1) else info.title
-                DockTab(id, label, id == activeId)
+                DockTab(id, label, id == activeId, state.wins[id]?.mode == WinMode.MINIMIZED)
             }
-            DockItem(info, e.tabId, e.pinned, tabs.any { it.active }, tabs, DesktopApps.allowsMultiple(e.app), if (launcherPrefs.badges) badgeOf(e.app) else 0)
+            val shown = e.tabIds.any { state.wins[it]?.visible == true }
+            val minimized = e.tabIds.isNotEmpty() && e.tabIds.all { state.wins[it]?.mode == WinMode.MINIMIZED }
+            DockItem(info, e.tabId, e.pinned, tabs.any { it.active }, tabs, DesktopApps.allowsMultiple(e.app), if (launcherPrefs.badges) badgeOf(e.app) else 0, shown, minimized)
         }
     }
     val openApps = state.tabs.map { it.app }.toSet()
     val pinnedSet = state.pinned.toSet()
     val dropHover = if (fileDrag.file != null) dockAiAt(fileDrag.pointer) else null
+    val windowHover = if (fileDrag.file != null && dropHover == null) aiWindowAt(fileDrag.pointer) else null
 
     // Ana ekran olarak: geri tuşu masaüstünden çıkmaz (yalnız açık katmanları kapatır).
     BackHandler(enabled = isHome) { }
@@ -654,8 +685,8 @@ private fun DesktopShellContent(
                             areaSize = it.size
                         },
                 ) {
-                    // Hiçbir sekme görünmüyorsa: boş masaüstü.
-                    if (restored && state.active == null) {
+                    // Masaüstü yüzeyi pencerelerin arkasında durur (yüzen pencereler arasında görünür).
+                    if (restored) {
                         LauncherHome(
                             container = container,
                             state = homeState,
@@ -673,23 +704,46 @@ private fun DesktopShellContent(
                         )
                     }
 
-                    // Bütün sekmeler bileşimde kalır; yalnız görünen sekme ekrandadır (diğerleri ekran dışında, saydam).
+                    // Bütün pencereler bileşimde kalır (küçültülenler ekran dışında, saydam); çocuk sırası sabit, üst üste sırası zIndex ile.
                     CompositionLocalProvider(LocalFileChooserOwnedByShell provides true, LocalInAppMessage provides { toastText = it }) {
-                        // Kapanmakta olan sekmeler de çizilir (animasyon bitene dek); anahtar aynı kaldığı için içerik korunur.
-                        val closingIds = closing.map { it.id }.toSet()
-                        val layers = (state.tabs + closing.filter { c -> state.tabs.none { it.id == c.id } })
+                        // Kapanmakta olan pencereler de çizilir (animasyon bitene dek); anahtar aynı kaldığı için içerik korunur.
+                        val closingIds = closing.map { it.tab.id }.toSet()
+                        val layers = (state.tabs + closing.map { it.tab }.filter { c -> state.tabs.none { it.id == c.id } })
                             .filter { !DesktopApps.isExternal(it.app) }
                             .sortedBy { it.id }
                         layers.forEach { tab ->
                             key(tab.id) {
-                                val visible = tab.id == activeId
+                                val closingWin = closing.firstOrNull { it.tab.id == tab.id }
                                 val aiId = DesktopApps.aiAccountId(tab.app)
-                                TabLayer(
-                                    visible = visible,
+                                val info = infoOf(tab.app)
+                                val fallback = remember(tab.id) { WinState(Windowing.cascadeGeom(tab.app, WinArea.Default, 0)) }
+                                val label = if (state.tabsOf(tab.app).size > 1) {
+                                    stringResource(R.string.desktop_tab_window_label, info?.title.orEmpty(), state.ordinalOf(tab.id))
+                                } else {
+                                    info?.title.orEmpty()
+                                }
+                                WindowFrame(
+                                    title = label,
+                                    info = info,
+                                    tint = info?.tint ?: scheme.primary,
+                                    win = { closingWin?.win ?: state.wins[tab.id] ?: fallback },
+                                    area = areaDp,
+                                    focused = closingWin == null && tab.id == activeId,
+                                    zOrder = ((closingWin?.z ?: state.z.indexOf(tab.id)) + 1).toFloat(),
                                     closing = tab.id in closingIds,
-                                    revealOrigin = if (tab.id in restoredIds) null else revealOriginFor(tab.app),
+                                    revealFromIcon = tab.id !in restoredIds,
+                                    iconCenter = iconCenterFor(tab.app),
+                                    highlight = windowHover == tab.app,
+                                    hub = dragHub,
+                                    onFocus = { state = Windowing.focus(state, tab.id) },
+                                    onMinimize = { state = Windowing.minimize(state, tab.id) },
+                                    onToggleMax = { state = Windowing.toggleMaximize(state, tab.id) },
+                                    onClose = { closeTab(tab.id) },
+                                    onMoveEnd = { g, zone ->
+                                        state = if (zone != null) Windowing.snap(state, tab.id, zone, areaDp) else Windowing.placeFromDrag(state, tab.id, g, areaDp)
+                                    },
+                                    onResizeEnd = { g -> state = Windowing.resize(state, tab.id, g, areaDp) },
                                     onClosed = { finishClose(tab) },
-                                    background = scheme.background,
                                 ) {
                                     when {
                                         aiId != null -> {
@@ -722,12 +776,12 @@ private fun DesktopShellContent(
                                             defaultGrid = prefs.filesGrid,
                                             onSend = { f, id -> sendFile(f, id) },
                                             onDragDrop = { f ->
-                                                dockAiAt(fileDrag.pointer)?.let { app -> DesktopApps.aiAccountId(app)?.let { sendFile(f, it) } }
+                                                dropTargetAt(fileDrag.pointer)?.let { app -> DesktopApps.aiAccountId(app)?.let { sendFile(f, it) } }
                                             },
                                         )
 
                                         else -> BoxWithConstraints(Modifier.fillMaxSize()) {
-                                            // Sekme genişliğine göre telefon/tablet düzeni (ekran genişliğine göre değil).
+                                            // Pencere genişliğine göre telefon/tablet düzeni; sınıf yalnız eşik (600/840dp) geçilince değişir.
                                             AppRoot(
                                                 themePreference = themePreference,
                                                 onThemeChange = onThemeChange,
@@ -740,6 +794,8 @@ private fun DesktopShellContent(
                             }
                         }
                     }
+                    // Yaslama önizlemesi pencerelerin üstünde, çubuğun altındadır.
+                    SnapPreview(dragHub, scheme.primary, Modifier.zIndex(5000f))
                 }
 
                 if (!imeVisible && dockVisible) {
@@ -765,19 +821,11 @@ private fun DesktopShellContent(
                                 // Harici uygulamaya dokunmak onu yeniden öne getirir.
                                 DesktopApps.isExternal(item.info.app) -> openApp(item.info.app)
 
-                                // Görünen sekmede değilse öne getirir (grupta: görünen ya da ilk pencere); açık değilse açar.
-                                !item.active && tabId != null -> {
-                                    state = Desktop.activate(state, tabId)
-                                }
+                                // PC görev çubuğu: küçültülmüşse geri getirir, odaklıysa küçültür, arkadaysa öne alır.
+                                tabId != null -> state = Windowing.dockTap(state, tabId)
 
-                                !item.active -> openApp(item.info.app)
-
-                                // Zaten görünen grupta yeniden dokunmak sıradaki pencereye geçer; tek pencerede bir şey yapmaz.
-                                item.grouped -> {
-                                    state = Desktop.cycleInGroup(state, item.info.app)
-                                }
-
-                                else -> Unit
+                                // Açık değilse açar.
+                                else -> openApp(item.info.app)
                             }
                         },
                         onClose = { item -> item.tabId?.let { closeTab(it) } },
@@ -786,17 +834,17 @@ private fun DesktopShellContent(
                         onReload = { item ->
                             DesktopApps.aiAccountId(item.info.app)?.let { id -> rowsById[id]?.let { hub.reopen(it) } }
                         },
-                        onTabActivate = { id -> state = Desktop.activate(state, id) },
+                        onTabActivate = { id -> state = Windowing.dockTap(state, id) },
                         onTabClose = { id -> closeTab(id) },
                         onNewWindow = { item ->
                             launcher = false
-                            state = Desktop.openNew(state, item.info.app)
+                            state = Desktop.openNew(state, item.info.app, areaDp)
                         },
                         onCloseApp = { item -> closeApp(item.info.app) },
                         onCloseAll = { closeAllTabs() },
                         onShowDesktop = {
                             launcher = false
-                            state = Desktop.showDesktop(state)
+                            state = Desktop.toggleDesktop(state)
                         },
                         onToggleFullscreen = { scope.launch { store.setDesktopFullscreen(!fullscreen) } },
                         onBounds = { app, rect -> trackBounds(app, rect) },
