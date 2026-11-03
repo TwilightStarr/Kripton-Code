@@ -262,13 +262,7 @@ private fun DockChip(
         label = "dockChipFill",
     )
     val indicatorWidth by animateDpAsState(
-        targetValue = if (item.active) {
-            24.dp
-        } else if (item.shown) {
-            14.dp
-        } else {
-            8.dp
-        },
+        targetValue = if (item.active) 24.dp else if (item.shown) 14.dp else 8.dp,
         animationSpec = motion.spec(Motion.MEDIUM),
         label = "dockIndicator",
     )

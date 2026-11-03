@@ -159,7 +159,8 @@ object Desktop {
     fun closeApp(s: DesktopState, app: String): DesktopState = s.tabsOf(app).fold(s) { acc, tab -> close(acc, tab.id) }
 
     /** Bütün sekmeleri kapatır (sabitler kalır); boş masaüstü görünür. Kimlik sayacı korunur. */
-    fun closeAll(s: DesktopState): DesktopState = if (s.tabs.isEmpty()) s else s.copy(tabs = emptyList(), wins = emptyMap(), z = emptyList(), shownDesktop = emptyList())
+    fun closeAll(s: DesktopState): DesktopState =
+        if (s.tabs.isEmpty()) s else s.copy(tabs = emptyList(), wins = emptyMap(), z = emptyList(), shownDesktop = emptyList())
 
     // ------------------------------------------------------------------------------------------------------------
     // Alt çubuk (sabitleme)

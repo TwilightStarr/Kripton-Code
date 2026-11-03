@@ -129,7 +129,8 @@ object Windowing {
     }
 
     /** Sürükleme sırasında konum: boyut sabit, pencere alanın içinde kalır. */
-    fun moveGeom(g: WinGeom, dx: Float, dy: Float, area: WinArea): WinGeom = fitGeom(g.copy(x = g.x + dx, y = g.y + dy), area, enforceMin = false)
+    fun moveGeom(g: WinGeom, dx: Float, dy: Float, area: WinArea): WinGeom =
+        fitGeom(g.copy(x = g.x + dx, y = g.y + dy), area, enforceMin = false)
 
     /**
      * [handle] tutamacını ([dx], [dy]) kadar sürükleyince oluşan dikdörtgen: karşı kenar sabit kalır, en az [MIN_W]x[MIN_H],
@@ -202,13 +203,15 @@ object Windowing {
     }
 
     /** [tab] için pencere oluşturur ve en üste koyar. Harici uygulama için çağrılmaz. */
-    fun addWindow(s: DesktopState, tab: DesktopTab, area: WinArea): DesktopState = s.copy(wins = s.wins + (tab.id to newWin(s, tab.app, area)), z = s.z.filter { it != tab.id } + tab.id)
+    fun addWindow(s: DesktopState, tab: DesktopTab, area: WinArea): DesktopState =
+        s.copy(wins = s.wins + (tab.id to newWin(s, tab.app, area)), z = s.z.filter { it != tab.id } + tab.id)
 
-    fun removeWindow(s: DesktopState, id: Int): DesktopState = if (id !in s.wins && id !in s.z) {
-        s
-    } else {
-        s.copy(wins = s.wins - id, z = s.z.filter { it != id }, shownDesktop = s.shownDesktop.filter { it != id })
-    }
+    fun removeWindow(s: DesktopState, id: Int): DesktopState =
+        if (id !in s.wins && id !in s.z) {
+            s
+        } else {
+            s.copy(wins = s.wins - id, z = s.z.filter { it != id }, shownDesktop = s.shownDesktop.filter { it != id })
+        }
 
     // ------------------------------------------------------------------------------------------------------------
     // Odak / z-sırası

@@ -455,9 +455,6 @@ private fun DesktopShellContent(
         return null
     }
 
-    /** Dosya sürüklenirken parmağın altındaki bırakma hedefi: önce alt çubuktaki AI öğesi, yoksa yüzen AI penceresi. */
-    fun dropTargetAt(pointerPx: Offset): String? = dockAiAt(pointerPx) ?: aiWindowAt(pointerPx)
-
     /** Dosya sürüklenirken parmağın altındaki alt çubuk öğesi açık bir AI sekmesiyse onun anahtarı. */
     fun dockAiAt(pointerPx: Offset): String? {
         val p = pointerPx + areaRoot
@@ -465,6 +462,9 @@ private fun DesktopShellContent(
             DesktopApps.aiAccountId(app) != null && state.byApp(app) != null && rect.contains(p)
         }?.key
     }
+
+    /** Dosya sürüklenirken parmağın altındaki bırakma hedefi: önce alt çubuktaki AI öğesi, yoksa yüzen AI penceresi. */
+    fun dropTargetAt(pointerPx: Offset): String? = dockAiAt(pointerPx) ?: aiWindowAt(pointerPx)
 
     // ---- Uygulama bilgisi (ad, renk, simge) ----
     val installedByPkg = installed?.associateBy { it.packageName }
