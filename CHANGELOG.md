@@ -5,6 +5,9 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
+### Düzeltildi (Web sohbet ekranlarında indirme)
+- AI sohbetlerinde (Claude vb.) sayfadaki zip/dosya "indir" düğmeleri hiçbir şey yapmıyordu: WebView'a indirme dinleyicisi eklendi. https bağlantıları oturum çerezleriyle, `blob:`/`data:` bağlantıları sayfanın içinden okunup **İndirilenler** klasörüne kaydedilir; `URL.revokeObjectURL` ertelenerek blob'un indirmeden önce silinmesi engellendi (`WebDownloadSaver`). `window.open` ile yeni pencere açan indir düğmeleri de yakalanır (`onCreateWindow`).
+
 ### Eklendi (Launcher: masaüstü modu gerçek bir ana ekrana dönüştü)
 - Ana ekran sayfaları (kısayollar, Kripton panoları, Android widget'ları), canlı uygulama çekmecesi, evrensel arama (uygulama, dosya, kişi, hesap makinesi, sistem ayarı, "AI'a sor", web), AI hızlı erişim çubuğu ve "AI'a sor" sayfası; **Paylaş > Kripton Code** ile metin gönderme.
 - Kendi bildirim sistemi: Kripton olay kutusu, sistem bildirimleri paneli (bildirim erişimi ile), rozetler, hızlı düğmeler.

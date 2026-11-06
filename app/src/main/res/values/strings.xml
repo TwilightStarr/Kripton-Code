@@ -333,4 +333,8 @@
     <string name="run_no_usable_accounts">Kullanılabilir hesap yok: hesaplar kapalı ya da Hata durumunda. AI\'lar sekmesinde hesabı aç, web hesabında oturumu yeniden aç; iş kendiliğinden devam eder.</string>
     <string name="settings_version_title">Sürüm</string>
     <string name="settings_version_value" tools:ignore="PluralsCandidate">%1$s (sürüm kodu %2$d)</string>
+
+    <string name="web_download_started">İndiriliyor: %1$s</string>
+    <string name="web_download_done">İndirildi: %1$s (İndirilenler)</string>
+    <string name="web_download_failed">Dosya indirilemedi. Sayfaya tekrar basıp deneyin.</string>
 </resources>

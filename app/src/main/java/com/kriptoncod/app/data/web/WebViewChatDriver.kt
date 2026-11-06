@@ -19,12 +19,16 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.kriptoncod.app.R
 import com.kriptoncod.app.data.ai.AiGenerationException
 import com.kriptoncod.app.data.ai.AiGenerationException.Kind
 import com.kriptoncod.app.data.db.AiAccount
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
@@ -58,6 +62,9 @@ class WebViewChatDriver(
     private val appContext = context.applicationContext
     private val globalLock = Mutex()
     private val accountLocks = ConcurrentHashMap<Long, Mutex>()
+
+    /** Kullanıcının sayfadaki "indir" düğmesiyle başlattığı indirmeler; oturum kapansa da yarım kalmasın diye sürücüye bağlıdır. */
+    private val downloadScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /** Bu cihazın WebView'ı hesap başına ayrı profili destekliyor mu (ayrı çerez deposu = gerçek eşzamanlılık). */
     private fun profilesSupported(): Boolean = runCatching { WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE) }.getOrDefault(false)
@@ -177,6 +184,9 @@ class WebViewChatDriver(
                 loadWithOverviewMode = true
                 useWideViewPort = true
                 mediaPlaybackRequiresUserGesture = true
+                // "İndir" düğmeleri çoğu zaman window.open ile yeni pencere açar; istek onCreateWindow'da yakalanır.
+                javaScriptCanOpenWindowsAutomatically = true
+                setSupportMultipleWindows(true)
             }
             wv.webViewClient = object : WebViewClient() {
                 override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) = Unit
@@ -202,11 +212,60 @@ class WebViewChatDriver(
                     if (h == null || webView?.parent == null) return false
                     return h(params, cb)
                 }
+
+                /**
+                 * Sayfa yeni pencere açmak isterse (indir düğmeleri sık yapar): pencere görünmez bir WebView'a verilir, oradan gelen
+                 * adres yakalanır. blob:/dosya indirmeleri kaydedilir; normal https adresleri bu sayfada açılır. Ekranda
+                 * görünmeyen otomasyon sayfasında açılır pencere engellenir (eskisi gibi).
+                 */
+                override fun onCreateWindow(view: WebView?, isDialog: Boolean, isUserGesture: Boolean, resultMsg: android.os.Message?): Boolean {
+                    val main = view ?: return false
+                    val msg = resultMsg ?: return false
+                    if (main.parent == null) return false
+                    val transport = msg.obj as? WebView.WebViewTransport ?: return false
+                    val temp = WebView(main.context)
+                    fun disposeTemp() {
+                        android.os.Handler(android.os.Looper.getMainLooper()).post { runCatching { temp.stopLoading(); temp.destroy() } }
+                    }
+                    WebUserAgent.apply(temp.settings)
+                    temp.settings.javaScriptEnabled = true
+                    temp.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
+                        onDownloadRequested(main, url, userAgent, contentDisposition, mimeType)
+                        disposeTemp()
+                    }
+                    temp.webViewClient = object : WebViewClient() {
+                        override fun shouldOverrideUrlLoading(v: WebView?, request: WebResourceRequest?): Boolean {
+                            val target = request?.url?.toString().orEmpty()
+                            // about:blank gibi ara adreslerde pencere açık kalır; gerçek adres gelince işlenir.
+                            val handled = when {
+                                target.startsWith("blob:") || target.startsWith("data:") -> {
+                                    onDownloadRequested(main, target, null, null, null)
+                                    true
+                                }
+                                target.startsWith("https:") -> {
+                                    main.loadUrl(target)
+                                    true
+                                }
+                                else -> false
+                            }
+                            if (handled) disposeTemp()
+                            return handled
+                        }
+                    }
+                    transport.webView = temp
+                    msg.sendToTarget()
+                    return true
+                }
+            }
+            // "İndir" düğmeleri (Claude'un verdiği zip/dosya bağlantıları): WebView indirmeyi kendisi yapmaz, dinleyici şarttır.
+            wv.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
+                onDownloadRequested(wv, url, userAgent, contentDisposition, mimeType)
             }
             // Ekrana eklenmemiş WebView'da sayfa "gizli" sayılır; görünür gösterilir (bkz. WebScripts.VISIBILITY_SHIM).
             runCatching {
                 if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
                     WebViewCompat.addDocumentStartJavaScript(wv, WebScripts.VISIBILITY_SHIM, setOf("*"))
+                    WebViewCompat.addDocumentStartJavaScript(wv, WebScripts.BLOB_KEEPALIVE_SHIM, setOf("*"))
                 }
             }
             // Ekran dışı ama ölçülü: getBoundingClientRect / görünürlük kontrolleri çalışsın.
@@ -216,6 +275,48 @@ class WebViewChatDriver(
             wv.resumeTimers()
             return wv
         }
+
+        /**
+         * Sayfadaki bir indirme düğmesine basıldı. Yalnız ekranda görünen (kullanıcının elle gezdiği) sayfa dosya kaydeder;
+         * otomasyonun gizli sayfası dosyayı kendi akışıyla ([download]) alır, İndirilenler'e bir şey yazılmaz.
+         * https: oturum çerezleriyle doğrudan indirilir. blob:/data: sayfanın içinden okunur.
+         */
+        private fun onDownloadRequested(wv: WebView, url: String?, userAgent: String?, contentDisposition: String?, mimeType: String?) {
+            if (url.isNullOrBlank() || wv.parent == null) return
+            val referer = wv.url
+            val hint = WebDownloadSaver.resolveName(url, contentDisposition, mimeType)
+            WebDownloadSaver.toast(appContext, appContext.getString(R.string.web_download_started, hint))
+            val cm = cookieManager
+            downloadScope.launch {
+                val saved = runCatching {
+                    when {
+                        url.startsWith("blob:") -> {
+                            val file = download(url) ?: throw java.io.IOException("blob")
+                            val named = if (filenameGiven(contentDisposition)) hint else file.name.takeIf { it.isNotBlank() && !it.contains(':') && it.contains('.') } ?: hint
+                            WebDownloadSaver.saveBytes(appContext, named, mimeType, file.bytes)
+                        }
+                        url.startsWith("data:") -> WebDownloadSaver.saveDataUrl(appContext, url, contentDisposition, mimeType)
+                        url.startsWith("https:") || url.startsWith("http:") -> WebDownloadSaver.saveHttp(
+                            context = appContext,
+                            url = url,
+                            userAgent = userAgent?.takeIf { it.isNotBlank() } ?: WebUserAgent.DESKTOP,
+                            referer = referer,
+                            contentDisposition = contentDisposition,
+                            mime = mimeType,
+                            cookieFor = { u -> runCatching { cm.getCookie(u) }.getOrNull() },
+                        )
+                        else -> throw java.io.IOException("scheme")
+                    }
+                }
+                val msg = saved.fold(
+                    onSuccess = { appContext.getString(R.string.web_download_done, it) },
+                    onFailure = { appContext.getString(R.string.web_download_failed) },
+                )
+                WebDownloadSaver.toast(appContext, msg)
+            }
+        }
+
+        private fun filenameGiven(contentDisposition: String?): Boolean = WebDownloadSaver.filenameFromDisposition(contentDisposition) != null
 
         /** Ekrana eklenmemiş WebView'ı sabit 1280x2000 olarak ölçüp yerleştirir. */
         private fun layoutOffscreen(wv: WebView) {

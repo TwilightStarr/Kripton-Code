@@ -59,6 +59,17 @@ object WebScripts {
             "window.cancelAnimationFrame=function(i){dead[i]=true;caf(i);};" +
             "}catch(e){}})();"
 
+    /**
+     * Siteler `a.download` ile blob: indirmesi başlatır başlatmaz `URL.revokeObjectURL` çağırır; WebView indirme dinleyicisi
+     * ise adresi biraz sonra alır ve blob o zamana kadar silinmiş olur (düğme "çalışmıyor" gibi görünür).
+     * Silme, indirmenin okunabilmesi için ertelenir.
+     */
+    const val BLOB_KEEPALIVE_SHIM =
+        "(function(){try{" +
+            "var rev=URL.revokeObjectURL.bind(URL);" +
+            "URL.revokeObjectURL=function(u){setTimeout(function(){try{rev(u);}catch(e){}},180000);};" +
+            "}catch(e){}})();"
+
     fun runChat(sel: SiteSelectors, prompt: String): String {
         val cfg = json.encodeToString(sel)
         val p = json.encodeToString(prompt)
