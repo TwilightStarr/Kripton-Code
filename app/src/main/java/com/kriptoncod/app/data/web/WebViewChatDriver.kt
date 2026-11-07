@@ -225,7 +225,12 @@ class WebViewChatDriver(
                     val transport = msg.obj as? WebView.WebViewTransport ?: return false
                     val temp = WebView(main.context)
                     fun disposeTemp() {
-                        android.os.Handler(android.os.Looper.getMainLooper()).post { runCatching { temp.stopLoading(); temp.destroy() } }
+                        android.os.Handler(android.os.Looper.getMainLooper()).post {
+                            runCatching {
+                                temp.stopLoading()
+                                temp.destroy()
+                            }
+                        }
                     }
                     WebUserAgent.apply(temp.settings)
                     temp.settings.javaScriptEnabled = true
@@ -242,10 +247,12 @@ class WebViewChatDriver(
                                     onDownloadRequested(main, target, null, null, null)
                                     true
                                 }
+
                                 target.startsWith("https:") -> {
                                     main.loadUrl(target)
                                     true
                                 }
+
                                 else -> false
                             }
                             if (handled) disposeTemp()
@@ -295,7 +302,9 @@ class WebViewChatDriver(
                             val named = if (filenameGiven(contentDisposition)) hint else file.name.takeIf { it.isNotBlank() && !it.contains(':') && it.contains('.') } ?: hint
                             WebDownloadSaver.saveBytes(appContext, named, mimeType, file.bytes)
                         }
+
                         url.startsWith("data:") -> WebDownloadSaver.saveDataUrl(appContext, url, contentDisposition, mimeType)
+
                         url.startsWith("https:") || url.startsWith("http:") -> WebDownloadSaver.saveHttp(
                             context = appContext,
                             url = url,
@@ -305,6 +314,7 @@ class WebViewChatDriver(
                             mime = mimeType,
                             cookieFor = { u -> runCatching { cm.getCookie(u) }.getOrNull() },
                         )
+
                         else -> throw java.io.IOException("scheme")
                     }
                 }
