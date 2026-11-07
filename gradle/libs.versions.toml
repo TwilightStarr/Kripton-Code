@@ -26,6 +26,15 @@ leakcanary = "2.14"
 # Shizuku: ayrıcalıklı (adb/root) kullanıcı servisi; masaüstü modu Dosyalar penceresinde /data erişimi
 shizuku = "13.1.5"
 
+# Sora Editor (kod düzenleyici): kaynak sora/ altında yerel modül olarak durur; bağımlılıkları burada.
+soraAnnotation = "1.9.1"
+soraCollection = "1.5.0"
+soraGson = "2.11.0"
+soraJcodings = "1.0.64"
+soraJoni = "2.2.7"
+soraSnakeyaml = "2.10"
+soraJdtAnnotation = "2.4.100"
+
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
@@ -70,8 +79,18 @@ leakcanary-android = { module = "com.squareup.leakcanary:leakcanary-android", ve
 # Google Identity Services — Authorization API (GIS)
 google-identity-authorization = { module = "com.google.android.gms:play-services-auth", version.ref = "googleIdentity" }
 
+# Sora Editor bağımlılıkları
+sora-annotation = { module = "androidx.annotation:annotation", version.ref = "soraAnnotation" }
+sora-collection = { module = "androidx.collection:collection", version.ref = "soraCollection" }
+sora-gson = { module = "com.google.code.gson:gson", version.ref = "soraGson" }
+sora-jcodings = { module = "org.jruby.jcodings:jcodings", version.ref = "soraJcodings" }
+sora-joni = { module = "org.jruby.joni:joni", version.ref = "soraJoni" }
+sora-snakeyaml = { module = "org.snakeyaml:snakeyaml-engine", version.ref = "soraSnakeyaml" }
+sora-jdt-annotation = { module = "org.eclipse.jdt:org.eclipse.jdt.annotation", version.ref = "soraJdtAnnotation" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

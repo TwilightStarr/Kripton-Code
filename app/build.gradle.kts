@@ -110,6 +110,10 @@ ksp {
 }
 
 dependencies {
+    // Sora Editor: kod düzenleyici (sora/ altındaki yerel modüller)
+    implementation(project(":sora-editor"))
+    implementation(project(":sora-language-textmate"))
+    implementation(project(":sora-oniguruma"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -45,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import com.kriptoncod.app.R
 import com.kriptoncod.app.ui.components.OutputMarkdown
 import com.kriptoncod.app.ui.components.OutputMarkdownView
+import com.kriptoncod.app.ui.editor.CodeEditorPane
 import com.kriptoncod.app.ui.theme.KriptonTheme
 import java.io.File
 import kotlinx.coroutines.Dispatchers
@@ -53,11 +55,28 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /**
- * Hafif uygulama içi görüntüleyici: metin/markdown/kod (renklendirmeli), PDF (PdfRenderer) ve görüntü (yakınlaştırma).
+ * Uygulama içi görüntüleyici/düzenleyici: kod ve metin dosyaları Sora Editor ile (renklendirme, düzenleme, arama, kaydetme),
+ * markdown önce önizleme olarak (isteğe bağlı düzenleme), PDF (PdfRenderer) ve görüntü (yakınlaştırma).
  * Başka türler için [onOpenExternal].
  */
 @Composable
 fun FileViewer(file: File, kind: FileKind, onClose: () -> Unit, onOpenExternal: () -> Unit) {
+    // Metin dosyaları tam ekran düzenleyicide açılır (kendi üst çubuğu var).
+    if (kind == FileKind.TEXT) {
+        CodeEditorPane(file = file, onClose = onClose, onOpenExternal = onOpenExternal)
+        return
+    }
+    var editing by remember(file.path) { mutableStateOf(false) }
+    var version by remember(file.path) { mutableIntStateOf(0) }
+    if (kind == FileKind.MARKDOWN && editing) {
+        CodeEditorPane(
+            file = file,
+            onClose = { editing = false; version++; onClose() },
+            onOpenExternal = onOpenExternal,
+            onPreview = { editing = false; version++ },
+        )
+        return
+    }
     val k = KriptonTheme.colors
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -65,12 +84,15 @@ fun FileViewer(file: File, kind: FileKind, onClose: () -> Unit, onOpenExternal: 
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.desktop_files_up))
             }
             Text(file.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            if (kind == FileKind.MARKDOWN) {
+                TextButton(onClick = { editing = true }) { Text(stringResource(R.string.editor_edit), maxLines = 1) }
+            }
             TextButton(onClick = onOpenExternal) { Text(stringResource(R.string.desktop_files_open_other), maxLines = 1) }
         }
         androidx.compose.material3.HorizontalDivider(color = k.nodeBorder.copy(alpha = 0.5f))
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when (kind) {
-                FileKind.TEXT, FileKind.MARKDOWN -> TextBody(file, kind)
+                FileKind.MARKDOWN -> TextBody(file, kind, version)
                 FileKind.PDF -> PdfBody(file)
                 FileKind.IMAGE -> ImageBody(file)
                 else -> Unit
@@ -80,8 +102,8 @@ fun FileViewer(file: File, kind: FileKind, onClose: () -> Unit, onOpenExternal: 
 }
 
 @Composable
-private fun BoxScope.TextBody(file: File, kind: FileKind) {
-    val loaded by produceState<Pair<List<String>, Boolean>?>(null, file.path) {
+private fun BoxScope.TextBody(file: File, kind: FileKind, version: Int) {
+    val loaded by produceState<Pair<List<String>, Boolean>?>(null, file.path, version) {
         value = withContext(Dispatchers.IO) {
             runCatching {
                 val (text, cut) = FileOps.readText(file.inputStream())

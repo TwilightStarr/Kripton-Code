@@ -1,0 +1,94 @@
+{
+  "name": "YAML",
+  "scopeName": "source.yaml",
+  "patterns": [
+    {
+      "include": "#comment"
+    },
+    {
+      "include": "#doc"
+    },
+    {
+      "include": "#key"
+    },
+    {
+      "include": "#dash"
+    },
+    {
+      "include": "#anchor"
+    },
+    {
+      "include": "#tag"
+    },
+    {
+      "include": "#block"
+    },
+    {
+      "include": "#value"
+    }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.line.number-sign.yaml",
+      "match": "(?:^|\\s)#.*$"
+    },
+    "doc": {
+      "name": "entity.other.document.yaml",
+      "match": "^(?:---|\\.\\.\\.)(?=\\s|$)"
+    },
+    "key": {
+      "name": "entity.name.tag.yaml",
+      "match": "(?:(?<=^|\\s|-)|^)(?:\"[^\"]*\"|'[^']*'|[^\\s#:\"'\\[\\]{},&*!|>%@`-][^#:]*?)(?=\\s*:(?:\\s|$))"
+    },
+    "dash": {
+      "name": "punctuation.definition.sequence.yaml",
+      "match": "^\\s*-(?=\\s)|(?<=\\s)-(?=\\s)"
+    },
+    "anchor": {
+      "name": "variable.other.yaml",
+      "match": "[&*][\\w.-]+"
+    },
+    "tag": {
+      "name": "storage.type.yaml",
+      "match": "![\\w!<>:/.-]*"
+    },
+    "block": {
+      "name": "keyword.control.flow.yaml",
+      "match": "(?<=:|-)\\s+[|>][+-]?\\d*\\s*$"
+    },
+    "value": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.yaml",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.yaml",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.yaml",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "constant.character.escape.yaml",
+              "match": "''"
+            }
+          ]
+        },
+        {
+          "name": "constant.language.yaml",
+          "match": "\\b(?:true|false|null|yes|no|on|off|True|False|Null|~)\\b"
+        },
+        {
+          "name": "constant.numeric.yaml",
+          "match": "(?<![\\w.])[-+]?(?:0x[0-9a-fA-F]+|\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?)(?![\\w.])"
+        }
+      ]
+    }
+  }
+}

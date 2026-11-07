@@ -18,6 +18,9 @@ object FileOps {
     private val TEXT = setOf(
         "txt", "log", "json", "xml", "csv", "kt", "kts", "java", "py", "js", "ts", "sh", "gradle", "toml", "yml", "yaml",
         "ini", "cfg", "properties", "html", "htm", "css", "sql", "conf", "gitignore", "pro",
+        "jsx", "tsx", "mjs", "cjs", "jsonc", "json5", "bash", "zsh", "env", "editorconfig", "scss", "less",
+        "svg", "plist", "xsd", "xsl", "aidl", "smali", "c", "h", "cpp", "hpp", "cc", "go", "rs", "rb", "php",
+        "swift", "lua", "bat", "cmd", "tsv", "pyw", "kt",
     )
     private val IMAGE = setOf("png", "jpg", "jpeg", "webp", "gif", "bmp")
     private val ARCHIVE = setOf("zip", "7z", "rar", "tar", "gz", "tgz", "bz2", "xz")

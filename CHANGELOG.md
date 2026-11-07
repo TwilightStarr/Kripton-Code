@@ -5,6 +5,13 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
+### Eklendi (Kod düzenleyici: Sora Editor)
+- Dosyalar penceresinde metin/kod dosyaları artık **Sora Editor** ile açılır: TextMate renklendirme (Java, Kotlin, Python, JS/TS, JSON, YAML, Shell, XML/HTML, CSS, SQL, Markdown, ini/properties/toml), düzenleme, geri al/yinele, arama + regex/sözcük/büyük-küçük + değiştir, satıra git, satır numaraları, kapsam başlığı (sticky scroll), parantez eşleme, otomatik girinti/kapatma/tamamlama, sembol çubuğu, durum çubuğu.
+- Uygulamanın gümüş/AMOLED paletine uyan `kripton-dark` / `kripton-light` sözdizimi temaları; arayüz renkleri (zemin, satır numarası, seçim, imleç, açılır pencereler) uygulama temasından türetilir ve tema değişince canlı güncellenir.
+- Güvenli kaydetme: atomik yazma, dosya başka yerde değiştiyse onay, kaydedilmemiş değişiklikte sorma; salt okunur/çok büyük (5 MB üstü)/UTF-8 olmayan dosyalar bozulmasın diye düzenlemeye kapalı. Markdown için önizleme ↔ düzenleme geçişi.
+- Ayarlar (yazı boyutu, satır kaydırma, boşlukları göster, girinti genişliği vb.) kalıcıdır. Dosya türleri genişletildi (c/cpp/go/rs/rb/php/swift/lua/bat/svg…).
+- Sora Editor (LGPL-2.1) `sora/` altında yerel modül olarak durur (editor, language-textmate, oniguruma; yerel regex için Joni kullanılır). Lisans: `sora/LICENSE-sora-editor`.
+
 ### Düzeltildi (Web sohbet ekranlarında indirme)
 - AI sohbetlerinde (Claude vb.) sayfadaki zip/dosya "indir" düğmeleri hiçbir şey yapmıyordu: WebView'a indirme dinleyicisi eklendi. https bağlantıları oturum çerezleriyle, `blob:`/`data:` bağlantıları sayfanın içinden okunup **İndirilenler** klasörüne kaydedilir; `URL.revokeObjectURL` ertelenerek blob'un indirmeden önce silinmesi engellendi (`WebDownloadSaver`). `window.open` ile yeni pencere açan indir düğmeleri de yakalanır (`onCreateWindow`).
 

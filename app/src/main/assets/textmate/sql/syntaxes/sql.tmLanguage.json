@@ -1,0 +1,87 @@
+{
+  "name": "SQL",
+  "scopeName": "source.sql",
+  "patterns": [
+    {
+      "include": "#comment"
+    },
+    {
+      "include": "#string"
+    },
+    {
+      "include": "#kw"
+    },
+    {
+      "include": "#type"
+    },
+    {
+      "include": "#fn"
+    },
+    {
+      "include": "#num"
+    },
+    {
+      "include": "#op"
+    }
+  ],
+  "repository": {
+    "comment": {
+      "patterns": [
+        {
+          "name": "comment.line.double-dash.sql",
+          "match": "--.*$"
+        },
+        {
+          "name": "comment.block.sql",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "string": {
+      "patterns": [
+        {
+          "name": "string.quoted.single.sql",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "constant.character.escape.sql",
+              "match": "''"
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.double.sql",
+          "begin": "\"",
+          "end": "\""
+        },
+        {
+          "name": "string.quoted.other.sql",
+          "begin": "`",
+          "end": "`"
+        }
+      ]
+    },
+    "kw": {
+      "name": "keyword.other.sql",
+      "match": "(?i)\\b(?:select|from|where|insert|into|values|update|set|delete|create|alter|drop|table|index|view|trigger|join|inner|left|right|outer|full|cross|natural|on|as|and|or|not|in|is|null|like|glob|between|exists|group|by|order|having|limit|offset|union|intersect|except|all|distinct|case|when|then|else|end|primary|key|foreign|references|default|unique|check|constraint|autoincrement|begin|commit|rollback|transaction|with|recursive|asc|desc|if|pragma|replace|vacuum|explain|add|column|rename|to|cascade|restrict|using|collate|returning|truncate|grant|revoke)\\b"
+    },
+    "type": {
+      "name": "storage.type.sql",
+      "match": "(?i)\\b(?:int|integer|bigint|smallint|tinyint|text|varchar|char|nvarchar|real|float|double|decimal|numeric|boolean|bool|date|datetime|time|timestamp|blob|json|uuid|serial)\\b"
+    },
+    "fn": {
+      "name": "support.function.sql",
+      "match": "(?i)\\b(?:count|sum|avg|min|max|coalesce|ifnull|nullif|length|substr|substring|lower|upper|trim|round|abs|now|date|strftime|cast|random|group_concat|json_extract)\\b(?=\\s*\\()"
+    },
+    "num": {
+      "name": "constant.numeric.sql",
+      "match": "(?<![\\w.])\\d+(?:\\.\\d+)?(?![\\w.])"
+    },
+    "op": {
+      "name": "keyword.operator.sql",
+      "match": "[=<>!+\\-*/%|&~]+"
+    }
+  }
+}

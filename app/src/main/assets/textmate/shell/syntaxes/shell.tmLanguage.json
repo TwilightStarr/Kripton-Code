@@ -1,0 +1,93 @@
+{
+  "name": "Shell",
+  "scopeName": "source.shell",
+  "patterns": [
+    {
+      "include": "#shebang"
+    },
+    {
+      "include": "#comment"
+    },
+    {
+      "include": "#string"
+    },
+    {
+      "include": "#var"
+    },
+    {
+      "include": "#kw"
+    },
+    {
+      "include": "#builtin"
+    },
+    {
+      "include": "#num"
+    },
+    {
+      "include": "#op"
+    }
+  ],
+  "repository": {
+    "shebang": {
+      "name": "comment.line.shebang.shell",
+      "match": "\\A#!.*$"
+    },
+    "comment": {
+      "name": "comment.line.number-sign.shell",
+      "match": "(?<![\\w$\\\\])#.*$"
+    },
+    "string": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.shell",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.shell",
+              "match": "\\\\."
+            },
+            {
+              "include": "#var"
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.shell",
+          "begin": "'",
+          "end": "'"
+        },
+        {
+          "name": "string.interpolated.backtick.shell",
+          "begin": "`",
+          "end": "`",
+          "patterns": [
+            {
+              "include": "#var"
+            }
+          ]
+        }
+      ]
+    },
+    "var": {
+      "name": "variable.other.shell",
+      "match": "\\$(?:\\w+|\\{[^}]*\\}|[@*#?$!0-9-])"
+    },
+    "kw": {
+      "name": "keyword.control.shell",
+      "match": "\\b(?:if|then|else|elif|fi|for|while|until|do|done|case|esac|in|function|select|time|coproc)\\b"
+    },
+    "builtin": {
+      "name": "support.function.builtin.shell",
+      "match": "(?<![\\w./-])(?:echo|cd|pwd|test|read|printf|eval|exec|trap|shift|wait|kill|return|break|continue|exit|export|local|readonly|declare|typeset|set|unset|source|alias|unalias|type|command|builtin|ls|cp|mv|rm|mkdir|rmdir|touch|cat|grep|sed|awk|find|xargs|chmod|chown|curl|wget|tar|zip|unzip|sudo|git|adb|pm|am)(?![\\w./-])"
+    },
+    "num": {
+      "name": "constant.numeric.shell",
+      "match": "(?<![\\w.])\\d+(?![\\w.])"
+    },
+    "op": {
+      "name": "keyword.operator.shell",
+      "match": "&&|\\|\\||[|&;<>]+|\\[\\[|\\]\\]"
+    }
+  }
+}

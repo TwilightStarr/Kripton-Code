@@ -1,0 +1,72 @@
+{
+  "name": "Config",
+  "scopeName": "source.ini",
+  "patterns": [
+    {
+      "include": "#comment"
+    },
+    {
+      "include": "#section"
+    },
+    {
+      "include": "#key"
+    },
+    {
+      "include": "#value"
+    }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.line.number-sign.ini",
+      "match": "^\\s*[#;].*$"
+    },
+    "section": {
+      "name": "entity.name.section.ini",
+      "match": "^\\s*\\[\\[?[^\\]\\n]*\\]\\]?"
+    },
+    "key": {
+      "name": "support.type.property-name.ini",
+      "match": "^\\s*(?:\"[^\"]*\"|[^=:#;\\s\\[\"][^=:\\n]*?)(?=\\s*[=:])"
+    },
+    "value": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.ini",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.ini",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.ini",
+          "begin": "'",
+          "end": "'"
+        },
+        {
+          "name": "variable.other.ini",
+          "match": "\\$\\{[^}]*\\}|%\\([^)]*\\)s"
+        },
+        {
+          "name": "constant.language.ini",
+          "match": "\\b(?:true|false|yes|no|on|off|null)\\b"
+        },
+        {
+          "name": "constant.numeric.ini",
+          "match": "(?<![\\w.])[-+]?\\d+(?:\\.\\d+)?(?![\\w.])"
+        },
+        {
+          "name": "comment.line.number-sign.ini",
+          "match": "\\s[#;].*$"
+        },
+        {
+          "name": "keyword.operator.ini",
+          "match": "[=:]"
+        }
+      ]
+    }
+  }
+}
