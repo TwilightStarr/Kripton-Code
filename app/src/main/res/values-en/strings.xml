@@ -338,7 +338,7 @@
     <string name="web_download_done">Downloaded: %1$s (Downloads)</string>
     <string name="web_download_failed">Download failed. Try the button again.</string>
 
-    <!-- Code editor (Sora Editor) -->
+    <!-- Code editor -->
     <string name="editor_save">Save</string>
     <string name="editor_saved">Saved</string>
     <string name="editor_save_failed">Could not save the file</string>
@@ -388,4 +388,29 @@
     <string name="editor_auto_close">Auto-close brackets/quotes</string>
     <string name="editor_autocomplete">Auto-completion</string>
     <string name="editor_symbol_bar">Symbol bar</string>
+
+    <!-- Editor tab -->
+    <string name="nav_editor">Editor</string>
+    <string name="editor_files">Files</string>
+    <string name="editor_new_file">New file</string>
+    <string name="editor_new_folder">New folder</string>
+    <string name="editor_import">Import from device</string>
+    <string name="editor_export">Export</string>
+    <string name="editor_exported">File saved</string>
+    <string name="editor_export_failed">Could not export</string>
+    <string name="editor_imported">%1$d file(s) imported</string>
+    <string name="editor_import_failed">Could not import</string>
+    <string name="editor_create">Create</string>
+    <string name="editor_create_failed">Action failed</string>
+    <string name="editor_rename">Rename</string>
+    <string name="editor_delete">Delete</string>
+    <string name="editor_delete_confirm">Delete “%1$s”? This cannot be undone.</string>
+    <string name="editor_name_hint">Name</string>
+    <string name="editor_name_invalid">Invalid name (cannot be empty or contain “/”).</string>
+    <string name="editor_exists">A file with this name already exists</string>
+    <string name="editor_up">Parent folder</string>
+    <string name="editor_empty_title">Your workspace is empty</string>
+    <string name="editor_empty_msg">Create a new file or import one from your device. You can also start quickly below.</string>
+    <string name="editor_theme">Editor theme</string>
+    <string name="editor_theme_auto">Follows the app theme</string>
 </resources>

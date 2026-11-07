@@ -18,7 +18,7 @@
 -keep class com.kriptoncod.app.data.shizuku.IPrivFileService { *; }
 -keep class com.kriptoncod.app.data.shizuku.IPrivFileService$Stub { *; }
 
-# Sora Editor + TextMate: grammar/tema modelleri Gson ile yansıtmayla okunur; joni/jcodings iç sınıfları korunur.
+# Kod düzenleyici + TextMate: grammar/tema modelleri Gson ile yansıtmayla okunur; joni/jcodings iç sınıfları korunur.
 -keep class org.eclipse.tm4e.languageconfiguration.internal.model.* { *; }
 -keep class io.github.rosemoe.sora.langs.textmate.registry.model.* { *; }
 -keep class org.joni.ast.QuantifierNode { *; }

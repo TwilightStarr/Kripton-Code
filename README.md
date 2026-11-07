@@ -27,6 +27,7 @@ Android için kod odaklı, çoklu-AI üretim aracı. Büyük bir işi ayrıntıl
 - **Yerel çökme günlüğü (ACRA):** Çökme ayrıntısı yalnızca cihazda saklanır, ağa hiçbir şey gönderilmez; Ayarlar'dan paylaşılabilir/silinebilir.
 - **Kalite araçları:** CI'da ktlint (şimdilik yalnız rapor), debug derlemede LeakCanary, Dependabot ile haftalık bağımlılık güncellemesi.
 - **Tema:** Sistem / açık / koyu.
+- **Editör sekmesi:** çok sekmeli kod düzenleyici; kendi çalışma alanı (yeni dosya/klasör, içe/dışa aktarma), renklendirme, arama/değiştirme, güvenli kaydetme ve özgün temalar (Obsidyen, Kehribar, Zümrüt, Kırağı, Kum).
 - **Animasyonlar:** Durum anlatan logo (boşta, çalışıyor, bekliyor, başarı, hata, açılış), ekran geçişleri, kademeli belirme, basma efekti, çalışan düğümde nabız halkası. Ayarlar'dan kapatılabilir.
 - **Pil kısıtlaması:** Ayarlar'da durum gösterilir; Android'in "kısıtlama yok" izni ve Xiaomi/Huawei/Oppo/Vivo/Samsung gibi cihazların kendi otomatik başlatma ekranları açılabilir.
 - **Güvenlik:** Anahtarlar ve token'lar Android Keystore ile AES-GCM şifrelenerek yalnızca cihazda tutulur; yedekleme kapalıdır.
@@ -119,7 +120,7 @@ Kotlin 2.0, Jetpack Compose (Material 3), Room, DataStore, WorkManager, OkHttp, 
 
 ## Lisans
 
-[MIT](LICENSE). Değişiklikler için [CHANGELOG.md](CHANGELOG.md).
+[MIT](LICENSE). Değişiklikler için [CHANGELOG.md](CHANGELOG.md). Üçüncü taraf bileşenlerin lisans metinleri `sora/` altındadır.
 
 ## Katkı
 

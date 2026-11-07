@@ -5,12 +5,22 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 
 ## [Yayınlanmamış]
 
-### Eklendi (Kod düzenleyici: Sora Editor)
-- Dosyalar penceresinde metin/kod dosyaları artık **Sora Editor** ile açılır: TextMate renklendirme (Java, Kotlin, Python, JS/TS, JSON, YAML, Shell, XML/HTML, CSS, SQL, Markdown, ini/properties/toml), düzenleme, geri al/yinele, arama + regex/sözcük/büyük-küçük + değiştir, satıra git, satır numaraları, kapsam başlığı (sticky scroll), parantez eşleme, otomatik girinti/kapatma/tamamlama, sembol çubuğu, durum çubuğu.
-- Uygulamanın gümüş/AMOLED paletine uyan `kripton-dark` / `kripton-light` sözdizimi temaları; arayüz renkleri (zemin, satır numarası, seçim, imleç, açılır pencereler) uygulama temasından türetilir ve tema değişince canlı güncellenir.
-- Güvenli kaydetme: atomik yazma, dosya başka yerde değiştiyse onay, kaydedilmemiş değişiklikte sorma; salt okunur/çok büyük (5 MB üstü)/UTF-8 olmayan dosyalar bozulmasın diye düzenlemeye kapalı. Markdown için önizleme ↔ düzenleme geçişi.
+### Düzeltildi (PDF çökmesi ve derleme uyarıları)
+- PDF görüntüleyici "Document already closed" ile çöküyordu: belge kapatıldıktan sonra `PdfRenderer.pageCount`'a erişiliyordu (ekrandan çıkarken/dosya değişirken liste hâlâ çiziliyordu). Sayfa sayısı artık açılışta bir kez okunur, çizim ve kapatma aynı kilit altındadır, açılamayan belge tanıtıcıları kapatılır.
+- `WidgetHost`: kullanımdan kalkmış `updateAppWidgetSize` yerine seçenek paketi + `updateAppWidgetOptions` (Android 12+ için boyut listesi dahil).
+- `ArchiveToolTest`: `File?` için null güvenli erişim.
+- Manifest: kullanılmayan ACRA e-posta eki sağlayıcısı kaldırıldı (kütüphanenin `tools:replace` uyarısını da bitirir).
+- Editör bileşenlerinin derleme çıktısındaki "deprecated/unchecked" notları ve Kotlin uyarıları kapatıldı (üçüncü taraf kaynak; davranış değişmedi).
+
+### Eklendi (Editör sekmesi)
+- Alt menüye (tablet ve masaüstünde yan çubuğa) yeni **Editör** sekmesi eklendi: çok sekmeli kod düzenleyici. Dosyalar penceresindeki metin/kod dosyaları da aynı düzenleyiciyle açılır.
+- **Çalışma alanı:** kendi klasörün; yeni dosya/klasör, yeniden adlandırma, silme, cihazdan içe aktarma ve dışa aktarma. Boşken `main.kt`, `index.html`, `script.py`, `notlar.md`, `veri.json` ile hızlı başlangıç.
+- **Özgün Editör temaları:** Kripton (uygulama temasını izler), Obsidyen, Kehribar, Zümrüt, Kırağı, Kum. Her tema sekme şeridini, araç çubuklarını, iletişim kutularını ve kod renklerini birlikte boyar; seçim kalıcıdır.
+- **Sekmeler:** açık dosyalar sekme şeridinde durur, kaydedilmemiş sekmede ● görünür. Sekme değiştirirken, dosya listesine geçerken ve alt menüde başka sekmeye giderken yazılanlar taslak olarak korunur; uygulama yeniden açılınca açık sekmeler geri gelir.
+- **Düzenleme:** TextMate renklendirme (Java, Kotlin, Python, JS/TS, JSON, YAML, Shell, XML/HTML, CSS, SQL, Markdown, ini/properties/toml), geri al/yinele, arama + regex/sözcük/büyük-küçük + değiştir, satıra git, satır numaraları, kapsam başlığı (sticky scroll), parantez eşleme, otomatik girinti/kapatma/tamamlama, sembol çubuğu, durum çubuğu.
+- **Güvenli kaydetme:** atomik yazma, dosya başka yerde değiştiyse onay, kaydedilmemiş değişiklikte sorma; salt okunur/çok büyük (5 MB üstü)/UTF-8 olmayan dosyalar bozulmasın diye düzenlemeye kapalı. Markdown için önizleme ↔ düzenleme geçişi.
 - Ayarlar (yazı boyutu, satır kaydırma, boşlukları göster, girinti genişliği vb.) kalıcıdır. Dosya türleri genişletildi (c/cpp/go/rs/rb/php/swift/lua/bat/svg…).
-- Sora Editor (LGPL-2.1) `sora/` altında yerel modül olarak durur (editor, language-textmate, oniguruma; yerel regex için Joni kullanılır). Lisans: `sora/LICENSE-sora-editor`.
+- Testler: `EditorWorkspaceTest` (ad doğrulama, çakışmasız ad, sıralama, klasör kaçışı, taslaklar), `EditorThemesTest` (tema kimlikleri, renk dosyaları, palet-zemin uyumu).
 
 ### Düzeltildi (Web sohbet ekranlarında indirme)
 - AI sohbetlerinde (Claude vb.) sayfadaki zip/dosya "indir" düğmeleri hiçbir şey yapmıyordu: WebView'a indirme dinleyicisi eklendi. https bağlantıları oturum çerezleriyle, `blob:`/`data:` bağlantıları sayfanın içinden okunup **İndirilenler** klasörüne kaydedilir; `URL.revokeObjectURL` ertelenerek blob'un indirmeden önce silinmesi engellendi (`WebDownloadSaver`). `window.open` ile yeni pencere açan indir düğmeleri de yakalanır (`onCreateWindow`).

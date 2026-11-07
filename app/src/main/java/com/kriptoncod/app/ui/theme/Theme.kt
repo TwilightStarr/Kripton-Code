@@ -116,3 +116,18 @@ fun KriptonCodTheme(
         )
     }
 }
+
+/**
+ * Ana temanın içinde, verilen paletle ayrı bir tema kapsamı açar (Editör sekmesi kendi renklerini taşır).
+ * Altındaki tüm Material bileşenleri ve [KriptonTheme.colors] bu paletten okur.
+ */
+@Composable
+internal fun ScopedTheme(spec: ThemeSpec, content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalKriptonColors provides spec.toKriptonColors()) {
+        MaterialTheme(
+            colorScheme = spec.toColorScheme(),
+            typography = KriptonTypography,
+            content = content,
+        )
+    }
+}

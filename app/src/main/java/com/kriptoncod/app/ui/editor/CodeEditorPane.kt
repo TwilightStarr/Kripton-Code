@@ -94,8 +94,10 @@ private class CodeEditorState {
     var column by mutableIntStateOf(1)
     var matchCount by mutableIntStateOf(0)
     var matchIndex by mutableIntStateOf(-1)
-    var appliedDark: Boolean? = null
+    var appliedSyntax: String? = null
     var appliedKey: Int = 0
+    var bom: Boolean = false
+    var base: Long = 0L
     var appliedFont: Float = -1f
 
     fun refreshHistory() {
@@ -125,7 +127,10 @@ private class CodeEditorState {
 
 private class ChangedOnDisk : Exception()
 
-/** Kodu düzenleyici bölmesi (Sora Editor): renklendirme, arama/değiştirme, geri al/yinele, sembol çubuğu, kaydetme. */
+/** Üç nokta menüsüne eklenen dış eylem; [onClick] düzenleyicinin o anki metnini alır. */
+class EditorMenuAction(val label: String, val onClick: (text: String) -> Unit)
+
+/** Kodu düzenleyici bölmesi: renklendirme, arama/değiştirme, geri al/yinele, sembol çubuğu, kaydetme. */
 @Composable
 fun CodeEditorPane(
     file: File,
@@ -134,12 +139,34 @@ fun CodeEditorPane(
     modifier: Modifier = Modifier,
     /** Markdown dosyalarında düzenleme ile önizleme arasında geçiş; null ise menüde görünmez. */
     onPreview: (() -> Unit)? = null,
+    /** Renklendirme teması (TextMate adı); null ise uygulamanın açık/koyu durumuna göre. */
+    syntaxTheme: String? = null,
+    /**
+     * Editör sekmesi kipi: geri oku yerine kapat düğmesi; sekme değişince kaydedilmemiş metin taslak olarak saklanır
+     * ([EditorDrafts]) ve dosya yeniden açılınca geri gelir.
+     */
+    embedded: Boolean = false,
+    onModifiedChange: ((Boolean) -> Unit)? = null,
+    extraMenu: List<EditorMenuAction> = emptyList(),
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val message = LocalInAppMessage.current
     val state = remember(file.path) { CodeEditorState() }
-    DisposableEffect(state) { onDispose { state.release() } }
+    DisposableEffect(state) {
+        onDispose {
+            val ed = state.editor
+            if (embedded && ed != null) {
+                if (state.modified) {
+                    EditorDrafts.put(file.path, EditorDrafts.Draft(ed.text.toString(), state.bom, state.base))
+                } else {
+                    EditorDrafts.remove(file.path)
+                }
+            }
+            state.release()
+        }
+    }
+    LaunchedEffect(state.modified) { onModifiedChange?.invoke(state.modified) }
 
     var settings by remember { mutableStateOf(EditorPrefs.load(context)) }
     fun updateSettings(s: EditorSettings) {
@@ -174,7 +201,9 @@ fun CodeEditorPane(
             l.safeToWrite && runCatching { file.canWrite() }.getOrDefault(false) &&
                 !file.path.startsWith(context.cacheDir.path)
         }
-        var lastKnown by remember(file.path, l) { mutableStateOf(l.lastModified) }
+        var lastKnown by remember(file.path, l) {
+            mutableStateOf((if (embedded) EditorDrafts.get(file.path)?.base else null) ?: l.lastModified)
+        }
         val scopeName = remember(file.name) { EditorSupport.scopeFor(file.name) }
 
         // --- arama / değiştirme durumu ---
@@ -233,6 +262,7 @@ fun CodeEditorPane(
                 }
                 result.onSuccess {
                     lastKnown = it
+                    state.base = it
                     state.modified = false
                     message(context.getString(R.string.editor_saved))
                 }.onFailure {
@@ -246,7 +276,8 @@ fun CodeEditorPane(
             if (state.modified) pendingLeave = action else action()
         }
 
-        BackHandler(enabled = state.modified || showSearch) {
+        // Sekme kipinde geri tuşu yalnız aramayı kapatır; kaydedilmemiş metin zaten taslak olarak korunur.
+        BackHandler(enabled = showSearch || (!embedded && state.modified)) {
             if (showSearch) closeSearch() else leave(onClose)
         }
 
@@ -260,25 +291,30 @@ fun CodeEditorPane(
 
         // --- üst çubuk ---
         Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { leave(onClose) }) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.desktop_files_up))
+            if (embedded) {
+                Text(
+                    (if (state.modified) "● " else "") + EditorSupport.languageLabel(scopeName),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = k.muted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f).padding(start = 12.dp),
+                )
+            } else {
+                IconButton(onClick = { leave(onClose) }) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.desktop_files_up))
+                }
+                Text(
+                    (if (state.modified) "● " else "") + file.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
             }
-            Text(
-                (if (state.modified) "● " else "") + file.name,
-                style = MaterialTheme.typography.titleSmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
             if (writable) {
-                GlyphButton("↶", stringResource(R.string.editor_undo), state.canUndo) {
-                    state.editor?.undo()
-                    state.refreshHistory()
-                }
-                GlyphButton("↷", stringResource(R.string.editor_redo), state.canRedo) {
-                    state.editor?.redo()
-                    state.refreshHistory()
-                }
+                GlyphButton("↶", stringResource(R.string.editor_undo), state.canUndo) { state.editor?.undo(); state.refreshHistory() }
+                GlyphButton("↷", stringResource(R.string.editor_redo), state.canRedo) { state.editor?.redo(); state.refreshHistory() }
                 IconButton(onClick = { save(false) }, enabled = state.modified) {
                     Icon(Icons.Default.Check, contentDescription = stringResource(R.string.editor_save))
                 }
@@ -291,38 +327,31 @@ fun CodeEditorPane(
                     Icon(Icons.Default.MoreVert, contentDescription = null)
                 }
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_goto_line)) }, onClick = {
-                        menuOpen = false
-                        showGoto = true
-                    })
-                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_select_all)) }, onClick = {
-                        menuOpen = false
-                        state.editor?.selectAll()
-                    })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_goto_line)) }, onClick = { menuOpen = false; showGoto = true })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_select_all)) }, onClick = { menuOpen = false; state.editor?.selectAll() })
                     DropdownMenuItem(
                         text = { Text((if (settings.wordWrap) "✓ " else "") + stringResource(R.string.editor_wrap)) },
-                        onClick = {
-                            menuOpen = false
-                            updateSettings(settings.copy(wordWrap = !settings.wordWrap))
-                        },
+                        onClick = { menuOpen = false; updateSettings(settings.copy(wordWrap = !settings.wordWrap)) },
                     )
-                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_settings)) }, onClick = {
-                        menuOpen = false
-                        showSettings = true
-                    })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_settings)) }, onClick = { menuOpen = false; showSettings = true })
                     if (onPreview != null) {
-                        DropdownMenuItem(text = { Text(stringResource(R.string.editor_preview)) }, onClick = {
-                            menuOpen = false
-                            leave(onPreview)
-                        })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.editor_preview)) }, onClick = { menuOpen = false; leave(onPreview) })
+                    }
+                    for (action in extraMenu) {
+                        DropdownMenuItem(
+                            text = { Text(action.label) },
+                            onClick = { menuOpen = false; state.editor?.let { action.onClick(it.text.toString()) } },
+                        )
                     }
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.desktop_files_open_other)) },
-                        onClick = {
-                            menuOpen = false
-                            leave(onOpenExternal)
-                        },
+                        onClick = { menuOpen = false; leave(onOpenExternal) },
                     )
+                }
+            }
+            if (embedded) {
+                IconButton(onClick = { leave(onClose) }) {
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.editor_close))
                 }
             }
         }
@@ -349,10 +378,7 @@ fun CodeEditorPane(
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     CompactField(
                         value = query,
-                        onChange = {
-                            query = it
-                            runSearch()
-                        },
+                        onChange = { query = it; runSearch() },
                         hint = stringResource(R.string.editor_search_hint),
                         modifier = Modifier.weight(1f),
                         error = regexError,
@@ -363,33 +389,16 @@ fun CodeEditorPane(
                         color = k.muted,
                         maxLines = 1,
                     )
-                    GlyphButton("▲", stringResource(R.string.editor_prev), state.matchCount > 0) {
-                        state.editor?.searcher?.gotoPrevious()
-                        state.refreshMatches()
-                    }
-                    GlyphButton("▼", stringResource(R.string.editor_next), state.matchCount > 0) {
-                        state.editor?.searcher?.gotoNext()
-                        state.refreshMatches()
-                    }
+                    GlyphButton("▲", stringResource(R.string.editor_prev), state.matchCount > 0) { state.editor?.searcher?.gotoPrevious(); state.refreshMatches() }
+                    GlyphButton("▼", stringResource(R.string.editor_next), state.matchCount > 0) { state.editor?.searcher?.gotoNext(); state.refreshMatches() }
                     IconButton(onClick = { closeSearch() }, modifier = Modifier.size(36.dp)) {
                         Icon(Icons.Default.Close, contentDescription = stringResource(R.string.editor_close))
                     }
                 }
                 Row(Modifier.horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    ToggleChip("Aa", matchCase, stringResource(R.string.editor_match_case)) {
-                        matchCase = !matchCase
-                        runSearch()
-                    }
-                    ToggleChip(".*", useRegex, stringResource(R.string.editor_regex)) {
-                        useRegex = !useRegex
-                        if (useRegex) wholeWord = false
-                        runSearch()
-                    }
-                    ToggleChip("\\b", wholeWord, stringResource(R.string.editor_whole_word)) {
-                        wholeWord = !wholeWord
-                        if (wholeWord) useRegex = false
-                        runSearch()
-                    }
+                    ToggleChip("Aa", matchCase, stringResource(R.string.editor_match_case)) { matchCase = !matchCase; runSearch() }
+                    ToggleChip(".*", useRegex, stringResource(R.string.editor_regex)) { useRegex = !useRegex; if (useRegex) wholeWord = false; runSearch() }
+                    ToggleChip("\\b", wholeWord, stringResource(R.string.editor_whole_word)) { wholeWord = !wholeWord; if (wholeWord) useRegex = false; runSearch() }
                 }
                 if (writable) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -399,16 +408,10 @@ fun CodeEditorPane(
                             hint = stringResource(R.string.editor_replace_hint),
                             modifier = Modifier.weight(1f),
                         )
-                        TextButton(onClick = {
-                            state.editor?.searcher?.replaceCurrentMatch(replacement)
-                            state.refreshMatches()
-                        }, enabled = state.matchCount > 0) {
+                        TextButton(onClick = { state.editor?.searcher?.replaceCurrentMatch(replacement); state.refreshMatches() }, enabled = state.matchCount > 0) {
                             Text(stringResource(R.string.editor_replace), maxLines = 1)
                         }
-                        TextButton(onClick = {
-                            state.editor?.searcher?.replaceAll(replacement)
-                            state.refreshMatches()
-                        }, enabled = state.matchCount > 0) {
+                        TextButton(onClick = { state.editor?.searcher?.replaceAll(replacement); state.refreshMatches() }, enabled = state.matchCount > 0) {
                             Text(stringResource(R.string.editor_replace_all), maxLines = 1)
                         }
                     }
@@ -428,6 +431,7 @@ fun CodeEditorPane(
             accent = cs.primary.toArgb(),
             danger = k.danger.toArgb(),
             selection = cs.primary.copy(alpha = 0.30f).toArgb(),
+            syntax = syntaxTheme,
         )
         AndroidView(
             modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -440,15 +444,15 @@ fun CodeEditorPane(
                     ed.setDividerWidth(0f)
                     ed.setPinLineNumber(true)
                     // Renk şeması dilden ÖNCE verilir (TextMate dili TextMate şeması ister).
-                    SoraSetup.createScheme(chrome)?.let { s ->
-                        state.scheme = s
-                        ed.colorScheme = s
-                    }
-                    state.appliedDark = chrome.dark
+                    SoraSetup.createScheme(chrome)?.let { s -> state.scheme = s; ed.colorScheme = s }
+                    state.appliedSyntax = chrome.syntaxName()
                     state.appliedKey = chrome.key()
                     ed.setScalable(false)
                     SoraSetup.createLanguage(scopeName)?.let { lang -> ed.setEditorLanguage(lang) }
-                    ed.setText(l.text)
+                    val draft = if (embedded) EditorDrafts.get(file.path) else null
+                    state.bom = draft?.bom ?: l.bom
+                    state.base = draft?.base ?: l.lastModified
+                    ed.setText(draft?.text ?: l.text)
                     ed.isEditable = writable
                     ed.subscribeAlways<ContentChangeEvent> { event ->
                         if (event.action != ContentChangeEvent.ACTION_SET_NEW_TEXT) state.modified = true
@@ -457,6 +461,15 @@ fun CodeEditorPane(
                     ed.subscribeAlways<SelectionChangeEvent> { event ->
                         state.line = event.left.line + 1
                         state.column = event.left.column + 1
+                    }
+                    // Taslak geri yüklendiyse dosya "değişmiş" sayılır (setText bunu işaretlemez).
+                    if (draft != null) {
+                        // Taslak düzenleyiciye devredildi; sekme "değişmiş" göstergesi artık canlı durumdan gelir.
+                        EditorDrafts.remove(file.path)
+                        if (writable) {
+                            state.modified = true
+                            state.refreshHistory()
+                        }
                     }
                 }
             },
@@ -481,21 +494,18 @@ fun CodeEditorPane(
                     0
                 }
                 runCatching { ed.getComponent<EditorAutoCompletion>().isEnabled = s.autoComplete && writable }
-                // Tema (açık/koyu) değiştiyse yeni şema; yalnız renkler değiştiyse mevcut şema tazelenir.
+                // Renklendirme teması değiştiyse yeni şema; yalnız renkler değiştiyse mevcut şema tazelenir.
                 val current = state.scheme
                 val key = chrome.key()
-                if (current == null || state.appliedDark != chrome.dark) {
+                if (current == null || state.appliedSyntax != chrome.syntaxName()) {
                     SoraSetup.release(current)
-                    SoraSetup.createScheme(chrome)?.let { ns ->
-                        state.scheme = ns
-                        ed.colorScheme = ns
-                    }
+                    SoraSetup.createScheme(chrome)?.let { ns -> state.scheme = ns; ed.colorScheme = ns }
                 } else if (state.appliedKey != key) {
                     chrome.applyTo(current)
                     ed.invalidate()
                 }
                 state.appliedKey = key
-                state.appliedDark = chrome.dark
+                state.appliedSyntax = chrome.syntaxName()
             },
         )
 
@@ -526,10 +536,7 @@ fun CodeEditorPane(
             GotoDialog(
                 maxLine = state.editor?.text?.lineCount ?: 1,
                 onDismiss = { showGoto = false },
-                onGo = { line ->
-                    showGoto = false
-                    state.editor?.jumpToLine(line - 1)
-                },
+                onGo = { line -> showGoto = false; state.editor?.jumpToLine(line - 1) },
             )
         }
         if (showSettings) {
@@ -549,23 +556,14 @@ fun CodeEditorPane(
                             if (ed != null) {
                                 val text = ed.text.toString()
                                 val ok = withContext(Dispatchers.IO) { runCatching { AtomicFiles.write(file, EditorSupport.encode(text, l.bom)) }.isSuccess }
-                                if (ok) {
-                                    state.modified = false
-                                    leaving()
-                                } else {
-                                    message(context.getString(R.string.editor_save_failed))
-                                }
+                                if (ok) { state.modified = false; leaving() } else message(context.getString(R.string.editor_save_failed))
                             }
                         }
                     }) { Text(stringResource(R.string.editor_save)) }
                 },
                 dismissButton = {
                     Row {
-                        TextButton(onClick = {
-                            pendingLeave = null
-                            state.modified = false
-                            leaving()
-                        }) { Text(stringResource(R.string.editor_discard)) }
+                        TextButton(onClick = { pendingLeave = null; state.modified = false; leaving() }) { Text(stringResource(R.string.editor_discard)) }
                         TextButton(onClick = { pendingLeave = null }) { Text(stringResource(R.string.editor_cancel)) }
                     }
                 },
@@ -576,12 +574,7 @@ fun CodeEditorPane(
                 onDismissRequest = { askOverwrite = false },
                 title = { Text(stringResource(R.string.editor_overwrite_title)) },
                 text = { Text(stringResource(R.string.editor_overwrite_msg)) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        askOverwrite = false
-                        save(true)
-                    }) { Text(stringResource(R.string.editor_overwrite)) }
-                },
+                confirmButton = { TextButton(onClick = { askOverwrite = false; save(true) }) { Text(stringResource(R.string.editor_overwrite)) } },
                 dismissButton = { TextButton(onClick = { askOverwrite = false }) { Text(stringResource(R.string.editor_cancel)) } },
             )
         }

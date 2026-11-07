@@ -338,7 +338,7 @@
     <string name="web_download_done">İndirildi: %1$s (İndirilenler)</string>
     <string name="web_download_failed">Dosya indirilemedi. Sayfaya tekrar basıp deneyin.</string>
 
-    <!-- Kod düzenleyici (Sora Editor) -->
+    <!-- Kod düzenleyici -->
     <string name="editor_save">Kaydet</string>
     <string name="editor_saved">Kaydedildi</string>
     <string name="editor_save_failed">Dosya kaydedilemedi</string>
@@ -388,4 +388,29 @@
     <string name="editor_auto_close">Parantez/tırnak otomatik kapat</string>
     <string name="editor_autocomplete">Otomatik tamamlama</string>
     <string name="editor_symbol_bar">Sembol çubuğu</string>
+
+    <!-- Editör sekmesi -->
+    <string name="nav_editor">Editör</string>
+    <string name="editor_files">Dosyalar</string>
+    <string name="editor_new_file">Yeni dosya</string>
+    <string name="editor_new_folder">Yeni klasör</string>
+    <string name="editor_import">Cihazdan içe aktar</string>
+    <string name="editor_export">Dışa aktar</string>
+    <string name="editor_exported">Dosya kaydedildi</string>
+    <string name="editor_export_failed">Dışa aktarılamadı</string>
+    <string name="editor_imported">%1$d dosya içe aktarıldı</string>
+    <string name="editor_import_failed">İçe aktarılamadı</string>
+    <string name="editor_create">Oluştur</string>
+    <string name="editor_create_failed">İşlem yapılamadı</string>
+    <string name="editor_rename">Yeniden adlandır</string>
+    <string name="editor_delete">Sil</string>
+    <string name="editor_delete_confirm">“%1$s” silinsin mi? Bu geri alınamaz.</string>
+    <string name="editor_name_hint">Ad</string>
+    <string name="editor_name_invalid">Geçersiz ad (boş olamaz, “/” içeremez).</string>
+    <string name="editor_exists">Bu adla bir dosya zaten var</string>
+    <string name="editor_up">Üst klasör</string>
+    <string name="editor_empty_title">Çalışma alanın boş</string>
+    <string name="editor_empty_msg">Yeni bir dosya oluştur ya da cihazından içe aktar. Aşağıdan hızlıca başlayabilirsin.</string>
+    <string name="editor_theme">Editör teması</string>
+    <string name="editor_theme_auto">Uygulama temasını izler</string>
 </resources>

@@ -54,7 +54,8 @@ class ArchiveToolTest {
         }
         val dest = tmp.newFolder("safe")
         ArchiveTool.extract(evil, dest).getOrThrow()
-        assertFalse(File(dest.parentFile.parentFile, "escape.txt").exists())
+        val outside = requireNotNull(dest.parentFile?.parentFile) { "hedefin iki üst klasörü olmalı" }
+        assertFalse(File(outside, "escape.txt").exists())
         assertTrue(File(dest, "ok.txt").exists())
         assertNull(ArchiveTool.cleanPath("../x"))
         assertNull(ArchiveTool.safeTarget(dest, "a/../../x"))

@@ -24,8 +24,15 @@ android {
 }
 
 kotlin {
-    compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+        suppressWarnings.set(true)
+    }
 }
 
 dependencies {
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.addAll(listOf("-Xlint:-deprecation", "-Xlint:-unchecked"))
 }

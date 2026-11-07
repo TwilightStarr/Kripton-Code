@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
@@ -50,12 +49,10 @@ import com.kriptoncod.app.ui.editor.CodeEditorPane
 import com.kriptoncod.app.ui.theme.KriptonTheme
 import java.io.File
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /**
- * Uygulama içi görüntüleyici/düzenleyici: kod ve metin dosyaları Sora Editor ile (renklendirme, düzenleme, arama, kaydetme),
+ * Uygulama içi görüntüleyici/düzenleyici: kod ve metin dosyaları düzenleyici ile (renklendirme, düzenleme, arama, kaydetme),
  * markdown önce önizleme olarak (isteğe bağlı düzenleme), PDF (PdfRenderer) ve görüntü (yakınlaştırma).
  * Başka türler için [onOpenExternal].
  */
@@ -71,16 +68,9 @@ fun FileViewer(file: File, kind: FileKind, onClose: () -> Unit, onOpenExternal: 
     if (kind == FileKind.MARKDOWN && editing) {
         CodeEditorPane(
             file = file,
-            onClose = {
-                editing = false
-                version++
-                onClose()
-            },
+            onClose = { editing = false; version++; onClose() },
             onOpenExternal = onOpenExternal,
-            onPreview = {
-                editing = false
-                version++
-            },
+            onPreview = { editing = false; version++ },
         )
         return
     }
@@ -182,26 +172,29 @@ private fun BoxScope.ImageBody(file: File) {
     }
 }
 
-/** PdfRenderer aynı anda tek sayfa açar ve iş parçacığı güvenli değildir: sayfalar sırayla, kilit altında çizilir. */
+/**
+ * PdfRenderer aynı anda tek sayfa açar ve iş parçacığı güvenli değildir: sayfalar sırayla, kilit altında çizilir.
+ * Belge kapatıldıktan sonra renderer'a dokunmak çöker ("Document already closed"); bu yüzden sayfa sayısı açılışta bir kez
+ * okunur ve arayüz renderer'a hiç doğrudan erişmez.
+ */
 @Composable
 private fun BoxScope.PdfBody(file: File) {
     val holder by produceState<PdfHolder?>(null, file.path) {
-        value = withContext(Dispatchers.IO) {
-            runCatching {
-                val pfd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-                PdfHolder(pfd, PdfRenderer(pfd))
-            }.getOrNull()
-        }
+        value = withContext(Dispatchers.IO) { PdfHolder.open(file) }
     }
-    DisposableEffect(holder) { onDispose { holder?.close() } }
+    // Dosya değişince ya da ekrandan çıkınca eski belge kapatılır; kapatma kilit altında olduğu için süren bir çizimi bölmez.
+    DisposableEffect(holder) {
+        val current = holder
+        onDispose { current?.close() }
+    }
     val h = holder
     if (h == null) {
         Text(stringResource(R.string.desktop_files_unreadable), Modifier.align(Alignment.Center).padding(16.dp), color = KriptonTheme.colors.muted)
         return
     }
     LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items((0 until h.renderer.pageCount).toList(), key = { it }) { index ->
-            val page by produceState<Bitmap?>(null, index) { value = h.render(index) }
+        items(count = h.pageCount, key = { it }) { index ->
+            val page by produceState<Bitmap?>(null, h, index) { value = h.render(index) }
             val p = page
             if (p == null) {
                 Box(Modifier.fillMaxWidth().size(240.dp), contentAlignment = Alignment.Center) { Text("…", color = KriptonTheme.colors.muted) }
@@ -212,13 +205,19 @@ private fun BoxScope.PdfBody(file: File) {
     }
 }
 
-private class PdfHolder(private val pfd: ParcelFileDescriptor, val renderer: PdfRenderer) {
-    private val lock = Mutex()
+private class PdfHolder private constructor(
+    private val pfd: ParcelFileDescriptor,
+    private val renderer: PdfRenderer,
+    /** Açılışta okunur; kapandıktan sonra da güvenle sorulabilir. */
+    val pageCount: Int,
+) {
+    private val lock = Any()
     private var closed = false
 
+    /** Sayfayı çizer; belge kapanmışsa (ya da çizim başarısızsa) null. Kilit, [close] ile aynı olduğundan yarıda kapanmaz. */
     suspend fun render(index: Int): Bitmap? = withContext(Dispatchers.IO) {
-        lock.withLock {
-            if (closed) return@withLock null
+        synchronized(lock) {
+            if (closed || index !in 0 until pageCount) return@synchronized null
             runCatching {
                 renderer.openPage(index).use { page ->
                     val w = 1080
@@ -233,8 +232,28 @@ private class PdfHolder(private val pfd: ParcelFileDescriptor, val renderer: Pdf
     }
 
     fun close() {
-        closed = true
-        runCatching { renderer.close() }
-        runCatching { pfd.close() }
+        synchronized(lock) {
+            if (closed) return
+            closed = true
+            runCatching { renderer.close() }
+            runCatching { pfd.close() }
+        }
+    }
+
+    companion object {
+        /** Açılamazsa (bozuk/şifreli dosya) null; yarım açılmış tanıtıcılar kapatılır. */
+        fun open(file: File): PdfHolder? {
+            val pfd = runCatching { ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY) }.getOrNull() ?: return null
+            val renderer = runCatching { PdfRenderer(pfd) }.getOrElse {
+                runCatching { pfd.close() }
+                return null
+            }
+            val count = runCatching { renderer.pageCount }.getOrElse {
+                runCatching { renderer.close() }
+                runCatching { pfd.close() }
+                return null
+            }
+            return PdfHolder(pfd, renderer, count)
+        }
     }
 }

@@ -17,6 +17,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import com.kriptoncod.app.ui.components.KriptonCodLogo
 import com.kriptoncod.app.ui.components.LogoMood
+import com.kriptoncod.app.ui.editor.EditorScreen
 import kotlinx.coroutines.delay
 import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.Box
@@ -151,7 +152,12 @@ fun AppRoot(
                                         onClick = { navController.navigateTo(route) },
                                         icon = { Icon(route.icon, contentDescription = null) },
                                         label = {
-                                            Text(stringResource(route.label), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            Text(
+                                                stringResource(route.label),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                            )
                                         },
                                         alwaysShowLabel = true,
                                         colors = NavigationBarItemDefaults.colors(
@@ -395,6 +401,9 @@ fun AppRoot(
                             }
                             composable(ExtraRoutes.PERMISSIONS) {
                                 AdaptiveFrame(Adaptive.FormMaxWidth) { PermissionScreen(onDone = { navController.popBackStack() }) }
+                            }
+                            composable(Route.Editor.path) {
+                                EditorScreen()
                             }
                             composable(Route.Archive.path) {
                                 ArchiveScreen(

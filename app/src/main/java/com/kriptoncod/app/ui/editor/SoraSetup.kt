@@ -22,8 +22,13 @@ class EditorChrome(
     val accent: Int,
     val danger: Int,
     val selection: Int,
+    /** TextMate tema adı; null ise [dark] durumuna göre kripton-dark / kripton-light. */
+    val syntax: String? = null,
 ) {
-    fun key(): Int = listOf(dark, background, text, muted, raised, border, accent, danger, selection).hashCode()
+    /** Gerçekten kullanılacak TextMate tema adı. */
+    fun syntaxName(): String = syntax ?: if (dark) SoraSetup.THEME_DARK else SoraSetup.THEME_LIGHT
+
+    fun key(): Int = listOf(syntaxName(), dark, background, text, muted, raised, border, accent, danger, selection).hashCode()
 
     /** Tema üstüne uygulama arayüzünü (satır numarası, imleç, açılır pencereler, kaydırma çubuğu…) bindirir. */
     fun applyTo(s: EditorColorScheme) {
@@ -76,8 +81,8 @@ class EditorChrome(
 
 /** TextMate dil/tema kayıtlarını (assets/textmate) bir kez yükler ve düzenleyiciye dil/renk şeması üretir. */
 object SoraSetup {
-    private const val THEME_DARK = "kripton-dark"
-    private const val THEME_LIGHT = "kripton-light"
+    const val THEME_DARK = "kripton-dark"
+    const val THEME_LIGHT = "kripton-light"
 
     @Volatile private var ready = false
 
@@ -89,11 +94,16 @@ object SoraSetup {
             val files = FileProviderRegistry.getInstance()
             files.addFileProvider(AssetsFileResolver(context.applicationContext.assets))
             val themes = ThemeRegistry.getInstance()
-            for ((name, dark) in listOf(THEME_DARK to true, THEME_LIGHT to false)) {
-                val path = "textmate/$name.json"
-                val model = ThemeModel(IThemeSource.fromInputStream(files.tryGetInputStream(path), path, null), name)
-                model.isDark = dark
-                themes.loadTheme(model)
+            val all = listOf(THEME_DARK to true, THEME_LIGHT to false) +
+                EditorThemes.all.mapNotNull { t -> t.syntax?.let { it to (t.spec?.isDark ?: true) } }
+            for ((name, dark) in all) {
+                // Tek tema yüklenemese bile diğerleri çalışsın.
+                runCatching {
+                    val path = "textmate/$name.json"
+                    val model = ThemeModel(IThemeSource.fromInputStream(files.tryGetInputStream(path), path, null), name)
+                    model.isDark = dark
+                    themes.loadTheme(model)
+                }
             }
             GrammarRegistry.getInstance().loadGrammars("textmate/languages.json")
         }
@@ -102,7 +112,7 @@ object SoraSetup {
     /** Uygulama paletiyle boyanmış TextMate renk şeması. Düzenleyici kapanınca [release] çağrılmalıdır. */
     fun createScheme(chrome: EditorChrome): TextMateColorScheme? = runCatching {
         val themes = ThemeRegistry.getInstance()
-        themes.setTheme(if (chrome.dark) THEME_DARK else THEME_LIGHT)
+        themes.setTheme(chrome.syntaxName())
         TextMateColorScheme.create(themes).also { chrome.applyTo(it) }
     }.getOrNull()
 

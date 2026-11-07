@@ -4,6 +4,9 @@ import android.app.Activity
 import android.appwidget.AppWidgetHost
 import android.appwidget.AppWidgetHostView
 import android.appwidget.AppWidgetManager
+import android.os.Build
+import android.os.Bundle
+import android.util.SizeF
 import android.appwidget.AppWidgetProviderInfo
 import android.content.ComponentName
 import android.content.Context
@@ -186,8 +189,25 @@ fun HostedWidget(controller: WidgetHostController, widgetId: Int, rows: Int, mod
             factory = { _ -> controller.createView(context, widgetId) ?: View(context) },
             modifier = Modifier.fillMaxWidth().height(h),
             update = { v ->
-                (v as? AppWidgetHostView)?.updateAppWidgetSize(null, wDp, hDp, wDp, hDp)
+                (v as? AppWidgetHostView)?.let { applyWidgetSize(it, wDp, hDp) }
             },
         )
     }
+}
+
+/**
+ * Widget'a ayrılan alanı (dp) bildirir. Kullanımdan kalkmış `updateAppWidgetSize` yerine seçenekler doğrudan yazılır:
+ * min/maks genişlik-yükseklik her sürümde, Android 12+ için ayrıca boyut listesi ([AppWidgetManager.OPTION_APPWIDGET_SIZES]).
+ */
+private fun applyWidgetSize(view: AppWidgetHostView, widthDp: Int, heightDp: Int) {
+    val options = Bundle().apply {
+        putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, widthDp)
+        putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, heightDp)
+        putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, widthDp)
+        putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, heightDp)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            putParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES, arrayListOf(SizeF(widthDp.toFloat(), heightDp.toFloat())))
+        }
+    }
+    view.updateAppWidgetOptions(options)
 }

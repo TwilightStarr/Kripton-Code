@@ -24,10 +24,18 @@ android {
 }
 
 kotlin {
-    compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+        suppressWarnings.set(true)
+    }
 }
 
 dependencies {
     api(libs.sora.annotation)
     implementation(libs.sora.collection)
+}
+
+// Üçüncü taraf kaynak: "deprecated/unchecked" notları derleme çıktısını kirletmesin (kodun davranışı etkilenmez).
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.addAll(listOf("-Xlint:-deprecation", "-Xlint:-unchecked"))
 }
