@@ -37,5 +37,5 @@ dependencies {
 
 // Üçüncü taraf kaynak: "deprecated/unchecked" notları derleme çıktısını kirletmesin (kodun davranışı etkilenmez).
 tasks.withType<JavaCompile>().configureEach {
-    options.compilerArgs.addAll(listOf("-Xlint:-deprecation", "-Xlint:-unchecked"))
+    options.compilerArgs.addAll(listOf("-Xlint:-deprecation", "-Xlint:-unchecked", "-XDsuppressNotes"))
 }

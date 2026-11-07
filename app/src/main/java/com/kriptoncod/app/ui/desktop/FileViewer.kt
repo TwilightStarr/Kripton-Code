@@ -68,16 +68,9 @@ fun FileViewer(file: File, kind: FileKind, onClose: () -> Unit, onOpenExternal: 
     if (kind == FileKind.MARKDOWN && editing) {
         CodeEditorPane(
             file = file,
-            onClose = {
-                editing = false
-                version++
-                onClose()
-            },
+            onClose = { editing = false; version++; onClose() },
             onOpenExternal = onOpenExternal,
-            onPreview = {
-                editing = false
-                version++
-            },
+            onPreview = { editing = false; version++ },
         )
         return
     }

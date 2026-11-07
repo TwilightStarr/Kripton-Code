@@ -73,11 +73,13 @@
         android:supportsRtl="true"
         android:localeConfig="@xml/locales_config"
         android:theme="@style/Theme.KriptonCod">
-        <!-- ACRA e-posta eki sağlayıcısı kullanılmıyor (raporlar LocalCrashSender ile yerelde tutulur); kütüphanenin
-             "tools:replace ama değiştirilecek bildirim yok" uyarısı da bununla biter. -->
+        <!-- ACRA'nın e-posta eki sağlayıcısı kullanılmıyor; kütüphane bildirimi "tools:replace" taşıdığı için burada aynı
+             sağlayıcı bildirilir (üst bildirim yoksa birleştirici uyarı veriyordu). Dışa kapalıdır. -->
         <provider
             android:name="org.acra.attachment.AcraContentProvider"
-            tools:node="remove" />
+            android:authorities="${applicationId}.acra"
+            android:exported="false"
+            tools:node="merge" />
 
         <activity
             android:name=".MainActivity"

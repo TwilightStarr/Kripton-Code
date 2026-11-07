@@ -73,14 +73,15 @@ object EditorSession {
     private fun prefs(context: Context) = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     @Synchronized
-    fun ensureLoaded(context: Context) {
-        if (loaded) return
+    fun ensureLoaded(context: Context): Boolean {
+        if (loaded) return true
         loaded = true
         val p = prefs(context)
         val paths = p.getString("open", "").orEmpty().split('\n').filter { it.isNotBlank() && File(it).isFile }.distinct()
         open.clear()
         open.addAll(paths)
         active = p.getString("active", null)?.takeIf { it in open } ?: open.lastOrNull()
+        return true
     }
 
     private fun persist(context: Context) {
@@ -122,10 +123,7 @@ object EditorSession {
         val i = open.indexOf(from)
         if (i < 0) return
         open[i] = to
-        EditorDrafts.get(from)?.let {
-            EditorDrafts.put(to, it)
-            EditorDrafts.remove(from)
-        }
+        EditorDrafts.get(from)?.let { EditorDrafts.put(to, it); EditorDrafts.remove(from) }
         if (active == from) active = to
         persist(context)
     }

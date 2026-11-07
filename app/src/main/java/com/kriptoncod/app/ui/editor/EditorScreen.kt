@@ -182,10 +182,7 @@ private fun EditorWorkspaceContent(theme: EditorTheme, onTheme: (EditorTheme) ->
             return
         }
         runCatching { AtomicFiles.write(f, ByteArray(0)) }
-            .onSuccess {
-                tick++
-                openFile(f)
-            }
+            .onSuccess { tick++; openFile(f) }
             .onFailure { message(createFail) }
     }
 
@@ -294,7 +291,23 @@ private fun EditorWorkspaceContent(theme: EditorTheme, onTheme: (EditorTheme) ->
         // --- gövde ---
         Box(Modifier.weight(1f).fillMaxWidth()) {
             val a = active
-            if (filesVisible || a == null) {
+            if (a != null && !filesVisible) {
+                val file = File(a)
+                val exportLabel = stringResource(R.string.editor_export)
+                key(a) {
+                    CodeEditorPane(
+                        file = file,
+                        onClose = { EditorSession.close(context, a) },
+                        onOpenExternal = { if (!FileOpen.launch(context, file, null)) message(externalFail) },
+                        syntaxTheme = theme.syntax,
+                        embedded = true,
+                        onModifiedChange = { activeModified = it },
+                        extraMenu = listOf(
+                            EditorMenuAction(exportLabel) { text -> startExport(file.name, EditorSupport.encode(text, false)) },
+                        ),
+                    )
+                }
+            } else {
                 val entries = remember(curDir, tick) { EditorWorkspace.list(curDir) }
                 FilesPanel(
                     root = root,
@@ -317,32 +330,13 @@ private fun EditorWorkspaceContent(theme: EditorTheme, onTheme: (EditorTheme) ->
                         }
                     },
                 )
-            } else {
-                val file = File(a)
-                val exportLabel = stringResource(R.string.editor_export)
-                key(a) {
-                    CodeEditorPane(
-                        file = file,
-                        onClose = { EditorSession.close(context, a) },
-                        onOpenExternal = { if (!FileOpen.launch(context, file, null)) message(externalFail) },
-                        syntaxTheme = theme.syntax,
-                        embedded = true,
-                        onModifiedChange = { activeModified = it },
-                        extraMenu = listOf(
-                            EditorMenuAction(exportLabel) { text -> startExport(file.name, EditorSupport.encode(text, false)) },
-                        ),
-                    )
-                }
             }
         }
     }
 
     // --- iletişim kutuları ---
     if (showThemes) {
-        ThemeDialog(current = theme, onPick = {
-            onTheme(it)
-            showThemes = false
-        }, onDismiss = { showThemes = false })
+        ThemeDialog(current = theme, onPick = { onTheme(it); showThemes = false }, onDismiss = { showThemes = false })
     }
     if (showNewFile) {
         NameDialog(
@@ -350,10 +344,7 @@ private fun EditorWorkspaceContent(theme: EditorTheme, onTheme: (EditorTheme) ->
             initial = "",
             confirmLabel = stringResource(R.string.editor_create),
             onDismiss = { showNewFile = false },
-            onConfirm = {
-                showNewFile = false
-                createFile(it)
-            },
+            onConfirm = { showNewFile = false; createFile(it) },
         )
     }
     if (showNewFolder) {
@@ -362,10 +353,7 @@ private fun EditorWorkspaceContent(theme: EditorTheme, onTheme: (EditorTheme) ->
             initial = "",
             confirmLabel = stringResource(R.string.editor_create),
             onDismiss = { showNewFolder = false },
-            onConfirm = {
-                showNewFolder = false
-                createFolder(it)
-            },
+            onConfirm = { showNewFolder = false; createFolder(it) },
         )
     }
     renameTarget?.let { target ->
@@ -374,10 +362,7 @@ private fun EditorWorkspaceContent(theme: EditorTheme, onTheme: (EditorTheme) ->
             initial = target.name,
             confirmLabel = stringResource(R.string.editor_rename),
             onDismiss = { renameTarget = null },
-            onConfirm = {
-                renameTarget = null
-                rename(target, it)
-            },
+            onConfirm = { renameTarget = null; rename(target, it) },
         )
     }
     deleteTarget?.let { target ->
@@ -386,10 +371,7 @@ private fun EditorWorkspaceContent(theme: EditorTheme, onTheme: (EditorTheme) ->
             title = { Text(stringResource(R.string.editor_delete)) },
             text = { Text(stringResource(R.string.editor_delete_confirm, target.name)) },
             confirmButton = {
-                TextButton(onClick = {
-                    deleteTarget = null
-                    delete(target)
-                }) {
+                TextButton(onClick = { deleteTarget = null; delete(target) }) {
                     Text(stringResource(R.string.editor_delete), color = k.danger)
                 }
             },
@@ -568,22 +550,13 @@ private fun FileRow(file: File, onClick: () -> Unit, onRename: () -> Unit, onDel
         Box {
             IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, contentDescription = null, tint = k.muted) }
             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                DropdownMenuItem(text = { Text(stringResource(R.string.editor_rename)) }, onClick = {
-                    menu = false
-                    onRename()
-                })
+                DropdownMenuItem(text = { Text(stringResource(R.string.editor_rename)) }, onClick = { menu = false; onRename() })
                 if (!isDir) {
-                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_export)) }, onClick = {
-                        menu = false
-                        onExport()
-                    })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_export)) }, onClick = { menu = false; onExport() })
                 }
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.editor_delete), color = k.danger) },
-                    onClick = {
-                        menu = false
-                        onDelete()
-                    },
+                    onClick = { menu = false; onDelete() },
                 )
             }
         }

@@ -9,8 +9,8 @@ Her sürümün otomatik notları ayrıca GitHub Releases sayfasında yayınlanı
 - PDF görüntüleyici "Document already closed" ile çöküyordu: belge kapatıldıktan sonra `PdfRenderer.pageCount`'a erişiliyordu (ekrandan çıkarken/dosya değişirken liste hâlâ çiziliyordu). Sayfa sayısı artık açılışta bir kez okunur, çizim ve kapatma aynı kilit altındadır, açılamayan belge tanıtıcıları kapatılır.
 - `WidgetHost`: kullanımdan kalkmış `updateAppWidgetSize` yerine seçenek paketi + `updateAppWidgetOptions` (Android 12+ için boyut listesi dahil).
 - `ArchiveToolTest`: `File?` için null güvenli erişim.
-- Manifest: kullanılmayan ACRA e-posta eki sağlayıcısı kaldırıldı (kütüphanenin `tools:replace` uyarısını da bitirir).
-- Editör bileşenlerinin derleme çıktısındaki "deprecated/unchecked" notları ve Kotlin uyarıları kapatıldı (üçüncü taraf kaynak; davranış değişmedi).
+- Manifest: ACRA e-posta eki sağlayıcısı dışa kapalı olarak bildirildi (kütüphanenin `tools:replace` birleştirme uyarısını bitirir).
+- Editör sekmesi: lint hatası (`remember` Unit döndürüyordu) ve "koşul hep false" uyarısı giderildi; editör bileşenlerinin derleme çıktısındaki "deprecated/unchecked" notları ve Kotlin uyarıları kapatıldı (üçüncü taraf kaynak; davranış değişmedi).
 
 ### Eklendi (Editör sekmesi)
 - Alt menüye (tablet ve masaüstünde yan çubuğa) yeni **Editör** sekmesi eklendi: çok sekmeli kod düzenleyici. Dosyalar penceresindeki metin/kod dosyaları da aynı düzenleyiciyle açılır.

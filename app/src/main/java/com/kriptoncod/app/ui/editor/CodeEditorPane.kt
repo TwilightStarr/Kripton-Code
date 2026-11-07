@@ -313,14 +313,8 @@ fun CodeEditorPane(
                 )
             }
             if (writable) {
-                GlyphButton("↶", stringResource(R.string.editor_undo), state.canUndo) {
-                    state.editor?.undo()
-                    state.refreshHistory()
-                }
-                GlyphButton("↷", stringResource(R.string.editor_redo), state.canRedo) {
-                    state.editor?.redo()
-                    state.refreshHistory()
-                }
+                GlyphButton("↶", stringResource(R.string.editor_undo), state.canUndo) { state.editor?.undo(); state.refreshHistory() }
+                GlyphButton("↷", stringResource(R.string.editor_redo), state.canRedo) { state.editor?.redo(); state.refreshHistory() }
                 IconButton(onClick = { save(false) }, enabled = state.modified) {
                     Icon(Icons.Default.Check, contentDescription = stringResource(R.string.editor_save))
                 }
@@ -333,46 +327,25 @@ fun CodeEditorPane(
                     Icon(Icons.Default.MoreVert, contentDescription = null)
                 }
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_goto_line)) }, onClick = {
-                        menuOpen = false
-                        showGoto = true
-                    })
-                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_select_all)) }, onClick = {
-                        menuOpen = false
-                        state.editor?.selectAll()
-                    })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_goto_line)) }, onClick = { menuOpen = false; showGoto = true })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_select_all)) }, onClick = { menuOpen = false; state.editor?.selectAll() })
                     DropdownMenuItem(
                         text = { Text((if (settings.wordWrap) "✓ " else "") + stringResource(R.string.editor_wrap)) },
-                        onClick = {
-                            menuOpen = false
-                            updateSettings(settings.copy(wordWrap = !settings.wordWrap))
-                        },
+                        onClick = { menuOpen = false; updateSettings(settings.copy(wordWrap = !settings.wordWrap)) },
                     )
-                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_settings)) }, onClick = {
-                        menuOpen = false
-                        showSettings = true
-                    })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.editor_settings)) }, onClick = { menuOpen = false; showSettings = true })
                     if (onPreview != null) {
-                        DropdownMenuItem(text = { Text(stringResource(R.string.editor_preview)) }, onClick = {
-                            menuOpen = false
-                            leave(onPreview)
-                        })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.editor_preview)) }, onClick = { menuOpen = false; leave(onPreview) })
                     }
                     for (action in extraMenu) {
                         DropdownMenuItem(
                             text = { Text(action.label) },
-                            onClick = {
-                                menuOpen = false
-                                state.editor?.let { action.onClick(it.text.toString()) }
-                            },
+                            onClick = { menuOpen = false; state.editor?.let { action.onClick(it.text.toString()) } },
                         )
                     }
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.desktop_files_open_other)) },
-                        onClick = {
-                            menuOpen = false
-                            leave(onOpenExternal)
-                        },
+                        onClick = { menuOpen = false; leave(onOpenExternal) },
                     )
                 }
             }
@@ -405,10 +378,7 @@ fun CodeEditorPane(
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     CompactField(
                         value = query,
-                        onChange = {
-                            query = it
-                            runSearch()
-                        },
+                        onChange = { query = it; runSearch() },
                         hint = stringResource(R.string.editor_search_hint),
                         modifier = Modifier.weight(1f),
                         error = regexError,
@@ -419,33 +389,16 @@ fun CodeEditorPane(
                         color = k.muted,
                         maxLines = 1,
                     )
-                    GlyphButton("▲", stringResource(R.string.editor_prev), state.matchCount > 0) {
-                        state.editor?.searcher?.gotoPrevious()
-                        state.refreshMatches()
-                    }
-                    GlyphButton("▼", stringResource(R.string.editor_next), state.matchCount > 0) {
-                        state.editor?.searcher?.gotoNext()
-                        state.refreshMatches()
-                    }
+                    GlyphButton("▲", stringResource(R.string.editor_prev), state.matchCount > 0) { state.editor?.searcher?.gotoPrevious(); state.refreshMatches() }
+                    GlyphButton("▼", stringResource(R.string.editor_next), state.matchCount > 0) { state.editor?.searcher?.gotoNext(); state.refreshMatches() }
                     IconButton(onClick = { closeSearch() }, modifier = Modifier.size(36.dp)) {
                         Icon(Icons.Default.Close, contentDescription = stringResource(R.string.editor_close))
                     }
                 }
                 Row(Modifier.horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    ToggleChip("Aa", matchCase, stringResource(R.string.editor_match_case)) {
-                        matchCase = !matchCase
-                        runSearch()
-                    }
-                    ToggleChip(".*", useRegex, stringResource(R.string.editor_regex)) {
-                        useRegex = !useRegex
-                        if (useRegex) wholeWord = false
-                        runSearch()
-                    }
-                    ToggleChip("\\b", wholeWord, stringResource(R.string.editor_whole_word)) {
-                        wholeWord = !wholeWord
-                        if (wholeWord) useRegex = false
-                        runSearch()
-                    }
+                    ToggleChip("Aa", matchCase, stringResource(R.string.editor_match_case)) { matchCase = !matchCase; runSearch() }
+                    ToggleChip(".*", useRegex, stringResource(R.string.editor_regex)) { useRegex = !useRegex; if (useRegex) wholeWord = false; runSearch() }
+                    ToggleChip("\\b", wholeWord, stringResource(R.string.editor_whole_word)) { wholeWord = !wholeWord; if (wholeWord) useRegex = false; runSearch() }
                 }
                 if (writable) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -455,16 +408,10 @@ fun CodeEditorPane(
                             hint = stringResource(R.string.editor_replace_hint),
                             modifier = Modifier.weight(1f),
                         )
-                        TextButton(onClick = {
-                            state.editor?.searcher?.replaceCurrentMatch(replacement)
-                            state.refreshMatches()
-                        }, enabled = state.matchCount > 0) {
+                        TextButton(onClick = { state.editor?.searcher?.replaceCurrentMatch(replacement); state.refreshMatches() }, enabled = state.matchCount > 0) {
                             Text(stringResource(R.string.editor_replace), maxLines = 1)
                         }
-                        TextButton(onClick = {
-                            state.editor?.searcher?.replaceAll(replacement)
-                            state.refreshMatches()
-                        }, enabled = state.matchCount > 0) {
+                        TextButton(onClick = { state.editor?.searcher?.replaceAll(replacement); state.refreshMatches() }, enabled = state.matchCount > 0) {
                             Text(stringResource(R.string.editor_replace_all), maxLines = 1)
                         }
                     }
@@ -497,10 +444,7 @@ fun CodeEditorPane(
                     ed.setDividerWidth(0f)
                     ed.setPinLineNumber(true)
                     // Renk şeması dilden ÖNCE verilir (TextMate dili TextMate şeması ister).
-                    SoraSetup.createScheme(chrome)?.let { s ->
-                        state.scheme = s
-                        ed.colorScheme = s
-                    }
+                    SoraSetup.createScheme(chrome)?.let { s -> state.scheme = s; ed.colorScheme = s }
                     state.appliedSyntax = chrome.syntaxName()
                     state.appliedKey = chrome.key()
                     ed.setScalable(false)
@@ -555,10 +499,7 @@ fun CodeEditorPane(
                 val key = chrome.key()
                 if (current == null || state.appliedSyntax != chrome.syntaxName()) {
                     SoraSetup.release(current)
-                    SoraSetup.createScheme(chrome)?.let { ns ->
-                        state.scheme = ns
-                        ed.colorScheme = ns
-                    }
+                    SoraSetup.createScheme(chrome)?.let { ns -> state.scheme = ns; ed.colorScheme = ns }
                 } else if (state.appliedKey != key) {
                     chrome.applyTo(current)
                     ed.invalidate()
@@ -595,10 +536,7 @@ fun CodeEditorPane(
             GotoDialog(
                 maxLine = state.editor?.text?.lineCount ?: 1,
                 onDismiss = { showGoto = false },
-                onGo = { line ->
-                    showGoto = false
-                    state.editor?.jumpToLine(line - 1)
-                },
+                onGo = { line -> showGoto = false; state.editor?.jumpToLine(line - 1) },
             )
         }
         if (showSettings) {
@@ -618,23 +556,14 @@ fun CodeEditorPane(
                             if (ed != null) {
                                 val text = ed.text.toString()
                                 val ok = withContext(Dispatchers.IO) { runCatching { AtomicFiles.write(file, EditorSupport.encode(text, l.bom)) }.isSuccess }
-                                if (ok) {
-                                    state.modified = false
-                                    leaving()
-                                } else {
-                                    message(context.getString(R.string.editor_save_failed))
-                                }
+                                if (ok) { state.modified = false; leaving() } else message(context.getString(R.string.editor_save_failed))
                             }
                         }
                     }) { Text(stringResource(R.string.editor_save)) }
                 },
                 dismissButton = {
                     Row {
-                        TextButton(onClick = {
-                            pendingLeave = null
-                            state.modified = false
-                            leaving()
-                        }) { Text(stringResource(R.string.editor_discard)) }
+                        TextButton(onClick = { pendingLeave = null; state.modified = false; leaving() }) { Text(stringResource(R.string.editor_discard)) }
                         TextButton(onClick = { pendingLeave = null }) { Text(stringResource(R.string.editor_cancel)) }
                     }
                 },
@@ -645,12 +574,7 @@ fun CodeEditorPane(
                 onDismissRequest = { askOverwrite = false },
                 title = { Text(stringResource(R.string.editor_overwrite_title)) },
                 text = { Text(stringResource(R.string.editor_overwrite_msg)) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        askOverwrite = false
-                        save(true)
-                    }) { Text(stringResource(R.string.editor_overwrite)) }
-                },
+                confirmButton = { TextButton(onClick = { askOverwrite = false; save(true) }) { Text(stringResource(R.string.editor_overwrite)) } },
                 dismissButton = { TextButton(onClick = { askOverwrite = false }) { Text(stringResource(R.string.editor_cancel)) } },
             )
         }
