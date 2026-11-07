@@ -123,7 +123,10 @@ object EditorSession {
         val i = open.indexOf(from)
         if (i < 0) return
         open[i] = to
-        EditorDrafts.get(from)?.let { EditorDrafts.put(to, it); EditorDrafts.remove(from) }
+        EditorDrafts.get(from)?.let {
+            EditorDrafts.put(to, it)
+            EditorDrafts.remove(from)
+        }
         if (active == from) active = to
         persist(context)
     }
